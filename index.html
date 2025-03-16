@@ -13,7 +13,7 @@
             background-color: #f5f5f5; 
             overscroll-behavior: none; 
             position: relative; 
-            touch-action: pan-y; 
+            touch-action: none; 
         }
         #textContent { 
             font-size: 18px; 
@@ -33,6 +33,7 @@
             z-index: 1; 
             transition: transform 0.3s ease, background-color 0.3s, color 0.3s; 
             color: #333; 
+            user-select: none; 
         }
         #controls { 
             margin: 10px 0; 
@@ -72,8 +73,6 @@
         }
         #loadingSpinner { 
             display: none; 
-            visibility: hidden; 
-            opacity: 0; 
             position: fixed; 
             top: 50%; 
             left: 50%; 
@@ -120,7 +119,7 @@
             cursor: pointer; 
         }
         .char-span { 
-            transition: opacity 0.3s, color 0.3s; 
+            transition: opacity 0.3s, color 0.3s, background-color 0.1s; 
             color: inherit; 
         }
         .char-span.current { 
@@ -157,6 +156,30 @@
         }
         #fileUpload:hover { 
             background-color: #e6f0fa; 
+        }
+        #tocOverlay { 
+            display: none; 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            background: rgba(0, 0, 0, 0.8); 
+            z-index: 20; 
+            color: white; 
+            padding: 20px; 
+            overflow-y: auto; 
+        }
+        #tocOverlay ul { 
+            list-style: none; 
+            padding: 0; 
+        }
+        #tocOverlay li { 
+            padding: 10px; 
+            cursor: pointer; 
+        }
+        #tocOverlay li:hover { 
+            background: rgba(255, 255, 255, 0.1); 
         }
         @keyframes spin { 
             0% { transform: translate(-50%, -50%) rotate(0deg); } 
@@ -216,18 +239,11 @@
 <body>
     <input type="file" id="fileUpload" accept=".txt,.epub" aria-label="파일 업로드" multiple>
     <div id="controls" role="toolbar">
-        <button id="startButton" aria-label="훈련 시작">
-            <span class="icon">▶</span> 시작
-        </button>
-        <button id="stopButton" aria-label="훈련 중지">
-            <span class="icon">■</span> 정지
-        </button>
-        <button id="prevPage" aria-label="이전 페이지">
-            <span class="icon">◀</span> 이전
-        </button>
-        <button id="nextPage" aria-label="다음 페이지">
-            <span class="icon">▶</span> 다음
-        </button>
+        <button id="startButton" aria-label="훈련 시작"><span class="icon">▶</span> 시작</button>
+        <button id="stopButton" aria-label="훈련 중지"><span class="icon">■</span> 정지</button>
+        <button id="prevPage" aria-label="이전 페이지"><span class="icon">◀</span> 이전</button>
+        <button id="nextPage" aria-label="다음 페이지"><span class="icon">▶</span> 다음</button>
+        <button id="previewButton" aria-label="파일 미리보기">미리보기</button>
     </div>
     <details>
         <summary>고급 설정</summary>
@@ -287,6 +303,7 @@
     </div>
     <div id="loadingSpinner"></div>
     <div id="message" aria-live="assertive"></div>
+    <div id="tocOverlay"></div>
 
     <script>
         const fileInput = document.getElementById('fileUpload');
@@ -312,13 +329,15 @@
         const stopButton = document.getElementById('stopButton');
         const prevPage = document.getElementById('prevPage');
         const nextPage = document.getElementById('nextPage');
+        const previewButton = document.getElementById('previewButton');
         const pageInfo = document.getElementById('pageInfo');
         const message = document.getElementById('message');
         const progress = document.getElementById('progress');
         const loadingSpinner = document.getElementById('loadingSpinner');
         const resetSettings = document.getElementById('resetSettings');
-        let interval, pages = [], currentPage = 0, book;
-        let worker;
+        const tocOverlay = document.getElementById('tocOverlay');
+        let interval, pages = [], currentPage = 0, book, toc = [];
+        let worker, lastFileName = '';
         let renderedPages = [];
 
         speedControl.value = localStorage.getItem('speed') || 100;
@@ -372,29 +391,24 @@
                 return;
             }
 
+            lastFileName = file.name;
             textContent.style.opacity = 1;
             message.innerText = '파일 로딩 중...';
             message.style.display = 'block';
             progress.value = 0;
             toggleButtons(true);
             loadingSpinner.style.display = 'block';
-            loadingSpinner.style.visibility = 'visible';
-            loadingSpinner.style.opacity = 1;
 
             const reader = new FileReader();
             reader.onload = function(event) {
                 const fileData = event.target.result;
                 if (file.name.endsWith('.txt')) {
                     console.log('File data loaded:', fileData.substring(0, 100));
-                } else if (file.name.endsWith('.epub')) {
-                    console.log('File data loaded:', fileData);
-                }
-                if (file.name.endsWith('.txt')) {
                     if (worker) {
                         worker.onmessage = function(e) {
                             pages = e.data.pages;
+                            loadLastPage();
                             preloadPages();
-                            currentPage = 0;
                             displayPage();
                             message.style.display = 'none';
                             progress.value = 0;
@@ -410,8 +424,8 @@
                         worker.postMessage({ text: fileData, maxHeight: textContent.getBoundingClientRect().height });
                     } else {
                         pages = splitTextToFit(fileData, textContent.getBoundingClientRect().height);
+                        loadLastPage();
                         preloadPages();
-                        currentPage = 0;
                         displayPage();
                         message.style.display = 'none';
                         progress.value = 0;
@@ -431,8 +445,9 @@
                         message.innerText = 'EPUB 파싱 중...';
                         loadEpubPages().then(pagesData => {
                             pages = pagesData;
+                            book.toc().then(t => toc = t);
+                            loadLastPage();
                             preloadPages();
-                            currentPage = 0;
                             displayPage();
                             message.style.display = 'none';
                             progress.value = 0;
@@ -457,10 +472,9 @@
 
         async function loadEpubPages() {
             if (book && book.rendition) book.rendition.destroy();
-            const allPages = [];
+            let fullText = '';
             let loadedCount = 0;
             const sections = book.spine.items;
-            let fullText = '';
             for (let i = 0; i < sections.length; i++) {
                 const section = book.spine.get(i);
                 const content = await section.load(book.load.bind(book));
@@ -530,7 +544,18 @@
                     setTimeout(() => { if (autoRestart.checked && interval) startEffect(); }, 300);
                 } else if (autoRestart.checked && interval) startEffect();
                 preloadPages();
+                saveLastPage();
             }, 50);
+        }
+
+        function loadLastPage() {
+            const lastPage = localStorage.getItem(`lastPage_${lastFileName}`);
+            currentPage = lastPage ? parseInt(lastPage) : 0;
+            currentPage = Math.max(0, Math.min(currentPage, pages.length - 1));
+        }
+
+        function saveLastPage() {
+            localStorage.setItem(`lastPage_${lastFileName}`, currentPage);
         }
 
         startButton.addEventListener('click', () => {
@@ -561,6 +586,17 @@
                     });
                 }, 300);
             }
+        });
+
+        previewButton.addEventListener('click', () => {
+            if (pages.length === 0) {
+                message.innerText = '먼저 파일을 업로드하세요.';
+                message.style.display = 'block';
+                setTimeout(() => message.style.display = 'none', 2000);
+                return;
+            }
+            const previewWindow = window.open('', '_blank');
+            previewWindow.document.write('<pre>' + pages.join('\n\n---\n\n') + '</pre>');
         });
 
         speedControl.addEventListener('input', () => {
@@ -695,26 +731,47 @@
             }
         });
 
-        const hammer = new Hammer(textContent, {
-            threshold: 10,
-            velocity: 0.2,
-            inputClass: Hammer.TouchInput
+        let touchStartX = 0;
+        textContent.addEventListener('touchstart', (e) => {
+            touchStartX = e.touches[0].clientX;
         });
-        hammer.get('swipe').set({ direction: Hammer.DIRECTION_HORIZONTAL });
-        hammer.on('swipeleft', () => {
-            if (currentPage < pages.length - 1) {
+        textContent.addEventListener('touchend', (e) => {
+            const touchEndX = e.changedTouches[0].clientX;
+            const deltaX = touchEndX - touchStartX;
+            if (deltaX > 50 && currentPage > 0) {
+                currentPage--;
+                stopEffect();
+                displayPage(-1);
+            } else if (deltaX < -50 && currentPage < pages.length - 1) {
                 currentPage++;
                 stopEffect();
                 displayPage(1);
             }
         });
-        hammer.on('swiperight', () => {
-            if (currentPage > 0) {
-                currentPage--;
-                stopEffect();
-                displayPage(-1);
+
+        let tapCount = 0;
+        textContent.addEventListener('touchstart', (e) => {
+            tapCount++;
+            setTimeout(() => tapCount = 0, 300);
+            if (tapCount === 2 && book) {
+                showToc();
             }
         });
+
+        function showToc() {
+            if (toc.length === 0) return;
+            tocOverlay.innerHTML = '<ul>' + toc.map((item, index) => `<li data-page="${index}">${item.label}</li>`).join('') + '</ul>';
+            tocOverlay.style.display = 'block';
+            tocOverlay.querySelectorAll('li').forEach(li => {
+                li.addEventListener('click', () => {
+                    currentPage = parseInt(li.dataset.page);
+                    stopEffect();
+                    displayPage();
+                    tocOverlay.style.display = 'none';
+                });
+            });
+            tocOverlay.addEventListener('click', () => tocOverlay.style.display = 'none');
+        }
 
         resetSettings.addEventListener('click', () => {
             localStorage.clear();
@@ -780,6 +837,7 @@
             stopButton.disabled = disable;
             prevPage.disabled = disable;
             nextPage.disabled = disable;
+            previewButton.disabled = disable;
         }
 
         function startEffect() {
@@ -792,6 +850,8 @@
             const effect = effectSelect.value;
             const intervalTime = parseInt(speedControl.value);
             const fadeStep = Math.min(0.05, 10 / intervalTime);
+            const baseBgColor = blackMode.checked ? blackModeColor.value : '#fff';
+            const baseTextColor = blackMode.checked ? '#e0e0e0' : '#333';
 
             if (effect === 'fade') {
                 let opacity = 1;
@@ -832,15 +892,18 @@
                 const spans = textContent.querySelectorAll('.char-span:not(.char-space)');
                 let charIndex = 0;
                 const totalChars = spans.length;
-                const baseBgColor = blackMode.checked ? blackModeColor.value : '#fff';
-                const baseTextColor = blackMode.checked ? '#e0e0e0' : '#333';
                 interval = setInterval(() => {
                     if (charIndex < spans.length) {
                         if (charIndex > 0) spans[charIndex - 1].classList.remove('current');
                         spans[charIndex].classList.add('current');
-                        spans[charIndex].style.color = '#000'; // 글자 강조
+                        spans[charIndex].style.backgroundColor = '#000';
+                        spans[charIndex].style.color = '#fff';
+                        setTimeout(() => {
+                            spans[charIndex].style.backgroundColor = baseBgColor;
+                            spans[charIndex].style.color = baseTextColor;
+                        }, 100);
                         charIndex++;
-                        const completedChars = Array.from(spans).filter(span => span.style.color === 'rgb(0, 0, 0)').length;
+                        const completedChars = charIndex;
                         progress.value = (completedChars / totalChars) * 100;
                         progress.style.backgroundColor = `hsl(${progress.value * 1.2}, 70%, 50%)`;
                         if (completedChars === totalChars) {
@@ -848,7 +911,7 @@
                             textContent.style.backgroundColor = '#000';
                             setTimeout(() => {
                                 textContent.style.backgroundColor = baseBgColor;
-                                spans.forEach(span => span.style.color = baseTextColor);
+                                nextPage.click();
                             }, 200);
                         }
                     } else {
@@ -868,6 +931,7 @@
                 textContent.querySelectorAll('.char-span').forEach(span => {
                     span.style.opacity = 1;
                     span.style.color = blackMode.checked ? '#e0e0e0' : '#333';
+                    span.style.backgroundColor = '';
                     span.classList.remove('current');
                 });
                 textContent.querySelectorAll('.line').forEach(line => {
@@ -901,13 +965,21 @@
                 if (index < spans.length) {
                     if (effectSelect.value === 'char') spans[index].style.opacity = 0;
                     else if (effectSelect.value === 'fade') spans[index].style.opacity = 0.5;
-                    else if (effectSelect.value === 'eink') spans[index].style.color = '#000';
+                    else if (effectSelect.value === 'eink') {
+                        spans[index].style.backgroundColor = '#000';
+                        spans[index].style.color = '#fff';
+                        setTimeout(() => {
+                            spans[index].style.backgroundColor = '';
+                            spans[index].style.color = blackMode.checked ? '#e0e0e0' : '#333';
+                        }, 100);
+                    }
                     index++;
                 } else {
                     clearInterval(preview);
                     spans.forEach(span => {
                         span.style.opacity = 1;
                         span.style.color = blackMode.checked ? '#e0e0e0' : '#333';
+                        span.style.backgroundColor = '';
                     });
                 }
             }, speedControl.value);
