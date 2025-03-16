@@ -1,3 +1,11 @@
+### 요구사항 반영
+1. **`preloadPages` 범위 설정 가능**: 고급 설정에 "프리로드 범위" 추가, 기본값 ±2, 사용자 지정 가능.
+2. **전자잉크 모드 텍스트 색상**: 텍스트와 배경이 함께 검은색으로 변환 후 원래 색상으로 복귀.
+
+---
+
+### 전체 코드
+```html
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -274,6 +282,8 @@
             <input type="number" id="lineHeight" min="1" max="3" step="0.1" value="1.6">
             <label for="letterSpacing">글자 간격:</label>
             <input type="number" id="letterSpacing" min="0" max="5" step="0.1" value="0">px
+            <label for="preloadRange">프리로드 범위 (±페이지):</label>
+            <input type="number" id="preloadRange" min="1" max="10" value="2">
             <label for="autoRestart">페이지 전환 시 재시작:</label>
             <input type="checkbox" id="autoRestart">
             <label for="pageAnimation">페이지 전환 애니메이션:</label>
@@ -315,6 +325,7 @@
         const fontFamily = document.getElementById('fontFamily');
         const lineHeight = document.getElementById('lineHeight');
         const letterSpacing = document.getElementById('letterSpacing');
+        const preloadRange = document.getElementById('preloadRange');
         const autoRestart = document.getElementById('autoRestart');
         const pageAnimation = document.getElementById('pageAnimation');
         const showPageInfo = document.getElementById('showPageInfo');
@@ -347,6 +358,7 @@
         fontFamily.value = localStorage.getItem('fontFamily') || 'Arial, sans-serif';
         lineHeight.value = localStorage.getItem('lineHeight') || 1.6;
         letterSpacing.value = localStorage.getItem('letterSpacing') || 0;
+        preloadRange.value = localStorage.getItem('preloadRange') || 2;
         autoRestart.checked = localStorage.getItem('autoRestart') === 'true';
         pageAnimation.checked = localStorage.getItem('pageAnimation') !== 'false';
         showPageInfo.checked = localStorage.getItem('showPageInfo') !== 'false';
@@ -518,8 +530,9 @@
 
         function preloadPages() {
             renderedPages = [];
-            const start = Math.max(0, currentPage - 2);
-            const end = Math.min(pages.length, currentPage + 3);
+            const range = parseInt(preloadRange.value);
+            const start = Math.max(0, currentPage - range);
+            const end = Math.min(pages.length, currentPage + range + 1);
             for (let i = start; i < end; i++) {
                 const text = pages[i];
                 const lines = text.split('\n').filter(line => line.trim().length > 0);
@@ -663,6 +676,14 @@
             localStorage.setItem('letterSpacing', letterSpacing.value);
         });
 
+        preloadRange.addEventListener('input', () => {
+            let value = Math.min(10, Math.max(1, preloadRange.value));
+            preloadRange.value = value;
+            preloadPages();
+            displayPage();
+            localStorage.setItem('preloadRange', value);
+        });
+
         autoRestart.addEventListener('change', () => localStorage.setItem('autoRestart', autoRestart.checked));
         pageAnimation.addEventListener('change', () => {
             localStorage.setItem('pageAnimation', pageAnimation.checked);
@@ -789,6 +810,7 @@
             fontFamily.value = 'Arial, sans-serif';
             lineHeight.value = 1.6;
             letterSpacing.value = 0;
+            preloadRange.value = 2;
             autoRestart.checked = false;
             pageAnimation.checked = true;
             showPageInfo.checked = true;
@@ -914,10 +936,12 @@
                         progress.value = (completedChars / totalChars) * 100;
                         progress.style.backgroundColor = `hsl(${progress.value * 1.2}, 70%, 50%)`;
                         if (completedChars === totalChars) {
-                            textContent.style.transition = 'background-color 0.2s';
+                            textContent.style.transition = 'background-color 0.2s, color 0.2s';
                             textContent.style.backgroundColor = '#000';
+                            textContent.style.color = '#000';
                             setTimeout(() => {
                                 textContent.style.backgroundColor = baseBgColor;
+                                textContent.style.color = baseTextColor;
                                 if (currentPage < pages.length - 1) nextPage.click();
                             }, 200);
                         }
@@ -934,6 +958,7 @@
             if (interval) clearInterval(interval);
             textContent.style.opacity = 1;
             textContent.style.backgroundColor = blackMode.checked ? blackModeColor.value : '#fff';
+            textContent.style.color = blackMode.checked ? '#e0e0e0' : '#333';
             if (effectSelect.value === 'char' || effectSelect.value === 'eink') {
                 textContent.querySelectorAll('.char-span').forEach(span => {
                     span.style.opacity = 1;
@@ -994,3 +1019,25 @@
     </script>
 </body>
 </html>
+```
+
+---
+
+### 주요 변경사항
+1. **프리로드 범위 설정**:
+   - `<input type="number" id="preloadRange" min="1" max="10" value="2">` 추가.
+   - `preloadPages` 함수에서 `range = parseInt(preloadRange.value)`로 동적 범위 적용.
+   - `localStorage`에 저장 및 초기화 기능 포함.
+
+2. **전자잉크 모드 색상 변환**:
+   - `startEffect` 내 `eink` 효과에서 완료 시 `textContent.style.color = '#000'` 추가.
+   - 복귀 시 `baseTextColor`로 원상태 복원.
+   - 전환 애니메이션에 `color 0.2s` 추가.
+
+---
+
+### 확인 포인트
+- **프리로드 범위**: 설정에서 1~10 사이로 조정 가능, 페이지 이동 시 반영.
+- **전자잉크**: 텍스트와 배경이 함께 검은색으로 변한 후 복귀, 자연스러운 전자잉크 느낌 강화.
+
+추가 요청 있으면 말씀해주세요!
