@@ -235,7 +235,7 @@
             }
         }
         .black-mode body { background-color: #1a1a1a; }
-        .black-mode #textContent { background-color: #2d2d2d; color: #e0e0e0; border-color: #444; }
+        .black-mode #textContent { background-color: #2d2d2d; color: #fff; border-color: #444; }
         .black-mode summary { background-color: #3a3a3a; }
         .black-mode #fileUpload { background-color: #333; border-color: #555; }
         .black-mode #fileUpload:hover { background-color: #444; }
@@ -875,7 +875,7 @@
             if (blackMode.checked) {
                 document.body.classList.add('black-mode');
                 textContent.style.backgroundColor = blackModeColor.value;
-                textContent.style.color = '#e0e0e0';
+                textContent.style.color = '#fff'; // 블랙 모드에서 텍스트를 흰색으로 설정
             } else {
                 document.body.classList.remove('black-mode');
                 textContent.style.backgroundColor = '#fff';
@@ -902,7 +902,7 @@
             const intervalTime = parseInt(speedControl.value);
             const fadeStep = Math.min(0.05, 10 / intervalTime);
             const baseBgColor = blackMode.checked ? blackModeColor.value : '#fff';
-            const baseTextColor = blackMode.checked ? '#e0e0e0' : '#333';
+            const baseTextColor = blackMode.checked ? '#fff' : '#333'; // 블랙 모드에서 흰색 텍스트
 
             if (effect === 'fade') {
                 let opacity = 1;
@@ -947,7 +947,7 @@
                     if (charIndex < spans.length) {
                         if (charIndex > 0) spans[charIndex - 1].classList.remove('current');
                         spans[charIndex].classList.add('current');
-                        spans[charIndex].classList.add('eink-black'); // 글자와 배경 모두 검정
+                        spans[charIndex].classList.add('eink-black'); // 전자잉크 모드에서 검정색 유지
                         setTimeout(() => {
                             spans[charIndex].classList.remove('eink-black');
                             spans[charIndex].style.backgroundColor = baseBgColor;
@@ -979,12 +979,12 @@
             if (interval) clearInterval(interval);
             textContent.style.opacity = 1;
             textContent.style.backgroundColor = blackMode.checked ? blackModeColor.value : '#fff';
-            textContent.style.color = blackMode.checked ? '#e0e0e0' : '#333';
+            textContent.style.color = blackMode.checked ? '#fff' : '#333'; // 블랙 모드에서 흰색 텍스트
             textContent.classList.remove('eink-mode');
             if (effectSelect.value === 'char' || effectSelect.value === 'eink') {
                 textContent.querySelectorAll('.char-span').forEach(span => {
                     span.style.opacity = 1;
-                    span.style.color = blackMode.checked ? '#e0e0e0' : '#333';
+                    span.style.color = blackMode.checked ? '#fff' : '#333'; // 블랙 모드에서 흰색 텍스트
                     span.style.backgroundColor = '';
                     span.classList.remove('current', 'eink-black');
                 });
@@ -1023,7 +1023,7 @@
                         spans[index].classList.add('eink-black');
                         setTimeout(() => {
                             spans[index].classList.remove('eink-black');
-                            spans[index].style.color = blackMode.checked ? '#e0e0e0' : '#333';
+                            spans[index].style.color = blackMode.checked ? '#fff' : '#333'; // 블랙 모드에서 흰색 텍스트
                             spans[index].style.backgroundColor = '';
                         }, 100);
                     }
@@ -1032,7 +1032,7 @@
                     clearInterval(preview);
                     spans.forEach(span => {
                         span.style.opacity = 1;
-                        span.style.color = blackMode.checked ? '#e0e0e0' : '#333';
+                        span.style.color = blackMode.checked ? '#fff' : '#333'; // 블랙 모드에서 흰색 텍스트
                         span.style.backgroundColor = '';
                         span.classList.remove('eink-black');
                     });
@@ -1040,5 +1040,5 @@
             }, speedControl.value);
         }
     </script>
-</body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'92137116cbc4bfd6',t:'MTc0MjExOTYyNy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
