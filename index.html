@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>사라지는 텍스트 훈련</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; transition: opacity 0.3s; }
+        #textContent { 
+            font-size: 18px; 
+            line-height: 1.5; 
+            white-space: pre-wrap; 
+            position: relative; 
+            overflow-y: hidden; /* 스크롤 방지 */
+            width: 90vw; 
+            height: 80vh; 
+            margin: 0 auto; 
+            padding-bottom: 20px; 
+            box-sizing: border-box; 
+        }
+        #controls { margin: 10px 0; display: flex; flex-wrap: wrap; gap: 10px; }
+        #message { color: red; }
+        #pageInfo { position: absolute; bottom: -20px; left: 0; font-size: 14px; }
+        #progress { width: 100%; height: 5px; margin: 10px 0; opacity: 0.7; }
+        #loadingSpinner { 
+            display: none; 
+            position: absolute; 
+            top: 50%; 
+            left: 50%; 
+            transform: translate(-50%, -50%); 
+            width: 20px; 
+            height: 20px; 
+            border: 3px solid #f3f3f3; 
+            border-top: 3px solid #3498db; 
+            border-radius: 50%; 
+            animation: spin 1s linear infinite; 
+        }
+        button { margin: 0 5px; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        details { margin: 10px 0; }
+        .char-span { transition: opacity 0.3s; }
+        .char-span.current { background-color: rgba(255, 255, 0, 0.3); }
+        .line { display: block; transition: opacity 0.2s; }
+        .line.hidden { opacity: 0; }
+        .fullscreen #controls, .fullscreen #progress, .fullscreen #message, .fullscreen details { display: none; }
+        .fullscreen #textContent { width: 100vw; height: 100vh; margin: 0; }
+        [title]:hover::after { content: attr(title); position: absolute; background: #333; color: white; padding: 5px; border-radius: 3px; }
+        @keyframes spin { 0% { transform: translate(-50%, -50%) rotate(0deg); } 100% { transform: translate(-50%, -50%) rotate(360deg); } }
+        @media (max-width: 600px) {
+            #controls { flex-direction: column; }
+            #textContent { font-size: 16px; }
+            button, input, select { width: 100%; margin: 5px 0; }
+            #progress { height: 3px; }
+            #pageInfo { font-size: 12px; bottom: -15px; }
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://unpkg.com/epubjs/dist/epub.min.js"></script>
+</head>
+<body>
+    <input type="file" id="fileUpload" accept=".txt,.epub" aria-label="파일 업로드">
+    <div id="controls" role="toolbar">
+        <button id="startButton" title="훈련을 시작합니다">시작</button>
+        <button id="stopButton" title="훈련을 중지합니다">정지</button>
+        <button id="prevPage" title="이전 페이지로 이동">이전 페이지</button>
+        <button id="nextPage" title="다음 페이지로 이동">다음 페이지</button>
+    </div>
+    <details>
+        <summary>고급 설정</summary>
+        <div id="advancedControls" style="display: flex; flex-wrap: wrap; gap: 10px; padding: 10px;">
+            <label for="speedControl">속도 (빠름: 50ms ~ 느림: 2000ms):</label>
+            <input type="range" id="speedControl" min="50" max="2000" step="10" value="100">
+            <label for="speedPreset">속도 프리셋:</label>
+            <select id="speedPreset">
+                <option value="50">빠르게</option>
+                <option value="100" selected>보통</option>
+                <option value="200">느리게</option>
+            </select>
+            <label for="effectSelect">효과 선택:</label>
+            <select id="effectSelect">
+                <option value="char" selected>글자 단위 소멸</option>
+                <option value="fade">페이드 아웃</option>
+            </select>
+            <label for="fontSize">글꼴 크기:</label>
+            <input type="number" id="fontSize" min="12" max="36" value="18" style="width: 50px;">px
+            <label for="fontFamily">글꼴 스타일:</label>
+            <select id="fontFamily">
+                <option value="Arial, sans-serif">Arial</option>
+                <option value="Georgia, serif">Georgia</option>
+                <option value="'Noto Sans KR', sans-serif">Noto Sans KR</option>
+            </select>
+            <label for="lineHeight">줄 간격:</label>
+            <input type="number" id="lineHeight" min="1" max="3" step="0.1" value="1.5" style="width: 50px;">
+            <label for="letterSpacing">글자 간격:</label>
+            <input type="number" id="letterSpacing" min="0" max="5" step="0.1" value="0" style="width: 50px;">px
+            <label for="autoRestart">페이지 전환 시 재시작:</label>
+            <input type="checkbox" id="autoRestart">
+            <label for="pageAnimation">페이지 전환 애니메이션:</label>
+            <input type="checkbox" id="pageAnimation" checked>
+            <label for="showPageInfo">페이지 번호 표시:</label>
+            <input type="checkbox" id="showPageInfo" checked>
+            <label for="fullscreenMode">전체 화면 모드:</label>
+            <input type="checkbox" id="fullscreenMode">
+            <label for="marginTop">위쪽 여백 (%):</label>
+            <input type="number" id="marginTop" min="0" max="50" value="0" step="1" style="width: 50px;">
+            <label for="marginRight">오른쪽 여백 (%):</label>
+            <input type="number" id="marginRight" min="0" max="50" value="0" step="1" style="width: 50px;">
+            <label for="marginBottom">아래쪽 여백 (%):</label>
+            <input type="number" id="marginBottom" min="0" max="50" value="0" step="1" style="width: 50px;">
+            <label for="marginLeft">왼쪽 여백 (%):</label>
+            <input type="number" id="marginLeft" min="0" max="50" value="0" step="1" style="width: 50px;">
+        </div>
+    </details>
+    <progress id="progress" value="0" max="100"></progress>
+    <div id="textContent" role="region" aria-label="텍스트 표시 영역">
+        <div id="pageInfo" aria-live="polite"></div>
+        <div id="loadingSpinner"></div>
+    </div>
+    <div id="message" aria-live="assertive"></div>
+
+    <script>
+        const fileInput = document.getElementById('fileUpload');
+        const textContent = document.getElementById('textContent');
+        const speedControl = document.getElementById('speedControl');
+        const speedPreset = document.getElementById('speedPreset');
+        const effectSelect = document.getElementById('effectSelect');
+        const fontSize = document.getElementById('fontSize');
+        const fontFamily = document.getElementById('fontFamily');
+        const lineHeight = document.getElementById('lineHeight');
+        const letterSpacing = document.getElementById('letterSpacing');
+        const autoRestart = document.getElementById('autoRestart');
+        const pageAnimation = document.getElementById('pageAnimation');
+        const showPageInfo = document.getElementById('showPageInfo');
+        const fullscreenMode = document.getElementById('fullscreenMode');
+        const marginTop = document.getElementById('marginTop');
+        const marginRight = document.getElementById('marginRight');
+        const marginBottom = document.getElementById('marginBottom');
+        const marginLeft = document.getElementById('marginLeft');
+        const startButton = document.getElementById('startButton');
+        const stopButton = document.getElementById('stopButton');
+        const prevPage = document.getElementById('prevPage');
+        const nextPage = document.getElementById('nextPage');
+        const pageInfo = document.getElementById('pageInfo');
+        const message = document.getElementById('message');
+        const progress = document.getElementById('progress');
+        const loadingSpinner = document.getElementById('loadingSpinner');
+        let interval, pages = [], currentPage = 0, book;
+        let worker;
+
+        // 설정 로드
+        speedControl.value = localStorage.getItem('speed') || 100;
+        speedPreset.value = localStorage.getItem('speedPreset') || 100;
+        effectSelect.value = localStorage.getItem('effect') || 'char';
+        fontSize.value = localStorage.getItem('fontSize') || 18;
+        fontFamily.value = localStorage.getItem('fontFamily') || 'Arial, sans-serif';
+        lineHeight.value = localStorage.getItem('lineHeight') || 1.5;
+        letterSpacing.value = localStorage.getItem('letterSpacing') || 0;
+        autoRestart.checked = localStorage.getItem('autoRestart') === 'true';
+        pageAnimation.checked = localStorage.getItem('pageAnimation') !== 'false';
+        showPageInfo.checked = localStorage.getItem('showPageInfo') !== 'false';
+        fullscreenMode.checked = localStorage.getItem('fullscreenMode') === 'true';
+        marginTop.value = localStorage.getItem('marginTop') || 0;
+        marginRight.value = localStorage.getItem('marginRight') || 0;
+        marginBottom.value = localStorage.getItem('marginBottom') || 0;
+        marginLeft.value = localStorage.getItem('marginLeft') || 0;
+        updateTextContentStyles();
+
+        // 웹 워커 초기화
+        if (window.Worker) {
+            worker = new Worker(URL.createObjectURL(new Blob([`
+                self.onmessage = async function(e) {
+                    const { fileData, type, containerHeight } = e.data;
+                    let pages = [];
+                    if (type === 'txt') {
+                        pages = splitTextToFit(fileData, containerHeight);
+                        self.postMessage({ pages });
+                    } else if (type === 'epub') {
+                        self.postMessage({ error: 'EPUB 처리 불가: 메인 스레드에서 처리 필요' });
+                    }
+
+                    function splitTextToFit(text, height) {
+                        const lines = text.split('\n').filter(line => line.trim().length > 0);
+                        const pages = [];
+                        let currentPageText = '';
+                        const testDiv = document.createElement('div');
+                        testDiv.style.cssText = 'font-size: 18px; line-height: 1.5; white-space: pre-wrap; visibility: hidden; position: absolute;';
+                        document.body.appendChild(testDiv);
+
+                        for (let line of lines) {
+                            testDiv.innerText = currentPageText + line + '\n';
+                            if (testDiv.scrollHeight > height) {
+                                pages.push(currentPageText.trim());
+                                currentPageText = line + '\n';
+                            } else {
+                                currentPageText += line + '\n';
+                            }
+                        }
+                        if (currentPageText.trim().length > 0) pages.push(currentPageText.trim());
+                        document.body.removeChild(testDiv);
+                        return pages;
+                    }
+                };
+            `], { type: 'application/javascript' })));
+        }
+
+        fileInput.addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            if (file.size > 10 * 1024 * 1024) {
+                message.innerText = '파일 크기가 10MB를 초과했습니다.';
+                return;
+            }
+
+            textContent.style.opacity = 1;
+            message.innerText = '파일 로딩 중...';
+            progress.value = 0;
+            toggleButtons(true);
+
+            if (file.name.endsWith('.txt')) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    if (worker) {
+                        worker.onmessage = function(e) {
+                            if (e.data.error) {
+                                message.innerText = e.data.error;
+                                toggleButtons(false);
+                                return;
+                            }
+                            pages = e.data.pages;
+                            currentPage = 0;
+                            displayPage();
+                            message.innerText = '';
+                            progress.value = 0;
+                            toggleButtons(false);
+                        };
+                        worker.postMessage({ fileData: event.target.result, type: 'txt', containerHeight: textContent.offsetHeight });
+                    } else {
+                        pages = splitTextToFit(event.target.result, textContent.offsetHeight);
+                        currentPage = 0;
+                        displayPage();
+                        message.innerText = '';
+                        progress.value = 0;
+                        toggleButtons(false);
+                    }
+                };
+                reader.onerror = () => {
+                    message.innerText = 'TXT 파일 로딩 실패';
+                    toggleButtons(false);
+                };
+                reader.readAsText(file);
+            } else if (file.name.endsWith('.epub')) {
+                if (!window.ePub || !window.JSZip) {
+                    message.innerText = 'epub.js 또는 JSZip 로딩 실패. 네트워크를 확인하세요.';
+                    console.error('Required libraries not loaded.');
+                    toggleButtons(false);
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = async function(event) {
+                    book = window.ePub(event.target.result);
+                    await book.ready;
+                    console.log('EPUB loaded:', book);
+                    message.innerText = 'EPUB 파싱 중...';
+                    pages = await loadEpubPages();
+                    currentPage = 0;
+                    displayPage();
+                    message.innerText = '';
+                    progress.value = 0;
+                    toggleButtons(false);
+                };
+                reader.onerror = () => {
+                    message.innerText = 'EPUB 파일 로딩 실패';
+                    toggleButtons(false);
+                };
+                reader.readAsArrayBuffer(file);
+            }
+        });
+
+        async function loadEpubPages() {
+            if (book && book.rendition) {
+                book.rendition.destroy();
+            }
+            const allPages = [];
+            let loadedCount = 0;
+            const sections = book.spine.items;
+            console.log('Total sections:', sections.length);
+            let fullText = '';
+
+            for (let i = 0; i < sections.length; i++) {
+                const section = book.spine.get(i);
+                try {
+                    const content = await section.load(book.load.bind(book));
+                    loadedCount++;
+                    progress.value = (loadedCount / sections.length) * 50;
+                    const div = document.createElement('div');
+                    div.appendChild(content.cloneNode(true));
+                    const text = div.innerText.trim();
+                    if (text) fullText += text + '\n\n';
+                } catch (err) {
+                    console.error('Section load error:', err);
+                }
+            }
+
+            // 전체 텍스트를 텍스트 박스 높이에 맞게 분할
+            return splitTextToFit(fullText, textContent.offsetHeight);
+        }
+
+        function splitTextToFit(text, containerHeight) {
+            const lines = text.split('\n').filter(line => line.trim().length > 0);
+            const pages = [];
+            let currentPageText = '';
+            const testDiv = document.createElement('div');
+            testDiv.style.cssText = getComputedStyle(textContent).cssText + 'visibility: hidden; position: absolute;';
+            document.body.appendChild(testDiv);
+
+            for (let line of lines) {
+                testDiv.innerText = currentPageText + line + '\n';
+                if (testDiv.scrollHeight > containerHeight) {
+                    pages.push(currentPageText.trim());
+                    currentPageText = line + '\n';
+                } else {
+                    currentPageText += line + '\n';
+                }
+            }
+            if (currentPageText.trim().length > 0) pages.push(currentPageText.trim());
+            document.body.removeChild(testDiv);
+            return pages;
+        }
+
+        function displayPage() {
+            loadingSpinner.style.display = 'block';
+            setTimeout(() => {
+                const text = pages[currentPage] || '';
+                const lines = text.split('\n').filter(line => line.trim().length > 0);
+                let html = lines.map(line => {
+                    const chars = line.split('');
+                    return `<div class="line">${chars.map(char => {
+                        return char.trim() === '' ? `<span class="char-span char-space">${char}</span>` : `<span class="char-span">${char}</span>`;
+                    }).join('')}</div>`;
+                }).join('');
+                textContent.innerHTML = html;
+                updateTextContentStyles();
+                pageInfo.innerText = showPageInfo.checked ? `${currentPage + 1} / ${pages.length}` : '';
+                progress.value = 0;
+                loadingSpinner.style.display = 'none';
+                if (pageAnimation.checked) {
+                    textContent.style.opacity = 0;
+                    setTimeout(() => {
+                        textContent.style.opacity = 1;
+                        if (autoRestart.checked && interval) startEffect();
+                    }, 300);
+                } else if (autoRestart.checked && interval) startEffect();
+            }, 100);
+        }
+
+        startButton.addEventListener('click', () => {
+            if (fullscreenMode.checked) {
+                const fullscreenElement = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
+                const requestFullscreen = document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen || document.documentElement.mozRequestFullScreen || document.documentElement.msRequestFullscreen;
+                if (!fullscreenElement && requestFullscreen) {
+                    requestFullscreen.call(document.documentElement).then(() => {
+                        document.body.style.opacity = 0;
+                        setTimeout(() => {
+                            document.body.classList.add('fullscreen');
+                            document.body.style.opacity = 1;
+                        }, 300);
+                    }).catch(err => console.error('Fullscreen error:', err));
+                }
+            }
+            startEffect();
+        });
+
+        stopButton.addEventListener('click', () => {
+            stopEffect();
+            const fullscreenElement = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
+            const exitFullscreen = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen;
+            if (fullscreenElement && exitFullscreen) {
+                document.body.style.opacity = 0;
+                setTimeout(() => {
+                    exitFullscreen.call(document).then(() => {
+                        document.body.classList.remove('fullscreen');
+                        document.body.style.opacity = 1;
+                    });
+                }, 300);
+            }
+        });
+
+        speedControl.addEventListener('input', () => {
+            speedPreset.value = speedControl.value;
+            adjustSpeed();
+            if (!interval) previewEffect();
+            localStorage.setItem('speed', speedControl.value);
+        });
+
+        speedPreset.addEventListener('change', () => {
+            speedControl.value = speedPreset.value;
+            adjustSpeed();
+            if (!interval) previewEffect();
+            localStorage.setItem('speedPreset', speedPreset.value);
+        });
+
+        effectSelect.addEventListener('change', () => {
+            stopEffect();
+            displayPage();
+            adjustSpeed();
+            if (!interval) previewEffect();
+            localStorage.setItem('effect', effectSelect.value);
+        });
+
+        fontSize.addEventListener('input', () => {
+            let value = Math.min(36, Math.max(12, fontSize.value));
+            fontSize.value = value;
+            textContent.style.fontSize = `${value}px`;
+            pages = splitTextToFit(pages.join('\n\n'), textContent.offsetHeight);
+            displayPage();
+            localStorage.setItem('fontSize', value);
+        });
+
+        fontFamily.addEventListener('change', () => {
+            textContent.style.fontFamily = fontFamily.value;
+            pages = splitTextToFit(pages.join('\n\n'), textContent.offsetHeight);
+            displayPage();
+            localStorage.setItem('fontFamily', fontFamily.value);
+        });
+
+        lineHeight.addEventListener('change', () => {
+            textContent.style.lineHeight = lineHeight.value;
+            pages = splitTextToFit(pages.join('\n\n'), textContent.offsetHeight);
+            displayPage();
+            localStorage.setItem('lineHeight', lineHeight.value);
+        });
+
+        letterSpacing.addEventListener('change', () => {
+            textContent.style.letterSpacing = `${letterSpacing.value}px`;
+            pages = splitTextToFit(pages.join('\n\n'), textContent.offsetHeight);
+            displayPage();
+            localStorage.setItem('letterSpacing', letterSpacing.value);
+        });
+
+        autoRestart.addEventListener('change', () => localStorage.setItem('autoRestart', autoRestart.checked));
+        pageAnimation.addEventListener('change', () => {
+            localStorage.setItem('pageAnimation', pageAnimation.checked);
+            displayPage();
+        });
+        showPageInfo.addEventListener('change', () => {
+            localStorage.setItem('showPageInfo', showPageInfo.checked);
+            displayPage();
+        });
+        fullscreenMode.addEventListener('change', () => localStorage.setItem('fullscreenMode', fullscreenMode.checked));
+        marginTop.addEventListener('input', () => {
+            updateTextContentMargins();
+            pages = splitTextToFit(pages.join('\n\n'), textContent.offsetHeight);
+            displayPage();
+            localStorage.setItem('marginTop', marginTop.value);
+        });
+        marginRight.addEventListener('input', () => {
+            updateTextContentMargins();
+            pages = splitTextToFit(pages.join('\n\n'), textContent.offsetHeight);
+            displayPage();
+            localStorage.setItem('marginRight', marginRight.value);
+        });
+        marginBottom.addEventListener('input', () => {
+            updateTextContentMargins();
+            pages = splitTextToFit(pages.join('\n\n'), textContent.offsetHeight);
+            displayPage();
+            localStorage.setItem('marginBottom', marginBottom.value);
+        });
+        marginLeft.addEventListener('input', () => {
+            updateTextContentMargins();
+            pages = splitTextToFit(pages.join('\n\n'), textContent.offsetHeight);
+            displayPage();
+            localStorage.setItem('marginLeft', marginLeft.value);
+        });
+        prevPage.addEventListener('click', () => {
+            if (currentPage > 0) {
+                currentPage--;
+                stopEffect();
+                displayPage();
+            }
+        });
+        nextPage.addEventListener('click', () => {
+            if (currentPage < pages.length - 1) {
+                currentPage++;
+                stopEffect();
+                displayPage();
+            }
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') prevPage.click();
+            if (e.key === 'ArrowRight') nextPage.click();
+            if (e.key === 'Enter') startButton.click();
+            if (e.key === 'Escape') stopButton.click();
+        });
+
+        function updateTextContentStyles() {
+            textContent.style.fontSize = `${fontSize.value}px`;
+            textContent.style.fontFamily = fontFamily.value;
+            textContent.style.lineHeight = lineHeight.value;
+            textContent.style.letterSpacing = `${letterSpacing.value}px`;
+            updateTextContentMargins();
+        }
+
+        function updateTextContentMargins() {
+            textContent.style.marginTop = `${marginTop.value}vh`;
+            textContent.style.marginRight = `${marginRight.value}vw`;
+            textContent.style.marginBottom = `${marginBottom.value}vh`;
+            textContent.style.marginLeft = `${marginLeft.value}vw`;
+            textContent.style.width = `calc(90vw - ${marginLeft.value}vw - ${marginRight.value}vw)`;
+            textContent.style.height = `calc(80vh - ${marginTop.value}vh - ${marginBottom.value}vh)`;
+        }
+
+        function toggleButtons(disable) {
+            startButton.disabled = disable;
+            stopButton.disabled = disable;
+            prevPage.disabled = disable;
+            nextPage.disabled = disable;
+        }
+
+        function startEffect() {
+            if (!textContent.innerText) {
+                message.innerText = '먼저 파일을 업로드하세요.';
+                return;
+            }
+            stopEffect();
+            const effect = effectSelect.value;
+            const intervalTime = parseInt(speedControl.value);
+            const fadeStep = Math.min(0.05, 10 / intervalTime);
+
+            if (effect === 'fade') {
+                let opacity = 1;
+                interval = setInterval(() => {
+                    if (opacity > 0) {
+                        opacity -= fadeStep;
+                        textContent.style.opacity = opacity;
+                    } else {
+                        clearInterval(interval);
+                    }
+                }, intervalTime);
+            } else if (effect === 'char') {
+                const spans = textContent.querySelectorAll('.char-span:not(.char-space)');
+                let charIndex = 0;
+                const totalChars = spans.length;
+
+                interval = setInterval(() => {
+                    if (charIndex < spans.length) {
+                        if (charIndex > 0) {
+                            spans[charIndex - 1].classList.remove('current');
+                        }
+                        spans[charIndex].classList.add('current');
+                        spans[charIndex].style.opacity = 0;
+                        charIndex++;
+                        const completedChars = Array.from(spans).filter(span => span.style.opacity === '0').length;
+                        progress.value = (completedChars / totalChars) * 100;
+                    } else {
+                        if (charIndex > 0) {
+                            spans[charIndex - 1].classList.remove('current');
+                        }
+                        const lines = textContent.querySelectorAll('.line');
+                        lines.forEach(line => {
+                            line.classList.add('hidden');
+                            setTimeout(() => {
+                                line.style.display = 'none';
+                            }, 200);
+                        });
+                        clearInterval(interval);
+                    }
+                }, intervalTime / 2);
+            }
+        }
+
+        function stopEffect() {
+            if (interval) clearInterval(interval);
+            textContent.style.opacity = 1;
+            if (effectSelect.value === 'char') {
+                textContent.querySelectorAll('.char-span').forEach(span => {
+                    span.style.opacity = 1;
+                    span.classList.remove('current');
+                });
+                textContent.querySelectorAll('.line').forEach(line => {
+                    line.classList.remove('hidden');
+                    line.style.display = 'block';
+                });
+                progress.value = 0;
+            }
+        }
+
+        function adjustSpeed() {
+            if (interval) {
+                stopEffect();
+                startEffect();
+            }
+        }
+
+        function previewEffect() {
+            if (interval) return;
+            const spans = textContent.querySelectorAll('.char-span:not(.char-space)');
+            let index = 0;
+            const preview = setInterval(() => {
+                if (index < spans.length) {
+                    spans[index].style.opacity = effectSelect.value === 'char' ? 0 : 0.5;
+                    index++;
+                } else {
+                    clearInterval(preview);
+                    spans.forEach(span => span.style.opacity = 1);
+                }
+            }, speedControl.value);
+        }
+    </script>
+</body>
+</html>
