@@ -57,7 +57,7 @@
     <script src="https://unpkg.com/epubjs/dist/epub.min.js"></script>
 </head>
 <body>
-    <input type="file" id="fileUpload" accept=".txt,.epub" aria-label="파일 업로드">
+    <input type="file" id="fileUpload" accept=".txt,.epub" aria-label="파일 업로드" webkitdirectory multiple>
     <div id="controls" role="toolbar">
         <button id="startButton" title="훈련을 시작합니다">시작</button>
         <button id="stopButton" title="훈련을 중지합니다">정지</button>
@@ -203,12 +203,8 @@
         }
 
         fileInput.addEventListener('change', function(event) {
-            const file = event.target.files[0];
+            const file = event.target.files[0]; // 첫 번째 파일만 처리
             if (!file) return;
-            if (file.size > 10 * 1024 * 1024) {
-                message.innerText = '파일 크기가 10MB를 초과했습니다.';
-                return;
-            }
 
             textContent.style.opacity = 1;
             message.innerText = '파일 로딩 중...';
@@ -554,7 +550,7 @@
                         if (charIndex > 0) {
                             spans[charIndex - 1].classList.remove('current');
                         }
-                        const lines = textContent.querySelectorAll('.line');
+                        const lines = textContent.queryAll('.line');
                         lines.forEach(line => {
                             line.classList.add('hidden');
                             setTimeout(() => {
