@@ -12,27 +12,29 @@
             transition: opacity 0.3s; 
             background-color: #f5f5f5; 
             overscroll-behavior: none; 
+            position: relative; /* 로딩 스피너 위치 조정을 위해 */
         }
         #textContent { 
             font-size: 18px; 
             line-height: 1.6; 
             white-space: pre-wrap; 
             position: relative; 
-            overflow-y: auto; /* 오버플로우를 스크롤로 변경 */
+            overflow-y: auto; 
             width: 100%; 
-            height: calc(70vh - 80px); /* 컨트롤과 진행 바 높이를 고려한 동적 높이 */
+            height: calc(70vh - 80px); 
             margin: 0 auto; 
             padding: 15px; 
             box-sizing: border-box; 
-            background-color: white; 
+            background-color: white; /* 배경색 명확화 */
             border-radius: 8px; 
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); 
+            z-index: 1; /* 텍스트 영역을 최상단에 */
         }
         #controls { 
             margin: 10px 0; 
             display: flex; 
             flex-wrap: wrap; 
-            gap: 5px; /* 간격 줄임 */
+            gap: 5px; 
             justify-content: center; 
         }
         #message { 
@@ -74,9 +76,10 @@
             border-top: 3px solid #3498db; 
             border-radius: 50%; 
             animation: spin 1s linear infinite; 
+            z-index: 5; /* 로딩 스피너를 텍스트 아래로 */
         }
         button { 
-            padding: 10px 15px; /* 패딩 줄임 */
+            padding: 10px 15px; 
             font-size: 16px; 
             border: none; 
             border-radius: 5px; 
@@ -84,7 +87,7 @@
             color: white; 
             cursor: pointer; 
             transition: background-color 0.3s; 
-            max-width: 120px; /* 최대 너비 설정 */
+            max-width: 120px; 
         }
         button:hover { 
             background-color: #2980b9; 
@@ -145,7 +148,7 @@
             body { padding: 5px; }
             #textContent { 
                 font-size: 16px; 
-                height: calc(60vh - 60px); /* 모바일에서 동적 높이 조정 */
+                height: calc(60vh - 60px); 
                 padding: 10px; 
             }
             #controls { 
@@ -153,9 +156,9 @@
                 gap: 5px; 
             }
             button { 
-                padding: 10px 15px; /* 모바일에서도 동일하게 조정 */
+                padding: 10px 15px; 
                 font-size: 16px; 
-                max-width: 100%; /* 모바일에서 너비 제한 없애기 */
+                max-width: 100%; 
             }
             #advancedControls { 
                 display: flex; 
@@ -252,7 +255,7 @@
     <progress id="progress" value="0" max="100"></progress>
     <div id="textContent" role="region" aria-label="텍스트 표시 영역">
         <div id="pageInfo" aria-live="polite"></div>
-        <div id="loadingSpinner"></div>
+        <div id="loadingSpinner"></div> <!-- 로딩 스피너 유지 -->
     </div>
     <div id="message" aria-live="assertive"></div>
 
@@ -472,7 +475,7 @@
         }
 
         function displayPage() {
-            loadingSpinner.style.display = 'block';
+            loadingSpinner.style.display = 'block'; // 로딩 시작
             setTimeout(() => {
                 const text = pages[currentPage] || '';
                 const lines = text.split('\n').filter(line => line.trim().length > 0);
@@ -486,7 +489,7 @@
                 updateTextContentStyles();
                 pageInfo.innerText = showPageInfo.checked ? `${currentPage + 1} / ${pages.length}` : '';
                 progress.value = 0;
-                loadingSpinner.style.display = 'none';
+                loadingSpinner.style.display = 'none'; // 로딩 완료 후 숨김
                 if (pageAnimation.checked) {
                     textContent.style.opacity = 0;
                     setTimeout(() => {
@@ -663,7 +666,7 @@
             textContent.style.marginBottom = `${marginBottom.value}vh`;
             textContent.style.marginLeft = `${marginLeft.value}vw`;
             textContent.style.width = `calc(100% - ${marginLeft.value}vw - ${marginRight.value}vw)`;
-            textContent.style.height = `calc(70vh - ${marginTop.value}vh - ${marginBottom.value}vh - 80px)`; /* 동적 여백 적용 */
+            textContent.style.height = `calc(70vh - ${marginTop.value}vh - ${marginBottom.value}vh - 80px)`;
         }
 
         function toggleButtons(disable) {
@@ -727,7 +730,7 @@
 
         function stopEffect() {
             if (interval) clearInterval(interval);
-            textContent.style.opacity = 1;
+            textContent.style.opacity = 1; // 투명도 초기화
             if (effectSelect.value === 'char') {
                 textContent.querySelectorAll('.char-span').forEach(span => {
                     span.style.opacity = 1;
