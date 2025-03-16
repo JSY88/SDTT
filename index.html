@@ -13,8 +13,8 @@
             background-color: #f5f5f5; 
             overscroll-behavior: none; 
             position: relative; 
-            touch-action: pan-y; /* 수평 스크롤 제한 */
-            overflow-x: hidden; /* 가로 스크롤 방지 */
+            touch-action: pan-y; 
+            overflow-x: hidden; 
         }
         #textContent { 
             font-size: 18px; 
@@ -22,7 +22,7 @@
             white-space: pre-wrap; 
             position: relative; 
             overflow-y: hidden; 
-            overflow-x: hidden; /* 가로 스크롤 방지 */
+            overflow-x: hidden; 
             width: 100%; 
             height: calc(70vh - 80px); 
             margin: 0 auto; 
@@ -155,7 +155,7 @@
             opacity: 0; 
         }
         .fullscreen #controls, .fullscreen #progressContainer, .fullscreen #message, .fullscreen details, .fullscreen #fileUpload { 
-            display: none; /* 전체 화면에서 파일 업로드 및 기타 요소 숨김 */
+            display: none; 
         }
         .fullscreen #textContent { 
             width: 100vw; 
@@ -338,7 +338,14 @@
     </div>
 
     <script>
-        const noSleep = new NoSleep();
+        // NoSleep 로드 확인 및 초기화
+        let noSleep;
+        if (typeof NoSleep !== 'undefined') {
+            noSleep = new NoSleep();
+        } else {
+            console.warn('NoSleep.js 로드 실패. 화면 잠금 방지 기능이 작동하지 않습니다.');
+        }
+
         const fileInput = document.getElementById('fileUpload');
         const textContent = document.getElementById('textContent');
         const speedControl = document.getElementById('speedControl');
@@ -615,7 +622,7 @@
                         setTimeout(() => {
                             document.body.classList.add('fullscreen');
                             document.body.style.opacity = 1;
-                            noSleep.enable();
+                            if (noSleep) noSleep.enable(); // NoSleep 사용 시 안전 체크
                             isFullscreen = true;
                         }, 300);
                     });
@@ -637,7 +644,7 @@
                     exitFullscreen.call(document).then(() => {
                         document.body.classList.remove('fullscreen');
                         document.body.style.opacity = 1;
-                        noSleep.disable();
+                        if (noSleep) noSleep.disable(); // NoSleep 사용 시 안전 체크
                         isFullscreen = false;
                     });
                 }, 300);
