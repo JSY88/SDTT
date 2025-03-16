@@ -13,7 +13,8 @@
             background-color: #f5f5f5; 
             overscroll-behavior: none; 
             position: relative; 
-            touch-action: none; 
+            touch-action: pan-y; /* 수평 스크롤 제한 */
+            overflow-x: hidden; /* 가로 스크롤 방지 */
         }
         #textContent { 
             font-size: 18px; 
@@ -21,6 +22,7 @@
             white-space: pre-wrap; 
             position: relative; 
             overflow-y: hidden; 
+            overflow-x: hidden; /* 가로 스크롤 방지 */
             width: 100%; 
             height: calc(70vh - 80px); 
             margin: 0 auto; 
@@ -68,12 +70,24 @@
             border-radius: 5px; 
             z-index: 10; 
         }
+        #progressContainer {
+            position: relative;
+            width: 100%;
+            margin: 5px 0;
+        }
         #progress { 
             width: 100%; 
             height: 4px; 
-            margin: 5px 0; 
             opacity: 0.7; 
             transition: background-color 0.3s; 
+        }
+        #progressPercent {
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 12px;
+            color: #333;
         }
         #loadingSpinner { 
             display: none; 
@@ -140,8 +154,8 @@
         .line.hidden { 
             opacity: 0; 
         }
-        .fullscreen #controls, .fullscreen #progress, .fullscreen #message, .fullscreen details { 
-            display: none; 
+        .fullscreen #controls, .fullscreen #progressContainer, .fullscreen #message, .fullscreen details, .fullscreen #fileUpload { 
+            display: none; /* 전체 화면에서 파일 업로드 및 기타 요소 숨김 */
         }
         .fullscreen #textContent { 
             width: 100vw; 
@@ -243,6 +257,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://unpkg.com/epubjs/dist/epub.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/nosleep.js@1.1.0/dist/NoSleep.min.js"></script>
 </head>
 <body>
     <input type="file" id="fileUpload" accept=".txt,.epub" aria-label="파일 업로드" multiple>
@@ -252,6 +267,7 @@
         <button id="prevPage" aria-label="이전 페이지"><span class="icon">◀</span> 이전</button>
         <button id="nextPage" aria-label="다음 페이지"><span class="icon">▶</span> 다음</button>
         <button id="previewButton" aria-label="파일 미리보기">미리보기</button>
+        <input type="number" id="jumpToPage" min="1" placeholder="페이지로 이동" style="width: 100px; padding: 5px;">
     </div>
     <details>
         <summary>고급 설정</summary>
@@ -307,7 +323,10 @@
             <button id="resetSettings" aria-label="설정 초기화">설정 초기화</button>
         </div>
     </details>
-    <progress id="progress" value="0" max="100"></progress>
+    <div id="progressContainer">
+        <progress id="progress" value="0" max="100"></progress>
+        <span id="progressPercent">0%</span>
+    </div>
     <div id="textContent" role="region" aria-label="텍스트 표시 영역">
         <div id="pageInfo" aria-live="polite"></div>
     </div>
@@ -319,6 +338,7 @@
     </div>
 
     <script>
+        const noSleep = new NoSleep();
         const fileInput = document.getElementById('fileUpload');
         const textContent = document.getElementById('textContent');
         const speedControl = document.getElementById('speedControl');
@@ -344,9 +364,11 @@
         const prevPage = document.getElementById('prevPage');
         const nextPage = document.getElementById('nextPage');
         const previewButton = document.getElementById('previewButton');
+        const jumpToPage = document.getElementById('jumpToPage');
         const pageInfo = document.getElementById('pageInfo');
         const message = document.getElementById('message');
         const progress = document.getElementById('progress');
+        const progressPercent = document.getElementById('progressPercent');
         const loadingSpinner = document.getElementById('loadingSpinner');
         const resetSettings = document.getElementById('resetSettings');
         const tocOverlay = document.getElementById('tocOverlay');
@@ -354,6 +376,7 @@
         let interval, pages = [], currentPage = 0, book, toc = [];
         let worker, lastFileName = '';
         let renderedPages = [];
+        let isFullscreen = false;
 
         speedControl.value = localStorage.getItem('speed') || 100;
         speedPreset.value = localStorage.getItem('speedPreset') || 100;
@@ -420,7 +443,6 @@
             reader.onload = function(event) {
                 const fileData = event.target.result;
                 if (file.name.endsWith('.txt')) {
-                    console.log('File data loaded:', fileData.substring(0, 100));
                     if (worker) {
                         worker.onmessage = function(e) {
                             pages = e.data.pages;
@@ -464,7 +486,6 @@
                             pages = pagesData;
                             book.loaded.navigation.then(nav => {
                                 toc = nav.toc;
-                                console.log('TOC 로드 성공:', toc);
                             }).catch(err => console.error('TOC 로드 실패:', err));
                             loadLastPage();
                             preloadPages();
@@ -562,6 +583,7 @@
                 updateTextContentStyles();
                 pageInfo.innerText = showPageInfo.checked ? `${currentPage + 1} / ${pages.length}` : '';
                 progress.value = 0;
+                updateProgressPercent(0);
                 const loadTime = performance.now() - startTime;
                 if (loadTime < 100) loadingSpinner.style.display = 'none';
                 if (pageAnimation.checked) {
@@ -593,6 +615,8 @@
                         setTimeout(() => {
                             document.body.classList.add('fullscreen');
                             document.body.style.opacity = 1;
+                            noSleep.enable();
+                            isFullscreen = true;
                         }, 300);
                     });
                 }
@@ -602,6 +626,10 @@
 
         stopButton.addEventListener('click', () => {
             stopEffect();
+            exitFullscreen();
+        });
+
+        function exitFullscreen() {
             const exitFullscreen = document.exitFullscreen || document.webkitExitFullscreen;
             if (document.fullscreenElement && exitFullscreen) {
                 document.body.style.opacity = 0;
@@ -609,10 +637,12 @@
                     exitFullscreen.call(document).then(() => {
                         document.body.classList.remove('fullscreen');
                         document.body.style.opacity = 1;
+                        noSleep.disable();
+                        isFullscreen = false;
                     });
                 }, 300);
             }
-        });
+        }
 
         previewButton.addEventListener('click', () => {
             if (pages.length === 0) {
@@ -753,6 +783,16 @@
             }
         });
 
+        jumpToPage.addEventListener('change', () => {
+            let pageNum = parseInt(jumpToPage.value) - 1;
+            if (pageNum >= 0 && pageNum < pages.length) {
+                currentPage = pageNum;
+                stopEffect();
+                displayPage();
+            }
+            jumpToPage.value = '';
+        });
+
         document.addEventListener('keydown', (e) => {
             if (e.key === 'ArrowLeft' && currentPage > 0) {
                 currentPage--;
@@ -762,6 +802,16 @@
                 currentPage++;
                 stopEffect();
                 displayPage(1);
+            } else if (e.key === ' ' || e.key === 'Spacebar') {
+                e.preventDefault();
+                if (interval) stopEffect();
+                else startEffect();
+            } else if (e.key === 'Enter') {
+                if (currentPage < pages.length - 1) {
+                    currentPage++;
+                    stopEffect();
+                    displayPage(1);
+                }
             }
         });
 
@@ -792,15 +842,23 @@
             }
         });
 
+        window.addEventListener('popstate', (e) => {
+            if (isFullscreen) {
+                e.preventDefault();
+                stopEffect();
+                exitFullscreen();
+                history.pushState(null, null, window.location.href);
+            }
+        });
+        history.pushState(null, null, window.location.href);
+
         function showToc() {
             if (toc.length === 0) {
-                console.log('TOC 데이터 없음');
                 message.innerText = '목차가 없습니다.';
                 message.style.display = 'block';
                 setTimeout(() => message.style.display = 'none', 2000);
                 return;
             }
-            console.log('TOC 표시 시도:', toc);
             tocContent.innerHTML = '<ul>' + toc.map((item, index) => {
                 return `<li data-page="${index}">${item.label || '제목 없음'}</li>`;
             }).join('') + '</ul>';
@@ -810,7 +868,6 @@
                 li.addEventListener('click', (e) => {
                     e.stopPropagation();
                     const pageIndex = parseInt(li.dataset.page);
-                    console.log('목차 항목 클릭:', pageIndex, li.innerText);
                     currentPage = pageIndex;
                     stopEffect();
                     displayPage();
@@ -911,6 +968,8 @@
                     if (opacity > 0) {
                         opacity -= fadeStep;
                         textContent.style.opacity = opacity;
+                        progress.value = (1 - opacity) * 100;
+                        updateProgressPercent(progress.value);
                     } else {
                         clearInterval(interval);
                         showCompletionMessage();
@@ -928,6 +987,7 @@
                         charIndex++;
                         const completedChars = Array.from(spans).filter(span => span.style.opacity === '0').length;
                         progress.value = (completedChars / totalChars) * 100;
+                        updateProgressPercent(progress.value);
                         progress.style.backgroundColor = `hsl(${progress.value * 1.2}, 70%, 50%)`;
                     } else {
                         if (charIndex > 0) spans[charIndex - 1].classList.remove('current');
@@ -955,10 +1015,10 @@
                             spans[charIndex].style.color = baseTextColor;
                         }, 100);
                         charIndex++;
-                        const completedChars = charIndex;
-                        progress.value = (completedChars / totalChars) * 100;
+                        progress.value = (charIndex / totalChars) * 100;
+                        updateProgressPercent(progress.value);
                         progress.style.backgroundColor = `hsl(${progress.value * 1.2}, 70%, 50%)`;
-                        if (completedChars === totalChars) {
+                        if (charIndex === totalChars) {
                             textContent.classList.add('eink-mode');
                             setTimeout(() => {
                                 textContent.classList.remove('eink-mode');
@@ -994,6 +1054,7 @@
                     line.style.display = 'block';
                 });
                 progress.value = 0;
+                updateProgressPercent(0);
                 progress.style.backgroundColor = '';
             }
         }
@@ -1039,6 +1100,10 @@
                     });
                 }
             }, speedControl.value);
+        }
+
+        function updateProgressPercent(value) {
+            progressPercent.innerText = `${Math.round(value)}%`;
         }
     </script>
 </body>
