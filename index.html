@@ -12,17 +12,17 @@
             transition: opacity 0.3s; 
             background-color: #f5f5f5; 
             overscroll-behavior: none; 
-            position: relative; /* 로딩 스피너 위치를 위해 */
-            touch-action: pan-y; /* 수직 스크롤 허용, 수평 스와이프 사용 */
+            position: relative; 
+            touch-action: pan-y; 
         }
         #textContent { 
             font-size: 18px; 
             line-height: 1.6; 
             white-space: pre-wrap; 
             position: relative; 
-            overflow-y: hidden; /* 스크롤 제거, 페이징으로 대체 */
+            overflow-y: hidden; 
             width: 100%; 
-            height: calc(70vh - 80px); /* 컨트롤과 진행 바 높이 고려 */
+            height: calc(70vh - 80px); 
             margin: 0 auto; 
             padding: 10px; 
             box-sizing: border-box; 
@@ -48,6 +48,7 @@
             padding: 5px 10px; 
             border-radius: 5px; 
             z-index: 10; 
+            display: none; /* 초기 숨김 */
         }
         #pageInfo { 
             position: fixed; 
@@ -66,8 +67,10 @@
             opacity: 0.7; 
         }
         #loadingSpinner { 
-            display: none; 
-            position: fixed; /* 텍스트 영역 밖으로 이동 */
+            display: none; /* 초기 숨김 */
+            visibility: hidden; /* 추가로 숨김 보장 */
+            opacity: 0; /* 추가로 숨김 보장 */
+            position: fixed; 
             top: 50%; 
             left: 50%; 
             transform: translate(-50%, -50%); 
@@ -80,7 +83,7 @@
             z-index: 5; 
         }
         button { 
-            padding: 8px 12px; /* 버튼 크기 유지 */
+            padding: 8px 12px; 
             font-size: 14px; 
             border: none; 
             border-radius: 5px; 
@@ -108,7 +111,7 @@
             cursor: pointer; 
         }
         .char-span { 
-            transition: opacity 0.3s, color 0.3s; /* 색상 전환 추가 */
+            transition: opacity 0.3s, color 0.3s; 
         }
         .char-span.current { 
             background-color: rgba(255, 255, 0, 0.3); 
@@ -222,7 +225,7 @@
             <select id="effectSelect">
                 <option value="char" selected>글자 단위 소멸</option>
                 <option value="fade">페이드 아웃</option>
-                <option value="eink">전자잉크 모드</option> <!-- 새로운 효과 추가 -->
+                <option value="eink">전자잉크 모드</option>
             </select>
             <label for="fontSize">글꼴 크기:</label>
             <input type="number" id="fontSize" min="12" max="36" value="18">px
@@ -258,7 +261,7 @@
     <div id="textContent" role="region" aria-label="텍스트 표시 영역">
         <div id="pageInfo" aria-live="polite"></div>
     </div>
-    <div id="loadingSpinner"></div> <!-- 텍스트 영역 밖으로 이동 -->
+    <div id="loadingSpinner"></div>
     <div id="message" aria-live="assertive"></div>
 
     <script>
@@ -326,7 +329,7 @@
                         const pages = [];
                         let currentPageText = '';
                         const testDiv = document.createElement('div');
-                        testDiv.style.cssText = `font-size: 18px; line-height: 1.6; white-space: pre-wrap; visibility: hidden; position: absolute; padding: 10px;`;
+                        testDiv.style.cssText = 'font-size: 18px; line-height: 1.6; white-space: pre-wrap; visibility: hidden; position: absolute; padding: 10px;';
                         document.body.appendChild(testDiv);
 
                         for (let line of lines) {
@@ -351,14 +354,19 @@
             const file = event.target.files[0];
             if (!file) {
                 message.innerText = '파일을 선택해주세요.';
+                message.style.display = 'block';
+                loadingSpinner.style.display = 'none'; // 파일 없으면 스피너 숨김
                 return;
             }
 
             textContent.style.opacity = 1;
             message.innerText = '파일 로딩 중...';
+            message.style.display = 'block';
             progress.value = 0;
             toggleButtons(true);
             loadingSpinner.style.display = 'block'; // 로딩 시작
+            loadingSpinner.style.visibility = 'visible';
+            loadingSpinner.style.opacity = 1;
 
             if (file.name.endsWith('.txt')) {
                 const reader = new FileReader();
@@ -367,41 +375,54 @@
                         worker.onmessage = function(e) {
                             if (e.data.error) {
                                 message.innerText = e.data.error;
+                                message.style.display = 'block';
                                 toggleButtons(false);
-                                loadingSpinner.style.display = 'none'; // 로딩 종료
+                                loadingSpinner.style.display = 'none'; // 실패 시 스피너 숨김
+                                loadingSpinner.style.visibility = 'hidden';
+                                loadingSpinner.style.opacity = 0;
                                 return;
                             }
                             pages = e.data.pages;
                             currentPage = 0;
                             displayPage();
-                            message.innerText = '';
+                            message.style.display = 'none';
                             progress.value = 0;
                             toggleButtons(false);
-                            loadingSpinner.style.display = 'none'; // 로딩 종료
+                            loadingSpinner.style.display = 'none'; // 성공 시 스피너 숨김
+                            loadingSpinner.style.visibility = 'hidden';
+                            loadingSpinner.style.opacity = 0;
                         };
                         worker.postMessage({ fileData: event.target.result, type: 'txt', containerHeight: textContent.getBoundingClientRect().height });
                     } else {
                         pages = splitTextToFit(event.target.result, textContent.getBoundingClientRect().height);
                         currentPage = 0;
                         displayPage();
-                        message.innerText = '';
+                        message.style.display = 'none';
                         progress.value = 0;
                         toggleButtons(false);
-                        loadingSpinner.style.display = 'none'; // 로딩 종료
+                        loadingSpinner.style.display = 'none'; // 성공 시 스피너 숨김
+                        loadingSpinner.style.visibility = 'hidden';
+                        loadingSpinner.style.opacity = 0;
                     }
                 };
                 reader.onerror = () => {
                     message.innerText = 'TXT 파일 로딩 실패: 파일에 접근할 수 없습니다. 파일을 Download 폴더에 저장하거나 다른 위치를 선택해주세요.';
+                    message.style.display = 'block';
                     toggleButtons(false);
-                    loadingSpinner.style.display = 'none'; // 로딩 종료
+                    loadingSpinner.style.display = 'none'; // 실패 시 스피너 숨김
+                    loadingSpinner.style.visibility = 'hidden';
+                    loadingSpinner.style.opacity = 0;
                 };
                 reader.readAsText(file);
             } else if (file.name.endsWith('.epub')) {
                 if (!window.ePub || !window.JSZip) {
                     message.innerText = 'epub.js 또는 JSZip 로딩 실패. 네트워크를 확인하세요.';
+                    message.style.display = 'block';
                     console.error('Required libraries not loaded.');
                     toggleButtons(false);
-                    loadingSpinner.style.display = 'none'; // 로딩 종료
+                    loadingSpinner.style.display = 'none'; // 실패 시 스피너 숨김
+                    loadingSpinner.style.visibility = 'hidden';
+                    loadingSpinner.style.opacity = 0;
                     return;
                 }
                 const reader = new FileReader();
@@ -411,29 +432,41 @@
                         await book.ready;
                         console.log('EPUB loaded:', book);
                         message.innerText = 'EPUB 파싱 중...';
+                        message.style.display = 'block';
                         pages = await loadEpubPages();
                         currentPage = 0;
                         displayPage();
-                        message.innerText = '';
+                        message.style.display = 'none';
                         progress.value = 0;
                         toggleButtons(false);
-                        loadingSpinner.style.display = 'none'; // 로딩 종료
+                        loadingSpinner.style.display = 'none'; // 성공 시 스피너 숨김
+                        loadingSpinner.style.visibility = 'hidden';
+                        loadingSpinner.style.opacity = 0;
                     } catch (err) {
                         message.innerText = 'EPUB 파일 로딩 실패: 파일에 접근할 수 없습니다. 파일을 Download 폴더에 저장하거나 다른 위치를 선택해주세요.';
+                        message.style.display = 'block';
                         toggleButtons(false);
-                        loadingSpinner.style.display = 'none'; // 로딩 종료
+                        loadingSpinner.style.display = 'none'; // 실패 시 스피너 숨김
+                        loadingSpinner.style.visibility = 'hidden';
+                        loadingSpinner.style.opacity = 0;
                     }
                 };
                 reader.onerror = () => {
                     message.innerText = 'EPUB 파일 로딩 실패: 파일에 접근할 수 없습니다. 파일을 Download 폴더에 저장하거나 다른 위치를 선택해주세요.';
+                    message.style.display = 'block';
                     toggleButtons(false);
-                    loadingSpinner.style.display = 'none'; // 로딩 종료
+                    loadingSpinner.style.display = 'none'; // 실패 시 스피너 숨김
+                    loadingSpinner.style.visibility = 'hidden';
+                    loadingSpinner.style.opacity = 0;
                 };
                 reader.readAsArrayBuffer(file);
             } else {
                 message.innerText = '지원되지 않는 파일 형식입니다. .txt 또는 .epub 파일을 선택해주세요.';
+                message.style.display = 'block';
                 toggleButtons(false);
-                loadingSpinner.style.display = 'none'; // 로딩 종료
+                loadingSpinner.style.display = 'none'; // 실패 시 스피너 숨김
+                loadingSpinner.style.visibility = 'hidden';
+                loadingSpinner.style.opacity = 0;
             }
         });
 
@@ -459,6 +492,12 @@
                     if (text) fullText += text + '\n\n';
                 } catch (err) {
                     console.error('Section load error:', err);
+                    message.innerText = 'EPUB 섹션 로드 실패: ' + err.message;
+                    message.style.display = 'block';
+                    loadingSpinner.style.display = 'none'; // 실패 시 스피너 숨김
+                    loadingSpinner.style.visibility = 'hidden';
+                    loadingSpinner.style.opacity = 0;
+                    throw err;
                 }
             }
 
@@ -490,6 +529,8 @@
 
         function displayPage() {
             loadingSpinner.style.display = 'block'; // 로딩 시작
+            loadingSpinner.style.visibility = 'visible';
+            loadingSpinner.style.opacity = 1;
             setTimeout(() => {
                 const text = pages[currentPage] || '';
                 const lines = text.split('\n').filter(line => line.trim().length > 0);
@@ -504,6 +545,8 @@
                 pageInfo.innerText = showPageInfo.checked ? `${currentPage + 1} / ${pages.length}` : '';
                 progress.value = 0;
                 loadingSpinner.style.display = 'none'; // 로딩 완료 후 숨김
+                loadingSpinner.style.visibility = 'hidden';
+                loadingSpinner.style.opacity = 0;
                 if (pageAnimation.checked) {
                     textContent.style.opacity = 0;
                     setTimeout(() => {
@@ -651,10 +694,10 @@
 
         // 전체 body에 터치 제스처 적용
         const hammer = new Hammer(document.body, {
-            threshold: 50, // 스와이프 감도 조정 (픽셀 단위)
+            threshold: 50, 
             inputClass: Hammer.TouchInput
         });
-        hammer.get('swipe').set({ direction: Hammer.DIRECTION_HORIZONTAL }); // 수평 스와이프만 허용
+        hammer.get('swipe').set({ direction: Hammer.DIRECTION_HORIZONTAL }); 
         hammer.on('swipeleft', () => {
             if (currentPage < pages.length - 1) {
                 currentPage++;
@@ -713,6 +756,7 @@
         function startEffect() {
             if (!textContent.innerText) {
                 message.innerText = '먼저 파일을 업로드하세요.';
+                message.style.display = 'block';
                 return;
             }
             stopEffect();
@@ -770,7 +814,7 @@
                             spans[charIndex - 1].classList.remove('current');
                         }
                         spans[charIndex].classList.add('current');
-                        spans[charIndex].style.color = '#000000'; // 검은색으로 전환
+                        spans[charIndex].style.color = '#000000';
                         charIndex++;
                         const completedChars = Array.from(spans).filter(span => span.style.color === '#000000').length;
                         progress.value = (completedChars / totalChars) * 100;
@@ -797,7 +841,7 @@
             if (effectSelect.value === 'char' || effectSelect.value === 'eink') {
                 textContent.querySelectorAll('.char-span').forEach(span => {
                     span.style.opacity = 1;
-                    span.style.color = ''; // 원래 색상 복원
+                    span.style.color = '';
                     span.classList.remove('current');
                 });
                 textContent.querySelectorAll('.line').forEach(line => {
