@@ -31,18 +31,8 @@
             border-radius: 8px; 
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); 
             z-index: 1; 
-            transition: transform 0.3s ease; 
+            transition: transform 0.3s ease, background-color 0.3s; 
             color: #333; 
-        }
-        #textCanvas { 
-            position: absolute; 
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            height: 100%; 
-            pointer-events: none; 
-            opacity: 0; 
-            transition: opacity 0.5s; 
         }
         #controls { 
             margin: 10px 0; 
@@ -251,10 +241,6 @@
                 <option value="fade">페이드 아웃</option>
                 <option value="eink">전자잉크 모드</option>
             </select>
-            <label for="einkGhosting">전자잉크 잔상 강도 (0~1):</label>
-            <input type="number" id="einkGhosting" min="0" max="1" step="0.1" value="0.3">
-            <label for="einkGhostingDuration">전자잉크 잔상 지속 시간 (ms):</label>
-            <input type="number" id="einkGhostingDuration" min="500" max="3000" step="100" value="1000">
             <label for="fontSize">글꼴 크기:</label>
             <input type="number" id="fontSize" min="12" max="36" value="18">px
             <label for="fontFamily">글꼴 스타일:</label>
@@ -288,7 +274,6 @@
     </details>
     <progress id="progress" value="0" max="100"></progress>
     <div id="textContent" role="region" aria-label="텍스트 표시 영역">
-        <canvas id="textCanvas"></canvas>
         <div id="pageInfo" aria-live="polite"></div>
     </div>
     <div id="loadingSpinner"></div>
@@ -297,12 +282,9 @@
     <script>
         const fileInput = document.getElementById('fileUpload');
         const textContent = document.getElementById('textContent');
-        const textCanvas = document.getElementById('textCanvas');
         const speedControl = document.getElementById('speedControl');
         const speedPreset = document.getElementById('speedPreset');
         const effectSelect = document.getElementById('effectSelect');
-        const einkGhosting = document.getElementById('einkGhosting');
-        const einkGhostingDuration = document.getElementById('einkGhostingDuration');
         const fontSize = document.getElementById('fontSize');
         const fontFamily = document.getElementById('fontFamily');
         const lineHeight = document.getElementById('lineHeight');
@@ -325,15 +307,12 @@
         const loadingSpinner = document.getElementById('loadingSpinner');
         const resetSettings = document.getElementById('resetSettings');
         let interval, pages = [], currentPage = 0, book;
+        let worker;
         let renderedPages = [];
-        let canvasCtx, ghostingOpacity = 0;
 
-        // 설정 로드
         speedControl.value = localStorage.getItem('speed') || 100;
         speedPreset.value = localStorage.getItem('speedPreset') || 100;
         effectSelect.value = localStorage.getItem('effect') || 'char';
-        einkGhosting.value = localStorage.getItem('einkGhosting') || 0.3;
-        einkGhostingDuration.value = localStorage.getItem('einkGhostingDuration') || 1000;
         fontSize.value = localStorage.getItem('fontSize') || 18;
         fontFamily.value = localStorage.getItem('fontFamily') || 'Arial, sans-serif';
         lineHeight.value = localStorage.getItem('lineHeight') || 1.6;
@@ -347,7 +326,28 @@
         marginBottom.value = localStorage.getItem('marginBottom') || 0;
         marginLeft.value = localStorage.getItem('marginLeft') || 0;
         updateTextContentStyles();
-        setupCanvas();
+
+        if (window.Worker) {
+            worker = new Worker(URL.createObjectURL(new Blob([`
+                self.onmessage = function(e) {
+                    const { text, maxHeight } = e.data;
+                    const lines = text.split('\n').filter(line => line.trim().length > 0);
+                    const pages = [];
+                    let currentPageText = '';
+                    const maxLinesPerPage = Math.floor(maxHeight / 20);
+                    for (let line of lines) {
+                        if (currentPageText.split('\n').length >= maxLinesPerPage) {
+                            pages.push(currentPageText.trim());
+                            currentPageText = line + '\n';
+                        } else {
+                            currentPageText += line + '\n';
+                        }
+                    }
+                    if (currentPageText.trim().length > 0) pages.push(currentPageText.trim());
+                    self.postMessage({ pages });
+                };
+            `], { type: 'application/javascript' })));
+        }
 
         fileInput.addEventListener('change', function(event) {
             const file = event.target.files[0];
@@ -370,9 +370,33 @@
             const reader = new FileReader();
             reader.onload = function(event) {
                 const fileData = event.target.result;
-                console.log('File data loaded:', fileData.substring(0, 100)); // 디버깅 로그
                 if (file.name.endsWith('.txt')) {
-                    try {
+                    console.log('File data loaded:', fileData.substring(0, 100));
+                } else if (file.name.endsWith('.epub')) {
+                    console.log('File data loaded:', fileData);
+                }
+                if (file.name.endsWith('.txt')) {
+                    if (worker) {
+                        worker.onmessage = function(e) {
+                            pages = e.data.pages;
+                            preloadPages();
+                            currentPage = 0;
+                            displayPage();
+                            message.style.display = 'none';
+                            progress.value = 0;
+                            toggleButtons(false);
+                            loadingSpinner.style.display = 'none';
+                            loadingSpinner.style.visibility = 'hidden';
+                            loadingSpinner.style.opacity = 0;
+                        };
+                        worker.onerror = function(e) {
+                            message.innerText = '웹 워커 오류: ' + e.message;
+                            message.style.display = 'block';
+                            toggleButtons(false);
+                            loadingSpinner.style.display = 'none';
+                        };
+                        worker.postMessage({ text: fileData, maxHeight: textContent.getBoundingClientRect().height });
+                    } else {
                         pages = splitTextToFit(fileData, textContent.getBoundingClientRect().height);
                         preloadPages();
                         currentPage = 0;
@@ -381,85 +405,36 @@
                         progress.value = 0;
                         toggleButtons(false);
                         loadingSpinner.style.display = 'none';
-                        loadingSpinner.style.visibility = 'hidden';
-                        loadingSpinner.style.opacity = 0;
-                    } catch (err) {
-                        console.error('TXT processing error:', err);
-                        message.innerText = 'TXT 파일 처리 실패: ' + err.message;
-                        message.style.display = 'block';
-                        toggleButtons(false);
-                        loadingSpinner.style.display = 'none';
-                        loadingSpinner.style.visibility = 'hidden';
-                        loadingSpinner.style.opacity = 0;
                     }
                 } else if (file.name.endsWith('.epub')) {
                     if (!window.ePub || !window.JSZip) {
-                        message.innerText = 'epub.js 또는 JSZip 로딩 실패. 네트워크를 확인하세요.';
+                        message.innerText = 'epub.js 또는 JSZip 로딩 실패.';
                         message.style.display = 'block';
-                        console.error('Required libraries not loaded.');
                         toggleButtons(false);
                         loadingSpinner.style.display = 'none';
-                        loadingSpinner.style.visibility = 'hidden';
-                        loadingSpinner.style.opacity = 0;
                         return;
                     }
-                    try {
-                        book = window.ePub(fileData);
-                        book.ready.then(() => {
-                            console.log('EPUB loaded:', book);
-                            message.innerText = 'EPUB 파싱 중...';
-                            message.style.display = 'block';
-                            loadEpubPages().then(pagesData => {
-                                pages = pagesData;
-                                preloadPages();
-                                currentPage = 0;
-                                displayPage();
-                                message.style.display = 'none';
-                                progress.value = 0;
-                                toggleButtons(false);
-                                loadingSpinner.style.display = 'none';
-                                loadingSpinner.style.visibility = 'hidden';
-                                loadingSpinner.style.opacity = 0;
-                            }).catch(err => {
-                                message.innerText = 'EPUB 파싱 실패: ' + err.message;
-                                message.style.display = 'block';
-                                toggleButtons(false);
-                                loadingSpinner.style.display = 'none';
-                                loadingSpinner.style.visibility = 'hidden';
-                                loadingSpinner.style.opacity = 0;
-                            });
-                        }).catch(err => {
-                            message.innerText = 'EPUB 로딩 실패: ' + err.message;
-                            message.style.display = 'block';
+                    book = window.ePub(fileData);
+                    book.ready.then(() => {
+                        message.innerText = 'EPUB 파싱 중...';
+                        loadEpubPages().then(pagesData => {
+                            pages = pagesData;
+                            preloadPages();
+                            currentPage = 0;
+                            displayPage();
+                            message.style.display = 'none';
+                            progress.value = 0;
                             toggleButtons(false);
                             loadingSpinner.style.display = 'none';
-                            loadingSpinner.style.visibility = 'hidden';
-                            loadingSpinner.style.opacity = 0;
                         });
-                    } catch (err) {
-                        message.innerText = 'EPUB 처리 오류: ' + err.message;
-                        message.style.display = 'block';
-                        toggleButtons(false);
-                        loadingSpinner.style.display = 'none';
-                        loadingSpinner.style.visibility = 'hidden';
-                        loadingSpinner.style.opacity = 0;
-                    }
-                } else {
-                    message.innerText = '지원되지 않는 파일 형식입니다. .txt 또는 .epub 파일을 선택해주세요.';
-                    message.style.display = 'block';
-                    toggleButtons(false);
-                    loadingSpinner.style.display = 'none';
-                    loadingSpinner.style.visibility = 'hidden';
-                    loadingSpinner.style.opacity = 0;
+                    });
                 }
             };
             reader.onerror = function() {
-                message.innerText = '파일 읽기 오류: 파일에 접근할 수 없습니다. 파일을 Download 폴더에 저장하거나 다른 위치를 선택해주세요.';
+                message.innerText = '파일 읽기 오류.';
                 message.style.display = 'block';
                 toggleButtons(false);
                 loadingSpinner.style.display = 'none';
-                loadingSpinner.style.visibility = 'hidden';
-                loadingSpinner.style.opacity = 0;
             };
             if (file.name.endsWith('.txt')) {
                 reader.readAsText(file, 'UTF-8');
@@ -469,29 +444,20 @@
         });
 
         async function loadEpubPages() {
-            if (book && book.rendition) {
-                book.rendition.destroy();
-            }
+            if (book && book.rendition) book.rendition.destroy();
             const allPages = [];
             let loadedCount = 0;
             const sections = book.spine.items;
-            console.log('Total sections:', sections.length);
             let fullText = '';
-
             for (let i = 0; i < sections.length; i++) {
                 const section = book.spine.get(i);
-                try {
-                    const content = await section.load(book.load.bind(book));
-                    loadedCount++;
-                    progress.value = (loadedCount / sections.length) * 50;
-                    const div = document.createElement('div');
-                    div.appendChild(content.cloneNode(true));
-                    const text = div.innerText.trim();
-                    if (text) fullText += text + '\n\n';
-                } catch (err) {
-                    console.error('Section load error:', err);
-                    throw new Error('EPUB 섹션 로드 실패: ' + err.message);
-                }
+                const content = await section.load(book.load.bind(book));
+                loadedCount++;
+                progress.value = (loadedCount / sections.length) * 50;
+                const div = document.createElement('div');
+                div.appendChild(content.cloneNode(true));
+                const text = div.innerText.trim();
+                if (text) fullText += text + '\n\n';
             }
             return splitTextToFit(fullText, textContent.getBoundingClientRect().height);
         }
@@ -503,11 +469,9 @@
             const testDiv = document.createElement('div');
             testDiv.style.cssText = `font-size: ${fontSize.value}px; line-height: ${lineHeight.value}; white-space: pre-wrap; visibility: hidden; position: absolute; padding: 10px; font-family: ${fontFamily.value}; letter-spacing: ${letterSpacing.value}px;`;
             document.body.appendChild(testDiv);
-
             for (let line of lines) {
                 testDiv.innerText = currentPageText + line + '\n';
-                const boundingRect = testDiv.getBoundingClientRect();
-                if (boundingRect.height > containerHeight) {
+                if (testDiv.getBoundingClientRect().height > containerHeight) {
                     pages.push(currentPageText.trim());
                     currentPageText = line + '\n';
                 } else {
@@ -528,96 +492,46 @@
                 const lines = text.split('\n').filter(line => line.trim().length > 0);
                 const html = lines.map(line => {
                     const chars = line.split('');
-                    return `<div class="line">${chars.map(char => {
-                        return char.trim() === '' ? `<span class="char-span char-space">${char}</span>` : `<span class="char-span">${char}</span>`;
-                    }).join('')}</div>`;
+                    return `<div class="line">${chars.map(char => char.trim() === '' ? `<span class="char-span char-space">${char}</span>` : `<span class="char-span">${char}</span>`).join('')}</div>`;
                 }).join('');
                 renderedPages[i] = html;
             }
         }
 
-        function setupCanvas() {
-            textCanvas.width = textContent.clientWidth * window.devicePixelRatio;
-            textCanvas.height = textContent.clientHeight * window.devicePixelRatio;
-            textCanvas.style.width = `${textContent.clientWidth}px`;
-            textCanvas.style.height = `${textContent.clientHeight}px`;
-            canvasCtx = textCanvas.getContext('2d');
-            canvasCtx.scale(window.devicePixelRatio, window.devicePixelRatio);
-        }
-
-        function drawGhosting() {
-            canvasCtx.clearRect(0, 0, textCanvas.width, textCanvas.height);
-            canvasCtx.font = `${fontSize.value}px ${fontFamily.value}`;
-            canvasCtx.fillStyle = `rgba(0, 0, 0, ${ghostingOpacity})`;
-            canvasCtx.textBaseline = 'top';
-
-            const lines = textContent.querySelectorAll('.line');
-            let y = 10;
-            lines.forEach(line => {
-                const chars = line.querySelectorAll('.char-span');
-                let x = 10;
-                chars.forEach(char => {
-                    canvasCtx.fillText(char.innerText, x, y);
-                    x += canvasCtx.measureText(char.innerText).width;
-                });
-                y += parseFloat(lineHeight.value) * parseFloat(fontSize.value);
-            });
-        }
-
         function displayPage(direction = 0) {
             const startTime = performance.now();
-            if (!renderedPages[currentPage]) {
-                loadingSpinner.style.display = 'block';
-                loadingSpinner.style.visibility = 'visible';
-                loadingSpinner.style.opacity = 1;
-            }
-
+            if (!renderedPages[currentPage]) loadingSpinner.style.display = 'block';
             if (pageAnimation.checked && direction !== 0) {
                 textContent.style.transform = direction > 0 ? 'translateX(-100%)' : 'translateX(100%)';
                 textContent.style.opacity = 0;
             }
-
             setTimeout(() => {
                 textContent.innerHTML = renderedPages[currentPage] || '';
                 updateTextContentStyles();
                 pageInfo.innerText = showPageInfo.checked ? `${currentPage + 1} / ${pages.length}` : '';
                 progress.value = 0;
-                textCanvas.style.opacity = 0;
-                ghostingOpacity = 0;
-
-                const endTime = performance.now();
-                const loadTime = endTime - startTime;
-                if (loadTime < 100) {
-                    loadingSpinner.style.display = 'none';
-                    loadingSpinner.style.visibility = 'hidden';
-                    loadingSpinner.style.opacity = 0;
-                }
-
+                const loadTime = performance.now() - startTime;
+                if (loadTime < 100) loadingSpinner.style.display = 'none';
                 if (pageAnimation.checked) {
                     textContent.style.transform = 'translateX(0)';
                     textContent.style.opacity = 1;
-                    setTimeout(() => {
-                        if (autoRestart.checked && interval) startEffect();
-                    }, 300);
+                    setTimeout(() => { if (autoRestart.checked && interval) startEffect(); }, 300);
                 } else if (autoRestart.checked && interval) startEffect();
-
                 preloadPages();
             }, 50);
         }
 
         startButton.addEventListener('click', () => {
             if (fullscreenMode.checked) {
-                const fullscreenElement = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
-                const requestFullscreen = document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen || document.documentElement.mozRequestFullScreen || document.documentElement.msRequestFullscreen;
-                if (!fullscreenElement && requestFullscreen) {
+                const requestFullscreen = document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen;
+                if (!document.fullscreenElement && requestFullscreen) {
                     requestFullscreen.call(document.documentElement).then(() => {
                         document.body.style.opacity = 0;
                         setTimeout(() => {
                             document.body.classList.add('fullscreen');
                             document.body.style.opacity = 1;
-                            setupCanvas();
                         }, 300);
-                    }).catch(err => console.error('Fullscreen error:', err));
+                    });
                 }
             }
             startEffect();
@@ -625,15 +539,13 @@
 
         stopButton.addEventListener('click', () => {
             stopEffect();
-            const fullscreenElement = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
-            const exitFullscreen = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen;
-            if (fullscreenElement && exitFullscreen) {
+            const exitFullscreen = document.exitFullscreen || document.webkitExitFullscreen;
+            if (document.fullscreenElement && exitFullscreen) {
                 document.body.style.opacity = 0;
                 setTimeout(() => {
                     exitFullscreen.call(document).then(() => {
                         document.body.classList.remove('fullscreen');
                         document.body.style.opacity = 1;
-                        setupCanvas();
                     });
                 }, 300);
             }
@@ -662,14 +574,6 @@
             localStorage.setItem('effect', effectSelect.value);
         });
 
-        einkGhosting.addEventListener('input', () => {
-            localStorage.setItem('einkGhosting', einkGhosting.value);
-        });
-
-        einkGhostingDuration.addEventListener('input', () => {
-            localStorage.setItem('einkGhostingDuration', einkGhostingDuration.value);
-        });
-
         fontSize.addEventListener('input', () => {
             let value = Math.min(36, Math.max(12, fontSize.value));
             fontSize.value = value;
@@ -677,7 +581,6 @@
             pages = splitTextToFit(pages.join('\n\n'), textContent.getBoundingClientRect().height);
             preloadPages();
             displayPage();
-            setupCanvas();
             localStorage.setItem('fontSize', value);
         });
 
@@ -686,7 +589,6 @@
             pages = splitTextToFit(pages.join('\n\n'), textContent.getBoundingClientRect().height);
             preloadPages();
             displayPage();
-            setupCanvas();
             localStorage.setItem('fontFamily', fontFamily.value);
         });
 
@@ -695,7 +597,6 @@
             pages = splitTextToFit(pages.join('\n\n'), textContent.getBoundingClientRect().height);
             preloadPages();
             displayPage();
-            setupCanvas();
             localStorage.setItem('lineHeight', lineHeight.value);
         });
 
@@ -704,7 +605,6 @@
             pages = splitTextToFit(pages.join('\n\n'), textContent.getBoundingClientRect().height);
             preloadPages();
             displayPage();
-            setupCanvas();
             localStorage.setItem('letterSpacing', letterSpacing.value);
         });
 
@@ -723,7 +623,6 @@
             pages = splitTextToFit(pages.join('\n\n'), textContent.getBoundingClientRect().height);
             preloadPages();
             displayPage();
-            setupCanvas();
             localStorage.setItem('marginTop', marginTop.value);
         });
         marginRight.addEventListener('input', () => {
@@ -731,7 +630,6 @@
             pages = splitTextToFit(pages.join('\n\n'), textContent.getBoundingClientRect().height);
             preloadPages();
             displayPage();
-            setupCanvas();
             localStorage.setItem('marginRight', marginRight.value);
         });
         marginBottom.addEventListener('input', () => {
@@ -739,7 +637,6 @@
             pages = splitTextToFit(pages.join('\n\n'), textContent.getBoundingClientRect().height);
             preloadPages();
             displayPage();
-            setupCanvas();
             localStorage.setItem('marginBottom', marginBottom.value);
         });
         marginLeft.addEventListener('input', () => {
@@ -747,7 +644,6 @@
             pages = splitTextToFit(pages.join('\n\n'), textContent.getBoundingClientRect().height);
             preloadPages();
             displayPage();
-            setupCanvas();
             localStorage.setItem('marginLeft', marginLeft.value);
         });
 
@@ -780,13 +676,12 @@
         });
 
         const hammer = new Hammer(textContent, {
-            threshold: 20,
-            velocity: 0.3,
+            threshold: 10,
+            velocity: 0.2,
             inputClass: Hammer.TouchInput
         });
         hammer.get('swipe').set({ direction: Hammer.DIRECTION_HORIZONTAL });
         hammer.on('swipeleft', () => {
-            console.log('Swipe left detected');
             if (currentPage < pages.length - 1) {
                 currentPage++;
                 stopEffect();
@@ -794,7 +689,6 @@
             }
         });
         hammer.on('swiperight', () => {
-            console.log('Swipe right detected');
             if (currentPage > 0) {
                 currentPage--;
                 stopEffect();
@@ -807,8 +701,6 @@
             speedControl.value = 100;
             speedPreset.value = 100;
             effectSelect.value = 'char';
-            einkGhosting.value = 0.3;
-            einkGhostingDuration.value = 1000;
             fontSize.value = 18;
             fontFamily.value = 'Arial, sans-serif';
             lineHeight.value = 1.6;
@@ -825,12 +717,9 @@
             pages = splitTextToFit(pages.join('\n\n'), textContent.getBoundingClientRect().height);
             preloadPages();
             displayPage();
-            setupCanvas();
             message.innerText = '설정이 초기화되었습니다.';
             message.style.display = 'block';
-            setTimeout(() => {
-                message.style.display = 'none';
-            }, 2000);
+            setTimeout(() => message.style.display = 'none', 2000);
         });
 
         function updateTextContentStyles() {
@@ -839,6 +728,7 @@
             textContent.style.lineHeight = lineHeight.value;
             textContent.style.letterSpacing = `${letterSpacing.value}px`;
             textContent.style.color = '#333';
+            textContent.style.backgroundColor = '#fff';
             updateTextContentMargins();
         }
 
@@ -884,12 +774,9 @@
                 const spans = textContent.querySelectorAll('.char-span:not(.char-space)');
                 let charIndex = 0;
                 const totalChars = spans.length;
-
                 interval = setInterval(() => {
                     if (charIndex < spans.length) {
-                        if (charIndex > 0) {
-                            spans[charIndex - 1].classList.remove('current');
-                        }
+                        if (charIndex > 0) spans[charIndex - 1].classList.remove('current');
                         spans[charIndex].classList.add('current');
                         spans[charIndex].style.opacity = 0;
                         charIndex++;
@@ -897,31 +784,23 @@
                         progress.value = (completedChars / totalChars) * 100;
                         progress.style.backgroundColor = `hsl(${progress.value * 1.2}, 70%, 50%)`;
                     } else {
-                        if (charIndex > 0) {
-                            spans[charIndex - 1].classList.remove('current');
-                        }
+                        if (charIndex > 0) spans[charIndex - 1].classList.remove('current');
                         const lines = textContent.querySelectorAll('.line');
                         lines.forEach(line => {
                             line.classList.add('hidden');
-                            setTimeout(() => {
-                                line.style.display = 'none';
-                            }, 200);
+                            setTimeout(() => line.style.display = 'none', 200);
                         });
                         clearInterval(interval);
                         showCompletionMessage();
                     }
                 }, intervalTime / 2);
             } else if (effect === 'eink') {
-                console.log('Starting e-ink mode');
                 const spans = textContent.querySelectorAll('.char-span:not(.char-space)');
                 let charIndex = 0;
                 const totalChars = spans.length;
-
                 interval = setInterval(() => {
                     if (charIndex < spans.length) {
-                        if (charIndex > 0) {
-                            spans[charIndex - 1].classList.remove('current');
-                        }
+                        if (charIndex > 0) spans[charIndex - 1].classList.remove('current');
                         spans[charIndex].classList.add('current');
                         spans[charIndex].style.color = '#000000';
                         charIndex++;
@@ -929,25 +808,15 @@
                         progress.value = (completedChars / totalChars) * 100;
                         progress.style.backgroundColor = `hsl(${progress.value * 1.2}, 70%, 50%)`;
                         if (completedChars === totalChars) {
-                            // 캔버스에 잔상 그리기
-                            ghostingOpacity = parseFloat(einkGhosting.value);
-                            drawGhosting();
-                            textCanvas.style.opacity = 1;
+                            textContent.style.transition = 'background-color 0.1s';
+                            textContent.style.backgroundColor = '#000';
                             setTimeout(() => {
-                                textCanvas.style.opacity = 0;
-                            }, parseInt(einkGhostingDuration.value));
+                                textContent.style.backgroundColor = '#fff';
+                                spans.forEach(span => span.style.color = '#333');
+                            }, 150);
                         }
                     } else {
-                        if (charIndex > 0) {
-                            spans[charIndex - 1].classList.remove('current');
-                        }
-                        const lines = textContent.querySelectorAll('.line');
-                        lines.forEach(line => {
-                            line.classList.add('hidden');
-                            setTimeout(() => {
-                                line.style.display = 'none';
-                            }, 200);
-                        });
+                        if (charIndex > 0) spans[charIndex - 1].classList.remove('current');
                         clearInterval(interval);
                         showCompletionMessage();
                     }
@@ -958,8 +827,7 @@
         function stopEffect() {
             if (interval) clearInterval(interval);
             textContent.style.opacity = 1;
-            textCanvas.style.opacity = 0;
-            ghostingOpacity = 0;
+            textContent.style.backgroundColor = '#fff';
             if (effectSelect.value === 'char' || effectSelect.value === 'eink') {
                 textContent.querySelectorAll('.char-span').forEach(span => {
                     span.style.opacity = 1;
@@ -979,9 +847,7 @@
             message.innerText = '훈련이 완료되었습니다!';
             message.style.color = 'green';
             message.style.display = 'block';
-            setTimeout(() => {
-                message.style.display = 'none';
-            }, 2000);
+            setTimeout(() => message.style.display = 'none', 2000);
         }
 
         function adjustSpeed() {
@@ -997,13 +863,9 @@
             let index = 0;
             const preview = setInterval(() => {
                 if (index < spans.length) {
-                    if (effectSelect.value === 'char') {
-                        spans[index].style.opacity = 0;
-                    } else if (effectSelect.value === 'fade') {
-                        spans[index].style.opacity = 0.5;
-                    } else if (effectSelect.value === 'eink') {
-                        spans[index].style.color = '#000000';
-                    }
+                    if (effectSelect.value === 'char') spans[index].style.opacity = 0;
+                    else if (effectSelect.value === 'fade') spans[index].style.opacity = 0.5;
+                    else if (effectSelect.value === 'eink') spans[index].style.color = '#000000';
                     index++;
                 } else {
                     clearInterval(preview);
