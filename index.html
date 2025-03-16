@@ -13,7 +13,7 @@
             background-color: #f5f5f5; 
             overscroll-behavior: none; 
             position: relative; 
-            touch-action: pan-y; /* 수직 스크롤 허용, 수평 스와이프 사용 */
+            touch-action: pan-y; 
         }
         #textContent { 
             font-size: 18px; 
@@ -26,11 +26,13 @@
             margin: 0 auto; 
             padding: 10px; 
             box-sizing: border-box; 
-            background-color: white; 
+            background-color: #fff; /* 배경색 명확히 설정 */
+            border: 1px solid #ddd; /* 테두리 추가 */
             border-radius: 8px; 
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); 
             z-index: 1; 
-            transition: transform 0.3s ease; /* 페이지 전환 슬라이드 애니메이션 */
+            transition: transform 0.3s ease, background-color 0.3s; /* 배경색 전환 추가 */
+            color: #333; /* 초기 글자색 명시 */
         }
         #controls { 
             margin: 10px 0; 
@@ -66,7 +68,7 @@
             height: 4px; 
             margin: 5px 0; 
             opacity: 0.7; 
-            transition: background-color 0.3s; /* 진행 바 색상 변화 */
+            transition: background-color 0.3s; 
         }
         #loadingSpinner { 
             display: none; 
@@ -97,7 +99,7 @@
         }
         button:hover { 
             background-color: #2980b9; 
-            transform: scale(1.05); /* 버튼 클릭 시각적 피드백 */
+            transform: scale(1.05); 
         }
         button:focus { 
             outline: 2px solid #2980b9; 
@@ -119,6 +121,7 @@
         }
         .char-span { 
             transition: opacity 0.3s, color 0.3s; 
+            color: inherit; /* 초기 색상 상속 */
         }
         .char-span.current { 
             background-color: rgba(255, 255, 0, 0.3); 
@@ -266,7 +269,7 @@
             <input type="number" id="marginBottom" min="0" max="50" value="0" step="1">
             <label for="marginLeft">왼쪽 여백 (%):</label>
             <input type="number" id="marginLeft" min="0" max="50" value="0" step="1">
-            <button id="resetSettings" aria-label="설정 초기화">설정 초기화</button> <!-- 설정 초기화 버튼 추가 -->
+            <button id="resetSettings" aria-label="설정 초기화">설정 초기화</button>
         </div>
     </details>
     <progress id="progress" value="0" max="100"></progress>
@@ -302,10 +305,10 @@
         const message = document.getElementById('message');
         const progress = document.getElementById('progress');
         const loadingSpinner = document.getElementById('loadingSpinner');
-        const resetSettings = document.getElementById('resetSettings'); // 설정 초기화 버튼
+        const resetSettings = document.getElementById('resetSettings');
         let interval, pages = [], currentPage = 0, book;
         let worker;
-        let renderedPages = []; // 프리로드된 페이지 저장
+        let renderedPages = [];
 
         // 설정 로드
         speedControl.value = localStorage.getItem('speed') || 100;
@@ -378,7 +381,7 @@
             message.style.display = 'block';
             progress.value = 0;
             toggleButtons(true);
-            loadingSpinner.style.display = 'block'; // 파일 로딩 시에만 스피너 표시
+            loadingSpinner.style.display = 'block';
             loadingSpinner.style.visibility = 'visible';
             loadingSpinner.style.opacity = 1;
 
@@ -397,7 +400,7 @@
                                 return;
                             }
                             pages = e.data.pages;
-                            preloadPages(); // 페이지 프리로드
+                            preloadPages();
                             currentPage = 0;
                             displayPage();
                             message.style.display = 'none';
@@ -544,10 +547,13 @@
             return pages;
         }
 
-        // 페이지 프리로드 함수
+        // 프리로드 최적화: 현재 페이지 주변 5개 페이지씩만 로드
         function preloadPages() {
             renderedPages = [];
-            pages.forEach((text, index) => {
+            const start = Math.max(0, currentPage - 5);
+            const end = Math.min(pages.length, currentPage + 6);
+            for (let i = start; i < end; i++) {
+                const text = pages[i];
                 const lines = text.split('\n').filter(line => line.trim().length > 0);
                 const html = lines.map(line => {
                     const chars = line.split('');
@@ -555,20 +561,18 @@
                         return char.trim() === '' ? `<span class="char-span char-space">${char}</span>` : `<span class="char-span">${char}</span>`;
                     }).join('')}</div>`;
                 }).join('');
-                renderedPages[index] = html;
-            });
+                renderedPages[i] = html;
+            }
         }
 
         function displayPage(direction = 0) {
             const startTime = performance.now();
-            // 페이지 전환 시 스피너 표시 최소화
             if (!renderedPages[currentPage]) {
                 loadingSpinner.style.display = 'block';
                 loadingSpinner.style.visibility = 'visible';
                 loadingSpinner.style.opacity = 1;
             }
 
-            // 페이지 전환 애니메이션 (슬라이드 효과)
             if (pageAnimation.checked && direction !== 0) {
                 textContent.style.transform = direction > 0 ? 'translateX(-100%)' : 'translateX(100%)';
                 textContent.style.opacity = 0;
@@ -582,7 +586,6 @@
 
                 const endTime = performance.now();
                 const loadTime = endTime - startTime;
-                // 로딩 시간이 100ms 미만이면 스피너 숨김
                 if (loadTime < 100) {
                     loadingSpinner.style.display = 'none';
                     loadingSpinner.style.visibility = 'hidden';
@@ -596,7 +599,10 @@
                         if (autoRestart.checked && interval) startEffect();
                     }, 300);
                 } else if (autoRestart.checked && interval) startEffect();
-            }, 50); // 최소 지연으로 부드러운 전환 보장
+
+                // 주변 페이지 프리로드 갱신
+                preloadPages();
+            }, 50);
         }
 
         startButton.addEventListener('click', () => {
@@ -731,7 +737,7 @@
             if (currentPage > 0) {
                 currentPage--;
                 stopEffect();
-                displayPage(-1); // 방향: 왼쪽
+                displayPage(-1);
             }
         });
 
@@ -739,11 +745,10 @@
             if (currentPage < pages.length - 1) {
                 currentPage++;
                 stopEffect();
-                displayPage(1); // 방향: 오른쪽
+                displayPage(1);
             }
         });
 
-        // 키보드 내비게이션 추가
         document.addEventListener('keydown', (e) => {
             if (e.key === 'ArrowLeft' && currentPage > 0) {
                 currentPage--;
@@ -756,15 +761,14 @@
             }
         });
 
-        // 터치 제스처 개선
-        const hammer = new Hammer(textContent, { // 터치 영역을 #textContent로 제한
-            threshold: 20, // 감도 조정
-            velocity: 0.3, // 스와이프 속도 조정
+        const hammer = new Hammer(textContent, {
+            threshold: 20,
+            velocity: 0.3,
             inputClass: Hammer.TouchInput
         });
         hammer.get('swipe').set({ direction: Hammer.DIRECTION_HORIZONTAL });
         hammer.on('swipeleft', () => {
-            console.log('Swipe left detected'); // 디버깅 로그
+            console.log('Swipe left detected');
             if (currentPage < pages.length - 1) {
                 currentPage++;
                 stopEffect();
@@ -772,7 +776,7 @@
             }
         });
         hammer.on('swiperight', () => {
-            console.log('Swipe right detected'); // 디버깅 로그
+            console.log('Swipe right detected');
             if (currentPage > 0) {
                 currentPage--;
                 stopEffect();
@@ -780,7 +784,6 @@
             }
         });
 
-        // 설정 초기화 버튼 이벤트
         resetSettings.addEventListener('click', () => {
             localStorage.clear();
             speedControl.value = 100;
@@ -814,6 +817,8 @@
             textContent.style.fontFamily = fontFamily.value;
             textContent.style.lineHeight = lineHeight.value;
             textContent.style.letterSpacing = `${letterSpacing.value}px`;
+            textContent.style.color = '#333'; // 초기 글자색 설정
+            textContent.style.backgroundColor = '#fff'; // 초기 배경색 설정
             updateTextContentMargins();
         }
 
@@ -852,6 +857,7 @@
                         textContent.style.opacity = opacity;
                     } else {
                         clearInterval(interval);
+                        showCompletionMessage();
                     }
                 }, intervalTime);
             } else if (effect === 'char') {
@@ -869,36 +875,6 @@
                         charIndex++;
                         const completedChars = Array.from(spans).filter(span => span.style.opacity === '0').length;
                         progress.value = (completedChars / totalChars) * 100;
-                        progress.style.backgroundColor = `hsl(${progress.value * 1.2}, 70%, 50%)`; // 진행 바 색상 변화
-                    } else {
-                        if (charIndex > 0) {
-                            spans[charIndex - 1].classList.remove('current');
-                        }
-                        const lines = textContent.querySelectorAll('.line');
-                        lines.forEach(line => {
-                            line.classList.add('hidden');
-                            setTimeout(() => {
-                                line.style.display = 'none';
-                            }, 200);
-                        });
-                        clearInterval(interval);
-                    }
-                }, intervalTime / 2);
-            } else if (effect === 'eink') {
-                const spans = textContent.querySelectorAll('.char-span:not(.char-space)');
-                let charIndex = 0;
-                const totalChars = spans.length;
-
-                interval = setInterval(() => {
-                    if (charIndex < spans.length) {
-                        if (charIndex > 0) {
-                            spans[charIndex - 1].classList.remove('current');
-                        }
-                        spans[charIndex].classList.add('current');
-                        spans[charIndex].style.color = '#000000';
-                        charIndex++;
-                        const completedChars = Array.from(spans).filter(span => span.style.color === '#000000').length;
-                        progress.value = (completedChars / totalChars) * 100;
                         progress.style.backgroundColor = `hsl(${progress.value * 1.2}, 70%, 50%)`;
                     } else {
                         if (charIndex > 0) {
@@ -912,6 +888,46 @@
                             }, 200);
                         });
                         clearInterval(interval);
+                        showCompletionMessage();
+                    }
+                }, intervalTime / 2);
+            } else if (effect === 'eink') {
+                console.log('Starting e-ink mode'); // 디버깅 로그
+                const spans = textContent.querySelectorAll('.char-span:not(.char-space)');
+                let charIndex = 0;
+                const totalChars = spans.length;
+
+                interval = setInterval(() => {
+                    if (charIndex < spans.length) {
+                        if (charIndex > 0) {
+                            spans[charIndex - 1].classList.remove('current');
+                        }
+                        spans[charIndex].classList.add('current');
+                        spans[charIndex].style.color = '#000000'; // 글자색 검은색으로 변경
+                        charIndex++;
+                        const completedChars = Array.from(spans).filter(span => span.style.color === 'rgb(0, 0, 0)').length;
+                        progress.value = (completedChars / totalChars) * 100;
+                        progress.style.backgroundColor = `hsl(${progress.value * 1.2}, 70%, 50%)`;
+                        // 배경색 잠시 검은색으로 변경
+                        if (completedChars === totalChars) {
+                            textContent.style.backgroundColor = '#000';
+                            setTimeout(() => {
+                                textContent.style.backgroundColor = '#fff';
+                            }, 300);
+                        }
+                    } else {
+                        if (charIndex > 0) {
+                            spans[charIndex - 1].classList.remove('current');
+                        }
+                        const lines = textContent.querySelectorAll('.line');
+                        lines.forEach(line => {
+                            line.classList.add('hidden');
+                            setTimeout(() => {
+                                line.style.display = 'none';
+                            }, 200);
+                        });
+                        clearInterval(interval);
+                        showCompletionMessage();
                     }
                 }, intervalTime / 2);
             }
@@ -920,10 +936,11 @@
         function stopEffect() {
             if (interval) clearInterval(interval);
             textContent.style.opacity = 1;
+            textContent.style.backgroundColor = '#fff'; // 배경색 복원
             if (effectSelect.value === 'char' || effectSelect.value === 'eink') {
                 textContent.querySelectorAll('.char-span').forEach(span => {
                     span.style.opacity = 1;
-                    span.style.color = '';
+                    span.style.color = '#333'; // 글자색 복원
                     span.classList.remove('current');
                 });
                 textContent.querySelectorAll('.line').forEach(line => {
@@ -933,6 +950,15 @@
                 progress.value = 0;
                 progress.style.backgroundColor = '';
             }
+        }
+
+        function showCompletionMessage() {
+            message.innerText = '훈련이 완료되었습니다!';
+            message.style.color = 'green';
+            message.style.display = 'block';
+            setTimeout(() => {
+                message.style.display = 'none';
+            }, 2000);
         }
 
         function adjustSpeed() {
@@ -960,7 +986,7 @@
                     clearInterval(preview);
                     spans.forEach(span => {
                         span.style.opacity = 1;
-                        span.style.color = '';
+                        span.style.color = '#333';
                     });
                 }
             }, speedControl.value);
