@@ -8,27 +8,27 @@
         body { 
             font-family: Arial, sans-serif; 
             margin: 0; 
-            padding: 10px; 
+            padding: 5px; 
             transition: opacity 0.3s; 
             background-color: #f5f5f5; 
             overscroll-behavior: none; 
-            position: relative; /* 로딩 스피너 위치 조정을 위해 */
+            position: relative; /* 로딩 스피너 위치를 위해 */
         }
         #textContent { 
             font-size: 18px; 
             line-height: 1.6; 
             white-space: pre-wrap; 
             position: relative; 
-            overflow-y: auto; 
+            overflow-y: hidden; /* 스크롤 제거, 페이징으로 대체 */
             width: 100%; 
-            height: calc(70vh - 80px); 
+            height: calc(70vh - 80px); /* 컨트롤과 진행 바 높이 고려 */
             margin: 0 auto; 
-            padding: 15px; 
+            padding: 10px; 
             box-sizing: border-box; 
-            background-color: white; /* 배경색 명확화 */
+            background-color: white; 
             border-radius: 8px; 
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); 
-            z-index: 1; /* 텍스트 영역을 최상단에 */
+            z-index: 1; 
         }
         #controls { 
             margin: 10px 0; 
@@ -66,7 +66,7 @@
         }
         #loadingSpinner { 
             display: none; 
-            position: absolute; 
+            position: fixed; /* 텍스트 영역 밖으로 이동 */
             top: 50%; 
             left: 50%; 
             transform: translate(-50%, -50%); 
@@ -76,18 +76,18 @@
             border-top: 3px solid #3498db; 
             border-radius: 50%; 
             animation: spin 1s linear infinite; 
-            z-index: 5; /* 로딩 스피너를 텍스트 아래로 */
+            z-index: 5; 
         }
         button { 
-            padding: 10px 15px; 
-            font-size: 16px; 
+            padding: 8px 12px; /* 버튼 크기 추가 축소 */
+            font-size: 14px; /* 글자 크기 축소 */
             border: none; 
             border-radius: 5px; 
             background-color: #3498db; 
             color: white; 
             cursor: pointer; 
             transition: background-color 0.3s; 
-            max-width: 120px; 
+            max-width: 100px; /* 최대 너비 추가 조정 */
         }
         button:hover { 
             background-color: #2980b9; 
@@ -149,27 +149,27 @@
             #textContent { 
                 font-size: 16px; 
                 height: calc(60vh - 60px); 
-                padding: 10px; 
+                padding: 8px; /* 패딩 추가 축소 */
             }
             #controls { 
                 flex-direction: column; 
-                gap: 5px; 
+                gap: 3px; /* 간격 더 줄임 */
             }
             button { 
-                padding: 10px 15px; 
-                font-size: 16px; 
+                padding: 8px 12px; 
+                font-size: 14px; 
                 max-width: 100%; 
             }
             #advancedControls { 
                 display: flex; 
                 flex-direction: column; 
-                gap: 10px; 
-                padding: 10px; 
+                gap: 8px; 
+                padding: 8px; /* 패딩 축소 */
             }
             input, select { 
                 width: 100%; 
-                padding: 10px; 
-                font-size: 16px; 
+                padding: 8px; /* 패딩 축소 */
+                font-size: 14px; /* 글자 크기 축소 */
                 box-sizing: border-box; 
             }
             #progress { 
@@ -255,8 +255,8 @@
     <progress id="progress" value="0" max="100"></progress>
     <div id="textContent" role="region" aria-label="텍스트 표시 영역">
         <div id="pageInfo" aria-live="polite"></div>
-        <div id="loadingSpinner"></div> <!-- 로딩 스피너 유지 -->
     </div>
+    <div id="loadingSpinner"></div> <!-- 텍스트 영역 밖으로 이동 -->
     <div id="message" aria-live="assertive"></div>
 
     <script>
@@ -324,12 +324,13 @@
                         const pages = [];
                         let currentPageText = '';
                         const testDiv = document.createElement('div');
-                        testDiv.style.cssText = 'font-size: 18px; line-height: 1.6; white-space: pre-wrap; visibility: hidden; position: absolute;';
+                        testDiv.style.cssText = 'font-size: 18px; line-height: 1.6; white-space: pre-wrap; visibility: hidden; position: absolute; padding: 10px;';
                         document.body.appendChild(testDiv);
 
                         for (let line of lines) {
                             testDiv.innerText = currentPageText + line + '\n';
-                            if (testDiv.scrollHeight > height) {
+                            const boundingRect = testDiv.getBoundingClientRect();
+                            if (boundingRect.height > height) {
                                 pages.push(currentPageText.trim());
                                 currentPageText = line + '\n';
                             } else {
@@ -355,6 +356,7 @@
             message.innerText = '파일 로딩 중...';
             progress.value = 0;
             toggleButtons(true);
+            loadingSpinner.style.display = 'block'; // 로딩 시작
 
             if (file.name.endsWith('.txt')) {
                 const reader = new FileReader();
@@ -364,6 +366,7 @@
                             if (e.data.error) {
                                 message.innerText = e.data.error;
                                 toggleButtons(false);
+                                loadingSpinner.style.display = 'none'; // 로딩 종료
                                 return;
                             }
                             pages = e.data.pages;
@@ -372,20 +375,23 @@
                             message.innerText = '';
                             progress.value = 0;
                             toggleButtons(false);
+                            loadingSpinner.style.display = 'none'; // 로딩 종료
                         };
-                        worker.postMessage({ fileData: event.target.result, type: 'txt', containerHeight: textContent.offsetHeight });
+                        worker.postMessage({ fileData: event.target.result, type: 'txt', containerHeight: textContent.getBoundingClientRect().height });
                     } else {
-                        pages = splitTextToFit(event.target.result, textContent.offsetHeight);
+                        pages = splitTextToFit(event.target.result, textContent.getBoundingClientRect().height);
                         currentPage = 0;
                         displayPage();
                         message.innerText = '';
                         progress.value = 0;
                         toggleButtons(false);
+                        loadingSpinner.style.display = 'none'; // 로딩 종료
                     }
                 };
                 reader.onerror = () => {
                     message.innerText = 'TXT 파일 로딩 실패: 파일에 접근할 수 없습니다. 파일을 Download 폴더에 저장하거나 다른 위치를 선택해주세요.';
                     toggleButtons(false);
+                    loadingSpinner.style.display = 'none'; // 로딩 종료
                 };
                 reader.readAsText(file);
             } else if (file.name.endsWith('.epub')) {
@@ -393,6 +399,7 @@
                     message.innerText = 'epub.js 또는 JSZip 로딩 실패. 네트워크를 확인하세요.';
                     console.error('Required libraries not loaded.');
                     toggleButtons(false);
+                    loadingSpinner.style.display = 'none'; // 로딩 종료
                     return;
                 }
                 const reader = new FileReader();
@@ -408,19 +415,23 @@
                         message.innerText = '';
                         progress.value = 0;
                         toggleButtons(false);
+                        loadingSpinner.style.display = 'none'; // 로딩 종료
                     } catch (err) {
                         message.innerText = 'EPUB 파일 로딩 실패: 파일에 접근할 수 없습니다. 파일을 Download 폴더에 저장하거나 다른 위치를 선택해주세요.';
                         toggleButtons(false);
+                        loadingSpinner.style.display = 'none'; // 로딩 종료
                     }
                 };
                 reader.onerror = () => {
                     message.innerText = 'EPUB 파일 로딩 실패: 파일에 접근할 수 없습니다. 파일을 Download 폴더에 저장하거나 다른 위치를 선택해주세요.';
                     toggleButtons(false);
+                    loadingSpinner.style.display = 'none'; // 로딩 종료
                 };
                 reader.readAsArrayBuffer(file);
             } else {
                 message.innerText = '지원되지 않는 파일 형식입니다. .txt 또는 .epub 파일을 선택해주세요.';
                 toggleButtons(false);
+                loadingSpinner.style.display = 'none'; // 로딩 종료
             }
         });
 
@@ -449,7 +460,7 @@
                 }
             }
 
-            return splitTextToFit(fullText, textContent.offsetHeight);
+            return splitTextToFit(fullText, textContent.getBoundingClientRect().height);
         }
 
         function splitTextToFit(text, containerHeight) {
@@ -457,12 +468,13 @@
             const pages = [];
             let currentPageText = '';
             const testDiv = document.createElement('div');
-            testDiv.style.cssText = getComputedStyle(textContent).cssText + 'visibility: hidden; position: absolute;';
+            testDiv.style.cssText = `font-size: ${fontSize.value}px; line-height: ${lineHeight.value}; white-space: pre-wrap; visibility: hidden; position: absolute; padding: 10px; font-family: ${fontFamily.value}; letter-spacing: ${letterSpacing.value}px;`;
             document.body.appendChild(testDiv);
 
             for (let line of lines) {
                 testDiv.innerText = currentPageText + line + '\n';
-                if (testDiv.scrollHeight > containerHeight) {
+                const boundingRect = testDiv.getBoundingClientRect();
+                if (boundingRect.height > containerHeight) {
                     pages.push(currentPageText.trim());
                     currentPageText = line + '\n';
                 } else {
@@ -558,28 +570,28 @@
             let value = Math.min(36, Math.max(12, fontSize.value));
             fontSize.value = value;
             textContent.style.fontSize = `${value}px`;
-            pages = splitTextToFit(pages.join('\n\n'), textContent.offsetHeight);
+            pages = splitTextToFit(pages.join('\n\n'), textContent.getBoundingClientRect().height);
             displayPage();
             localStorage.setItem('fontSize', value);
         });
 
         fontFamily.addEventListener('change', () => {
             textContent.style.fontFamily = fontFamily.value;
-            pages = splitTextToFit(pages.join('\n\n'), textContent.offsetHeight);
+            pages = splitTextToFit(pages.join('\n\n'), textContent.getBoundingClientRect().height);
             displayPage();
             localStorage.setItem('fontFamily', fontFamily.value);
         });
 
         lineHeight.addEventListener('change', () => {
             textContent.style.lineHeight = lineHeight.value;
-            pages = splitTextToFit(pages.join('\n\n'), textContent.offsetHeight);
+            pages = splitTextToFit(pages.join('\n\n'), textContent.getBoundingClientRect().height);
             displayPage();
             localStorage.setItem('lineHeight', lineHeight.value);
         });
 
         letterSpacing.addEventListener('change', () => {
             textContent.style.letterSpacing = `${letterSpacing.value}px`;
-            pages = splitTextToFit(pages.join('\n\n'), textContent.offsetHeight);
+            pages = splitTextToFit(pages.join('\n\n'), textContent.getBoundingClientRect().height);
             displayPage();
             localStorage.setItem('letterSpacing', letterSpacing.value);
         });
@@ -596,25 +608,25 @@
         fullscreenMode.addEventListener('change', () => localStorage.setItem('fullscreenMode', fullscreenMode.checked));
         marginTop.addEventListener('input', () => {
             updateTextContentMargins();
-            pages = splitTextToFit(pages.join('\n\n'), textContent.offsetHeight);
+            pages = splitTextToFit(pages.join('\n\n'), textContent.getBoundingClientRect().height);
             displayPage();
             localStorage.setItem('marginTop', marginTop.value);
         });
         marginRight.addEventListener('input', () => {
             updateTextContentMargins();
-            pages = splitTextToFit(pages.join('\n\n'), textContent.offsetHeight);
+            pages = splitTextToFit(pages.join('\n\n'), textContent.getBoundingClientRect().height);
             displayPage();
             localStorage.setItem('marginRight', marginRight.value);
         });
         marginBottom.addEventListener('input', () => {
             updateTextContentMargins();
-            pages = splitTextToFit(pages.join('\n\n'), textContent.offsetHeight);
+            pages = splitTextToFit(pages.join('\n\n'), textContent.getBoundingClientRect().height);
             displayPage();
             localStorage.setItem('marginBottom', marginBottom.value);
         });
         marginLeft.addEventListener('input', () => {
             updateTextContentMargins();
-            pages = splitTextToFit(pages.join('\n\n'), textContent.offsetHeight);
+            pages = splitTextToFit(pages.join('\n\n'), textContent.getBoundingClientRect().height);
             displayPage();
             localStorage.setItem('marginLeft', marginLeft.value);
         });
@@ -730,7 +742,7 @@
 
         function stopEffect() {
             if (interval) clearInterval(interval);
-            textContent.style.opacity = 1; // 투명도 초기화
+            textContent.style.opacity = 1;
             if (effectSelect.value === 'char') {
                 textContent.querySelectorAll('.char-span').forEach(span => {
                     span.style.opacity = 1;
