@@ -9,7 +9,7 @@
             font-family: Arial, sans-serif; 
             margin: 0; 
             padding: 5px; 
-            transition: opacity 0.3s; 
+            transition: opacity 0.3s, background-color 0.3s; 
             background-color: #f5f5f5; 
             overscroll-behavior: none; 
             position: relative; 
@@ -31,7 +31,7 @@
             border-radius: 8px; 
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); 
             z-index: 1; 
-            transition: transform 0.3s ease, background-color 0.3s; 
+            transition: transform 0.3s ease, background-color 0.3s, color 0.3s; 
             color: #333; 
         }
         #controls { 
@@ -203,6 +203,11 @@
                 font-size: 14px; 
             }
         }
+        .black-mode body { background-color: #1a1a1a; }
+        .black-mode #textContent { background-color: #2d2d2d; color: #e0e0e0; border-color: #444; }
+        .black-mode summary { background-color: #3a3a3a; }
+        .black-mode #fileUpload { background-color: #333; border-color: #555; }
+        .black-mode #fileUpload:hover { background-color: #444; }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://unpkg.com/epubjs/dist/epub.min.js"></script>
@@ -261,6 +266,10 @@
             <input type="checkbox" id="showPageInfo" checked>
             <label for="fullscreenMode">전체 화면 모드:</label>
             <input type="checkbox" id="fullscreenMode">
+            <label for="blackMode">블랙 모드:</label>
+            <input type="checkbox" id="blackMode">
+            <label for="blackModeColor">블랙 모드 색상:</label>
+            <input type="color" id="blackModeColor" value="#2d2d2d">
             <label for="marginTop">위쪽 여백 (%):</label>
             <input type="number" id="marginTop" min="0" max="50" value="0" step="1">
             <label for="marginRight">오른쪽 여백 (%):</label>
@@ -293,6 +302,8 @@
         const pageAnimation = document.getElementById('pageAnimation');
         const showPageInfo = document.getElementById('showPageInfo');
         const fullscreenMode = document.getElementById('fullscreenMode');
+        const blackMode = document.getElementById('blackMode');
+        const blackModeColor = document.getElementById('blackModeColor');
         const marginTop = document.getElementById('marginTop');
         const marginRight = document.getElementById('marginRight');
         const marginBottom = document.getElementById('marginBottom');
@@ -321,11 +332,14 @@
         pageAnimation.checked = localStorage.getItem('pageAnimation') !== 'false';
         showPageInfo.checked = localStorage.getItem('showPageInfo') !== 'false';
         fullscreenMode.checked = localStorage.getItem('fullscreenMode') === 'true';
+        blackMode.checked = localStorage.getItem('blackMode') === 'true';
+        blackModeColor.value = localStorage.getItem('blackModeColor') || '#2d2d2d';
         marginTop.value = localStorage.getItem('marginTop') || 0;
         marginRight.value = localStorage.getItem('marginRight') || 0;
         marginBottom.value = localStorage.getItem('marginBottom') || 0;
         marginLeft.value = localStorage.getItem('marginLeft') || 0;
         updateTextContentStyles();
+        toggleBlackMode();
 
         if (window.Worker) {
             worker = new Worker(URL.createObjectURL(new Blob([`
@@ -386,8 +400,6 @@
                             progress.value = 0;
                             toggleButtons(false);
                             loadingSpinner.style.display = 'none';
-                            loadingSpinner.style.visibility = 'hidden';
-                            loadingSpinner.style.opacity = 0;
                         };
                         worker.onerror = function(e) {
                             message.innerText = '웹 워커 오류: ' + e.message;
@@ -618,6 +630,14 @@
             displayPage();
         });
         fullscreenMode.addEventListener('change', () => localStorage.setItem('fullscreenMode', fullscreenMode.checked));
+        blackMode.addEventListener('change', () => {
+            localStorage.setItem('blackMode', blackMode.checked);
+            toggleBlackMode();
+        });
+        blackModeColor.addEventListener('input', () => {
+            localStorage.setItem('blackModeColor', blackModeColor.value);
+            toggleBlackMode();
+        });
         marginTop.addEventListener('input', () => {
             updateTextContentMargins();
             pages = splitTextToFit(pages.join('\n\n'), textContent.getBoundingClientRect().height);
@@ -709,11 +729,14 @@
             pageAnimation.checked = true;
             showPageInfo.checked = true;
             fullscreenMode.checked = false;
+            blackMode.checked = false;
+            blackModeColor.value = '#2d2d2d';
             marginTop.value = 0;
             marginRight.value = 0;
             marginBottom.value = 0;
             marginLeft.value = 0;
             updateTextContentStyles();
+            toggleBlackMode();
             pages = splitTextToFit(pages.join('\n\n'), textContent.getBoundingClientRect().height);
             preloadPages();
             displayPage();
@@ -727,9 +750,8 @@
             textContent.style.fontFamily = fontFamily.value;
             textContent.style.lineHeight = lineHeight.value;
             textContent.style.letterSpacing = `${letterSpacing.value}px`;
-            textContent.style.color = '#333';
-            textContent.style.backgroundColor = '#fff';
             updateTextContentMargins();
+            toggleBlackMode();
         }
 
         function updateTextContentMargins() {
@@ -739,6 +761,18 @@
             textContent.style.marginLeft = `${marginLeft.value}vw`;
             textContent.style.width = `calc(100% - ${marginLeft.value}vw - ${marginRight.value}vw)`;
             textContent.style.height = `calc(70vh - ${marginTop.value}vh - ${marginBottom.value}vh - 80px)`;
+        }
+
+        function toggleBlackMode() {
+            if (blackMode.checked) {
+                document.body.classList.add('black-mode');
+                textContent.style.backgroundColor = blackModeColor.value;
+                textContent.style.color = '#e0e0e0';
+            } else {
+                document.body.classList.remove('black-mode');
+                textContent.style.backgroundColor = '#fff';
+                textContent.style.color = '#333';
+            }
         }
 
         function toggleButtons(disable) {
@@ -798,22 +832,24 @@
                 const spans = textContent.querySelectorAll('.char-span:not(.char-space)');
                 let charIndex = 0;
                 const totalChars = spans.length;
+                const baseBgColor = blackMode.checked ? blackModeColor.value : '#fff';
+                const baseTextColor = blackMode.checked ? '#e0e0e0' : '#333';
                 interval = setInterval(() => {
                     if (charIndex < spans.length) {
                         if (charIndex > 0) spans[charIndex - 1].classList.remove('current');
                         spans[charIndex].classList.add('current');
-                        spans[charIndex].style.color = '#000000';
+                        spans[charIndex].style.color = '#000'; // 글자 강조
                         charIndex++;
                         const completedChars = Array.from(spans).filter(span => span.style.color === 'rgb(0, 0, 0)').length;
                         progress.value = (completedChars / totalChars) * 100;
                         progress.style.backgroundColor = `hsl(${progress.value * 1.2}, 70%, 50%)`;
                         if (completedChars === totalChars) {
-                            textContent.style.transition = 'background-color 0.1s';
+                            textContent.style.transition = 'background-color 0.2s';
                             textContent.style.backgroundColor = '#000';
                             setTimeout(() => {
-                                textContent.style.backgroundColor = '#fff';
-                                spans.forEach(span => span.style.color = '#333');
-                            }, 150);
+                                textContent.style.backgroundColor = baseBgColor;
+                                spans.forEach(span => span.style.color = baseTextColor);
+                            }, 200);
                         }
                     } else {
                         if (charIndex > 0) spans[charIndex - 1].classList.remove('current');
@@ -827,11 +863,11 @@
         function stopEffect() {
             if (interval) clearInterval(interval);
             textContent.style.opacity = 1;
-            textContent.style.backgroundColor = '#fff';
+            textContent.style.backgroundColor = blackMode.checked ? blackModeColor.value : '#fff';
             if (effectSelect.value === 'char' || effectSelect.value === 'eink') {
                 textContent.querySelectorAll('.char-span').forEach(span => {
                     span.style.opacity = 1;
-                    span.style.color = '#333';
+                    span.style.color = blackMode.checked ? '#e0e0e0' : '#333';
                     span.classList.remove('current');
                 });
                 textContent.querySelectorAll('.line').forEach(line => {
@@ -865,13 +901,13 @@
                 if (index < spans.length) {
                     if (effectSelect.value === 'char') spans[index].style.opacity = 0;
                     else if (effectSelect.value === 'fade') spans[index].style.opacity = 0.5;
-                    else if (effectSelect.value === 'eink') spans[index].style.color = '#000000';
+                    else if (effectSelect.value === 'eink') spans[index].style.color = '#000';
                     index++;
                 } else {
                     clearInterval(preview);
                     spans.forEach(span => {
                         span.style.opacity = 1;
-                        span.style.color = '#333';
+                        span.style.color = blackMode.checked ? '#e0e0e0' : '#333';
                     });
                 }
             }, speedControl.value);
