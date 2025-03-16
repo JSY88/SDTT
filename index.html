@@ -18,9 +18,9 @@
             line-height: 1.6; 
             white-space: pre-wrap; 
             position: relative; 
-            overflow-y: hidden; 
+            overflow-y: auto; /* 오버플로우를 스크롤로 변경 */
             width: 100%; 
-            height: 70vh; 
+            height: calc(70vh - 80px); /* 컨트롤과 진행 바 높이를 고려한 동적 높이 */
             margin: 0 auto; 
             padding: 15px; 
             box-sizing: border-box; 
@@ -32,7 +32,7 @@
             margin: 10px 0; 
             display: flex; 
             flex-wrap: wrap; 
-            gap: 10px; 
+            gap: 5px; /* 간격 줄임 */
             justify-content: center; 
         }
         #message { 
@@ -76,7 +76,7 @@
             animation: spin 1s linear infinite; 
         }
         button { 
-            padding: 12px 20px; 
+            padding: 10px 15px; /* 패딩 줄임 */
             font-size: 16px; 
             border: none; 
             border-radius: 5px; 
@@ -84,6 +84,7 @@
             color: white; 
             cursor: pointer; 
             transition: background-color 0.3s; 
+            max-width: 120px; /* 최대 너비 설정 */
         }
         button:hover { 
             background-color: #2980b9; 
@@ -144,17 +145,17 @@
             body { padding: 5px; }
             #textContent { 
                 font-size: 16px; 
-                height: 60vh; 
+                height: calc(60vh - 60px); /* 모바일에서 동적 높이 조정 */
                 padding: 10px; 
             }
             #controls { 
                 flex-direction: column; 
-                gap: 8px; 
+                gap: 5px; 
             }
             button { 
-                width: 100%; 
-                padding: 15px; 
-                font-size: 18px; 
+                padding: 10px 15px; /* 모바일에서도 동일하게 조정 */
+                font-size: 16px; 
+                max-width: 100%; /* 모바일에서 너비 제한 없애기 */
             }
             #advancedControls { 
                 display: flex; 
@@ -187,7 +188,6 @@
     <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
 </head>
 <body>
-    <!-- 파일 선택 UI 개선: 드롭존 스타일 + accept 속성 명확화 -->
     <input type="file" id="fileUpload" accept=".txt,.epub" aria-label="파일 업로드" multiple>
     <div id="controls" role="toolbar">
         <button id="startButton" title="훈련을 시작합니다">
@@ -341,7 +341,6 @@
             `], { type: 'application/javascript' })));
         }
 
-        // 파일 선택 이벤트 개선: 접근 권한 문제 처리
         fileInput.addEventListener('change', function(event) {
             const file = event.target.files[0];
             if (!file) {
@@ -664,7 +663,7 @@
             textContent.style.marginBottom = `${marginBottom.value}vh`;
             textContent.style.marginLeft = `${marginLeft.value}vw`;
             textContent.style.width = `calc(100% - ${marginLeft.value}vw - ${marginRight.value}vw)`;
-            textContent.style.height = `calc(70vh - ${marginTop.value}vh - ${marginBottom.value}vh)`;
+            textContent.style.height = `calc(70vh - ${marginTop.value}vh - ${marginBottom.value}vh - 80px)`; /* 동적 여백 적용 */
         }
 
         function toggleButtons(disable) {
