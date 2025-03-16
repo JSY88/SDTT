@@ -5,81 +5,81 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>사라지는 텍스트 훈련</title>
     <style>
-        body { 
-            font-family: Arial, sans-serif; 
-            margin: 0; 
-            padding: 5px; 
-            transition: opacity 0.3s, background-color 0.3s; 
-            background-color: #f5f5f5; 
-            overscroll-behavior: none; 
-            position: relative; 
-            touch-action: pan-y; 
-            overflow-x: hidden; 
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 5px;
+            transition: opacity 0.3s, background-color 0.3s;
+            background-color: #f5f5f5;
+            overscroll-behavior: none;
+            position: relative;
+            touch-action: pan-y;
+            overflow-x: hidden;
         }
-        #textContent { 
-            font-size: 18px; 
-            line-height: 1.6; 
-            white-space: pre-wrap; 
-            position: relative; 
-            overflow-y: hidden; 
-            overflow-x: hidden; 
-            width: 100%; 
-            height: calc(70vh - 80px); 
-            margin: 0 auto; 
-            padding: 10px; 
-            box-sizing: border-box; 
-            background-color: #fff; 
-            border: 1px solid #ddd; 
-            border-radius: 8px; 
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); 
-            z-index: 1; 
-            transition: transform 0.3s ease, background-color 0.3s, color 0.3s; 
-            color: #333; 
-            user-select: none; 
+        #textContent {
+            font-size: 18px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            position: relative;
+            overflow-y: hidden;
+            overflow-x: hidden;
+            width: 100%;
+            height: calc(70vh - 80px);
+            margin: 0 auto;
+            padding: 10px;
+            box-sizing: border-box;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            z-index: 1;
+            transition: transform 0.3s ease, background-color 0.3s, color 0.3s;
+            color: #333;
+            user-select: none;
         }
         #textContent.eink-mode {
             background-color: #000 !important;
             color: #000 !important;
         }
-        #controls { 
-            margin: 10px 0; 
-            display: flex; 
-            flex-wrap: wrap; 
-            gap: 5px; 
-            justify-content: center; 
+        #controls {
+            margin: 10px 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            justify-content: center;
         }
-        #message { 
-            color: red; 
-            position: fixed; 
-            bottom: 20px; 
-            left: 50%; 
-            transform: translateX(-50%); 
-            background: rgba(255, 255, 255, 0.9); 
-            padding: 5px 10px; 
-            border-radius: 5px; 
-            z-index: 10; 
-            display: none; 
+        #message {
+            color: red;
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.9);
+            padding: 5px 10px;
+            border-radius: 5px;
+            z-index: 10;
+            display: none;
         }
-        #pageInfo { 
-            position: fixed; 
-            bottom: 10px; 
-            right: 10px; 
-            font-size: 14px; 
-            background: rgba(255, 255, 255, 0.9); 
-            padding: 3px 8px; 
-            border-radius: 5px; 
-            z-index: 10; 
+        #pageInfo {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            font-size: 14px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 3px 8px;
+            border-radius: 5px;
+            z-index: 10;
         }
         #progressContainer {
             position: relative;
             width: 100%;
             margin: 5px 0;
         }
-        #progress { 
-            width: 100%; 
-            height: 4px; 
-            opacity: 0.7; 
-            transition: background-color 0.3s; 
+        #progress {
+            width: 100%;
+            height: 4px;
+            opacity: 0.7;
+            transition: background-color 0.3s;
         }
         #progressPercent {
             position: absolute;
@@ -89,185 +89,186 @@
             font-size: 12px;
             color: #333;
         }
-        #loadingSpinner { 
-            display: none; 
-            position: fixed; 
-            top: 50%; 
-            left: 50%; 
-            transform: translate(-50%, -50%); 
-            width: 20px; 
-            height: 20px; 
-            border: 3px solid #f3f3f3; 
-            border-top: 3px solid #3498db; 
-            border-radius: 50%; 
-            animation: spin 1s linear infinite; 
-            z-index: 5; 
+        #loadingSpinner {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            z-index: 5;
         }
-        button { 
-            padding: 8px 12px; 
-            font-size: 14px; 
-            border: none; 
-            border-radius: 5px; 
-            background-color: #3498db; 
-            color: white; 
-            cursor: pointer; 
-            transition: background-color 0.3s, transform 0.1s; 
-            max-width: 100px; 
+        button {
+            padding: 8px 12px;
+            font-size: 14px;
+            border: none;
+            border-radius: 5px;
+            background-color: #3498db;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.1s;
+            max-width: 100px;
         }
-        button:hover { 
-            background-color: #2980b9; 
-            transform: scale(1.05); 
+        button:hover {
+            background-color: #2980b9;
+            transform: scale(1.05);
         }
-        button:focus { 
-            outline: 2px solid #2980b9; 
-            outline-offset: 2px; 
+        button:focus {
+            outline: 2px solid #2980b9;
+            outline-offset: 2px;
         }
-        button:disabled { 
-            opacity: 0.5; 
-            cursor: not-allowed; 
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
-        details { 
-            margin: 10px 0; 
-            width: 100%; 
+        details {
+            margin: 10px 0;
+            width: 100%;
+            z-index: 30;
         }
-        summary { 
-            padding: 10px; 
-            background-color: #ecf0f1; 
-            border-radius: 5px; 
-            cursor: pointer; 
+        summary {
+            padding: 10px;
+            background-color: #ecf0f1;
+            border-radius: 5px;
+            cursor: pointer;
         }
-        .char-span { 
-            transition: opacity 0.3s, color 0.3s, background-color 0.1s; 
-            color: inherit; 
+        .char-span {
+            transition: opacity 0.3s, color 0.3s, background-color 0.1s;
+            color: inherit;
         }
-        .char-span.current { 
-            background-color: rgba(255, 255, 0, 0.3); 
+        .char-span.current {
+            background-color: rgba(255, 255, 0, 0.3);
         }
         .char-span.eink-black {
             background-color: #000 !important;
             color: #000 !important;
         }
-        .line { 
-            display: block; 
-            transition: opacity 0.2s; 
+        .line {
+            display: block;
+            transition: opacity 0.2s;
         }
-        .line.hidden { 
-            opacity: 0; 
+        .line.hidden {
+            opacity: 0;
         }
-        .fullscreen #controls, .fullscreen #progressContainer, .fullscreen #message, .fullscreen details, .fullscreen #fileUpload { 
-            display: none; 
+        .fullscreen #controls, .fullscreen #progressContainer, .fullscreen #message, .fullscreen details, .fullscreen #fileUpload {
+            display: none;
         }
-        .fullscreen #textContent { 
-            width: 100vw; 
-            height: calc(100vh - var(--margin-bottom, 0vh)); 
-            margin: 0; 
-            padding: 20px; 
+        .fullscreen #textContent {
+            width: 100vw;
+            height: 100vh; /* Modified to cover full viewport height */
+            margin: 0;
+            padding: 20px;
         }
-        #fileUpload { 
-            display: block; 
-            width: 100%; 
-            padding: 15px; 
-            margin: 10px 0; 
-            border: 2px dashed #3498db; 
-            border-radius: 5px; 
-            text-align: center; 
-            font-size: 16px; 
-            background-color: #f9f9f9; 
-            cursor: pointer; 
-            transition: background-color 0.3s; 
+        #fileUpload {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            border: 2px dashed #3498db;
+            border-radius: 5px;
+            text-align: center;
+            font-size: 16px;
+            background-color: #f9f9f9;
+            cursor: pointer;
+            transition: background-color 0.3s;
         }
-        #fileUpload:hover, #fileUpload.dragover { 
-            background-color: #e6f0fa; 
+        #fileUpload:hover, #fileUpload.dragover {
+            background-color: #e6f0fa;
         }
-        #tocOverlay, #libraryOverlay { 
-            display: none; 
-            position: fixed; 
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            height: 100%; 
-            background: rgba(0, 0, 0, 0.8); 
-            z-index: 20; 
-            color: white; 
-            padding: 20px; 
-            overflow-y: auto; 
+        #tocOverlay, #libraryOverlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 20;
+            color: white;
+            padding: 20px;
+            overflow-y: auto;
         }
-        #tocOverlay ul, #libraryOverlay ul { 
-            list-style: none; 
-            padding: 0; 
+        #tocOverlay ul, #libraryOverlay ul {
+            list-style: none;
+            padding: 0;
         }
-        #tocOverlay li, #libraryOverlay li { 
-            padding: 10px; 
-            cursor: pointer; 
+        #tocOverlay li, #libraryOverlay li {
+            padding: 10px;
+            cursor: pointer;
         }
-        #tocOverlay li:hover, #libraryOverlay li:hover { 
-            background: rgba(255, 255, 255, 0.1); 
+        #tocOverlay li:hover, #libraryOverlay li:hover {
+            background: rgba(255, 255, 255, 0.1);
         }
-        #libraryOverlay .library-item { 
-            display: flex; 
-            align-items: center; 
-            gap: 10px; 
-            margin-bottom: 10px; 
+        #libraryOverlay .library-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
         }
-        #libraryOverlay .library-item img { 
-            width: 50px; 
-            height: 70px; 
-            object-fit: cover; 
+        #libraryOverlay .library-item img {
+            width: 50px;
+            height: 70px;
+            object-fit: cover;
         }
-        #libraryOverlay .library-item .no-cover { 
-            width: 50px; 
-            height: 70px; 
-            background: #333; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            text-align: center; 
-            font-size: 12px; 
-            color: #fff; 
+        #libraryOverlay .library-item .no-cover {
+            width: 50px;
+            height: 70px;
+            background: #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-size: 12px;
+            color: #fff;
         }
-        @keyframes spin { 
-            0% { transform: translate(-50%, -50%) rotate(0deg); } 
-            100% { transform: translate(-50%, -50%) rotate(360deg); } 
+        @keyframes spin {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
         }
         @media (max-width: 600px) {
             body { padding: 5px; }
-            #textContent { 
-                font-size: 16px; 
-                height: calc(60vh - 60px); 
-                padding: 8px; 
+            #textContent {
+                font-size: 16px;
+                height: calc(60vh - 60px);
+                padding: 8px;
             }
-            #controls { 
-                flex-direction: column; 
-                gap: 3px; 
+            #controls {
+                flex-direction: column;
+                gap: 3px;
             }
-            button { 
-                padding: 8px 12px; 
-                font-size: 14px; 
-                max-width: 100%; 
+            button {
+                padding: 8px 12px;
+                font-size: 14px;
+                max-width: 100%;
             }
-            #advancedControls { 
-                display: flex; 
-                flex-direction: column; 
-                gap: 8px; 
-                padding: 8px; 
+            #advancedControls {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                padding: 8px;
             }
-            input, select { 
-                width: 100%; 
-                padding: 8px; 
-                font-size: 14px; 
-                box-sizing: border-box; 
+            input, select {
+                width: 100%;
+                padding: 8px;
+                font-size: 14px;
+                box-sizing: border-box;
             }
-            #progress { 
-                height: 3px; 
+            #progress {
+                height: 3px;
             }
-            #pageInfo { 
-                font-size: 12px; 
-                bottom: 5px; 
-                right: 5px; 
+            #pageInfo {
+                font-size: 12px;
+                bottom: 5px;
+                right: 5px;
             }
-            #message { 
-                bottom: 60px; 
-                font-size: 14px; 
+            #message {
+                bottom: 60px;
+                font-size: 14px;
             }
         }
         .black-mode body { background-color: #1a1a1a; }
@@ -275,6 +276,18 @@
         .black-mode summary { background-color: #3a3a3a; }
         .black-mode #fileUpload { background-color: #333; border-color: #555; }
         .black-mode #fileUpload:hover { background-color: #444; }
+
+        /* New Toggle Button Style and Position */
+        #toggleButton {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            z-index: 15; /* Ensure it's above other elements if needed */
+        }
+        .fullscreen #toggleButton {
+            bottom: 10px;
+            left: 10px;
+        }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://unpkg.com/epubjs/dist/epub.min.js"></script>
@@ -284,8 +297,7 @@
 <body>
     <input type="file" id="fileUpload" accept=".txt,.epub" aria-label="파일 업로드" multiple>
     <div id="controls" role="toolbar">
-        <button id="startButton" aria-label="훈련 시작"><span class="icon">▶</span> 시작</button>
-        <button id="stopButton" aria-label="훈련 중지"><span class="icon">■</span> 정지</button>
+        <button id="toggleButton" aria-label="훈련 시작/중지">시작</button> <!-- Toggle Button -->
         <button id="prevPage" aria-label="이전 페이지"><span class="icon">◀</span> 이전</button>
         <button id="nextPage" aria-label="다음 페이지"><span class="icon">▶</span> 다음</button>
         <button id="tocButton" aria-label="목차">목차</button>
@@ -347,6 +359,7 @@
             <label for="marginLeft">왼쪽 여백 (%):</label>
             <input type="number" id="marginLeft" min="0" max="50" value="0" step="1">
             <button id="resetSettings" aria-label="설정 초기화">설정 초기화</button>
+            <button id="clearCacheButton" aria-label="캐시 비우기">캐시 비우기</button>
         </div>
     </details>
     <div id="progressContainer">
@@ -397,8 +410,7 @@
         const marginRight = document.getElementById('marginRight');
         const marginBottom = document.getElementById('marginBottom');
         const marginLeft = document.getElementById('marginLeft');
-        const startButton = document.getElementById('startButton');
-        const stopButton = document.getElementById('stopButton');
+        const toggleButton = document.getElementById('toggleButton'); // Changed from startButton and stopButton
         const prevPage = document.getElementById('prevPage');
         const nextPage = document.getElementById('nextPage');
         const tocButton = document.getElementById('tocButton');
@@ -414,11 +426,156 @@
         const tocContent = document.getElementById('tocContent');
         const libraryOverlay = document.getElementById('libraryOverlay');
         const libraryContent = document.getElementById('libraryContent');
+        const clearCacheButton = document.getElementById('clearCacheButton');
+
         let interval, pages = [], currentPage = 0, book, toc = [];
         let worker, lastFileName = '';
         let renderedPages = [];
         let isFullscreen = false;
         let libraryFiles = JSON.parse(localStorage.getItem('libraryFiles')) || [];
+        let isTrainingActive = false; // Track training state
+        let messageTimer;
+
+        // IndexedDB setup
+        const DB_NAME = 'vanishingTextDB';
+        const DB_VERSION = 1;
+        const CACHE_STORE_NAME = 'fileCacheStore';
+        let db;
+
+        // Initialize IndexedDB
+        const dbPromise = new Promise((resolve, reject) => {
+            const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+            request.onerror = (event) => {
+                console.error('IndexedDB 초기화 오류:', event);
+                reject(event);
+            };
+
+            request.onsuccess = (event) => {
+                db = event.target.result;
+                resolve();
+            };
+
+            request.onupgradeneeded = (event) => {
+                const db = event.target.result;
+                if (!db.objectStoreNames.contains(CACHE_STORE_NAME)) {
+                    db.createObjectStore(CACHE_STORE_NAME);
+                }
+            };
+        });
+
+        // Function to get data from IndexedDB
+        async function getCachedData(fileName) {
+            await dbPromise;
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction([CACHE_STORE_NAME], 'readonly');
+                const store = transaction.objectStore(CACHE_STORE_NAME);
+                const request = store.get(fileName);
+
+                request.onsuccess = (event) => {
+                    resolve(event.target.result);
+                };
+
+                request.onerror = (event) => {
+                    console.error('IndexedDB get 오류:', event);
+                    reject(event);
+                };
+            });
+        }
+
+        // Function to store data in IndexedDB
+        async function setCachedData(fileName, data) {
+            await dbPromise;
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction([CACHE_STORE_NAME], 'readwrite');
+                const store = transaction.objectStore(CACHE_STORE_NAME);
+                const request = store.put(data, fileName);
+
+                request.onsuccess = (event) => {
+                    resolve();
+                };
+
+                request.onerror = (event) => {
+                    console.error('IndexedDB set 오류:', event);
+                    reject(event);
+                };
+            });
+        }
+
+        // Function to delete data from IndexedDB
+        async function deleteCachedData(fileName) {
+            await dbPromise;
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction([CACHE_STORE_NAME], 'readwrite');
+                const store = transaction.objectStore(CACHE_STORE_NAME);
+                const request = store.delete(fileName);
+
+                request.onsuccess = (event) => {
+                    resolve();
+                };
+
+                request.onerror = (event) => {
+                    console.error('IndexedDB delete 오류:', event);
+                    reject(event);
+                };
+            });
+        }
+
+        // Function to clear IndexedDB cache
+        async function clearIndexedDBCache() {
+            await dbPromise;
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction([CACHE_STORE_NAME], 'readwrite');
+                const store = transaction.objectStore(CACHE_STORE_NAME);
+                const request = store.clear();
+
+                request.onsuccess = (event) => {
+                    resolve();
+                };
+
+                request.onerror = (event) => {
+                    console.error('IndexedDB clear 오류:', event);
+                    reject(event);
+                };
+            });
+        }
+
+
+        // Function to prune IndexedDB cache (remove oldest entries)
+        async function pruneFileCache() {
+            await dbPromise;
+            const MAX_CACHE_ENTRIES = 5; // Adjust as needed
+            const cachedFiles = [];
+
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction([CACHE_STORE_NAME], 'readonly');
+                const store = transaction.objectStore(CACHE_STORE_NAME);
+                const request = store.openCursor();
+
+                request.onsuccess = async function(event) {
+                    const cursor = event.target.result;
+                    if (cursor) {
+                        const fileName = cursor.key;
+                        const cacheEntry = cursor.value;
+                        cachedFiles.push({ name: fileName, timestamp: cacheEntry.timestamp || Date.now() }); // Assuming timestamp is stored in cache entry
+                        cursor.continue();
+                    } else {
+                        cachedFiles.sort((a, b) => a.timestamp - b.timestamp); // Oldest first
+                        while (cachedFiles.length > MAX_CACHE_ENTRIES) {
+                            const fileToRemove = cachedFiles.shift();
+                            await deleteCachedData(fileToRemove.name);
+                        }
+                        resolve();
+                    }
+                };
+
+                request.onerror = (event) => {
+                    console.error('IndexedDB cursor error:', event);
+                    reject(event);
+                };
+            });
+        }
+
 
         speedControl.value = localStorage.getItem('speed') || 100;
         speedInput.value = speedControl.value;
@@ -466,6 +623,7 @@
             worker = new Worker(URL.createObjectURL(new Blob([workerCode], { type: 'application/javascript' })));
         }
 
+
         function addToLibrary(fileName, fileData, coverUrl) {
             const existingIndex = libraryFiles.findIndex(item => item.name === fileName);
             if (existingIndex !== -1) {
@@ -474,6 +632,7 @@
             libraryFiles.unshift({ name: fileName, data: fileData, cover: coverUrl, timestamp: Date.now() });
             libraryFiles = libraryFiles.slice(0, 10); // 최대 10개 유지
             localStorage.setItem('libraryFiles', JSON.stringify(libraryFiles));
+            pruneFileCache(); // Check and prune cache after adding new file
         }
 
         fileInput.addEventListener('change', function(event) {
@@ -495,51 +654,76 @@
             handleFileUpload(e.dataTransfer.files[0]);
         });
 
-        function handleFileUpload(file) {
+        function showMessage(text, duration = 3000) {
+            message.innerText = text;
+            message.style.display = 'block';
+            clearTimeout(messageTimer);
+            messageTimer = setTimeout(() => {
+                message.style.display = 'none';
+            }, duration);
+        }
+
+
+        async function handleFileUpload(file) {
+            await pruneFileCache(); // Prune cache at the start of file loading
             if (!file) {
-                message.innerText = '파일을 선택해주세요.';
-                message.style.display = 'block';
+                showMessage('파일을 선택해주세요.');
                 loadingSpinner.style.display = 'none';
                 return;
             }
 
             lastFileName = file.name;
             textContent.style.opacity = 1;
-            message.innerText = '파일 로딩 중...';
-            message.style.display = 'block';
+            showMessage('파일 로딩 중...');
             progress.value = 0;
             toggleButtons(true);
             loadingSpinner.style.display = 'block';
 
             const reader = new FileReader();
-            reader.onload = function(event) {
+            reader.onload = async function(event) {
                 const fileData = event.target.result;
+                let cachedData = await getCachedData(lastFileName);
+
+                if (cachedData) {
+                    pages = cachedData.pages;
+                    toc = cachedData.toc || [];
+                    loadLastPage();
+                    preloadPages();
+                    displayPage();
+                    showMessage('');
+                    progress.value = 0;
+                    toggleButtons(false);
+                    loadingSpinner.style.display = 'none';
+                    return; // Use cached data and exit
+                }
+
                 if (file.name.endsWith('.txt')) {
                     if (worker) {
-                        worker.onmessage = function(e) {
+                        worker.onmessage = async function(e) {
                             pages = e.data.pages;
+                            await setCachedData(lastFileName, { pages: pages, timestamp: Date.now() }); // Cache pages with timestamp
                             loadLastPage();
                             preloadPages();
                             displayPage();
-                            message.style.display = 'none';
+                            showMessage('');
                             progress.value = 0;
                             toggleButtons(false);
                             loadingSpinner.style.display = 'none';
                             addToLibrary(file.name, fileData, null);
                         };
                         worker.onerror = function(e) {
-                            message.innerText = '웹 워커 오류: ' + e.message;
-                            message.style.display = 'block';
+                            showMessage('웹 워커 오류: ' + e.message);
                             toggleButtons(false);
                             loadingSpinner.style.display = 'none';
                         };
                         worker.postMessage({ text: fileData, maxHeight: textContent.getBoundingClientRect().height });
                     } else {
                         pages = splitTextToFit(fileData, textContent.getBoundingClientRect().height);
+                        await setCachedData(lastFileName, { pages: pages, timestamp: Date.now() }); // Cache pages with timestamp
                         loadLastPage();
                         preloadPages();
                         displayPage();
-                        message.style.display = 'none';
+                        showMessage('');
                         progress.value = 0;
                         toggleButtons(false);
                         loadingSpinner.style.display = 'none';
@@ -547,42 +731,41 @@
                     }
                 } else if (file.name.endsWith('.epub')) {
                     if (!window.ePub || !window.JSZip) {
-                        message.innerText = 'epub.js 또는 JSZip 로딩 실패.';
-                        message.style.display = 'block';
+                        showMessage('epub.js 또는 JSZip 로딩 실패.');
                         toggleButtons(false);
                         loadingSpinner.style.display = 'none';
                         return;
                     }
                     book = window.ePub(fileData);
-                    book.ready.then(() => {
-                        message.innerText = 'EPUB 파싱 중...';
-                        book.coverUrl().then(coverUrl => {
-                            loadEpubPages().then(pagesData => {
-                                pages = pagesData;
-                                book.loaded.navigation.then(nav => {
-                                    toc = nav.toc;
-                                }).catch(err => console.error('TOC 로드 실패:', err));
-                                loadLastPage();
-                                preloadPages();
-                                displayPage();
-                                message.style.display = 'none';
-                                progress.value = 0;
-                                toggleButtons(false);
-                                loadingSpinner.style.display = 'none';
-                                addToLibrary(file.name, fileData, coverUrl);
-                            });
-                        });
-                    }).catch(err => {
-                        message.innerText = 'EPUB 로드 오류: ' + err.message;
-                        message.style.display = 'block';
+                    try {
+                        await book.ready; // Wait for book to be ready
+                        showMessage('EPUB 파싱 중...');
+                        const coverUrl = await book.coverUrl();
+                        const pagesData = await loadEpubPages();
+                        pages = pagesData;
+                        const nav = await book.loaded.navigation;
+                        toc = nav.toc;
+
+                        await setCachedData(lastFileName, { pages: pages, toc: toc, timestamp: Date.now() }); // Cache pages and toc with timestamp
+
+                        loadLastPage();
+                        preloadPages();
+                        displayPage();
+                        showMessage('');
+                        progress.value = 0;
                         toggleButtons(false);
                         loadingSpinner.style.display = 'none';
-                    });
+                        addToLibrary(file.name, fileData, coverUrl);
+
+                    } catch (err) {
+                        showMessage('EPUB 로드 오류: ' + err.message);
+                        toggleButtons(false);
+                        loadingSpinner.style.display = 'none';
+                    }
                 }
             };
             reader.onerror = function() {
-                message.innerText = '파일 읽기 오류.';
-                message.style.display = 'block';
+                showMessage('파일 읽기 오류.');
                 toggleButtons(false);
                 loadingSpinner.style.display = 'none';
             };
@@ -598,6 +781,13 @@
             let fullText = '';
             let loadedCount = 0;
             const sections = book.spine.items;
+            // 기존 rendition destroy 코드를 여기에 둡니다.
+            book.rendition = book.renderTo('textContent', {
+                ignoreContainerRead: true, // 이미지 로드 비활성화 옵션 추가
+                flow: 'paginated',
+                width: '100%',
+                height: '100%'
+            });
             for (let i = 0; i < sections.length; i++) {
                 const section = book.spine.get(i);
                 const content = await section.load(book.load.bind(book));
@@ -610,6 +800,7 @@
             }
             return splitTextToFit(fullText, textContent.getBoundingClientRect().height);
         }
+
 
         function splitTextToFit(text, containerHeight) {
             const lines = text.split('\n').filter(line => line.trim().length > 0);
@@ -683,28 +874,61 @@
             localStorage.setItem(`lastPage_${lastFileName}`, currentPage);
         }
 
-        startButton.addEventListener('click', () => {
-            if (fullscreenMode.checked) {
-                const requestFullscreen = document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen;
-                if (!document.fullscreenElement && requestFullscreen) {
-                    requestFullscreen.call(document.documentElement).then(() => {
-                        document.body.style.opacity = 0;
-                        setTimeout(() => {
-                            document.body.classList.add('fullscreen');
-                            document.body.style.opacity = 1;
-                            if (noSleep) noSleep.enable();
-                            isFullscreen = true;
-                        }, 300);
-                    });
+        toggleButton.addEventListener('click', () => { // Toggle Button Listener
+            if (!isTrainingActive) {
+                if (fullscreenMode.checked) {
+                    const requestFullscreen = document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen;
+                    if (!document.fullscreenElement && requestFullscreen) {
+                        requestFullscreen.call(document.documentElement).then(() => {
+                            document.body.style.opacity = 0;
+                            setTimeout(() => {
+                                document.body.classList.add('fullscreen');
+                                document.body.style.opacity = 1;
+                                if (noSleep) noSleep.enable();
+                                isFullscreen = true;
+                            }, 300);
+                        });
+                    }
                 }
+                startEffect();
+                toggleButton.innerText = '정지'; // Change button text to "Stop"
+                isTrainingActive = true;
+            } else {
+                stopEffect();
+                exitFullscreen();
+                toggleButton.innerText = '시작'; // Change button text back to "Start"
+                isTrainingActive = false;
             }
-            startEffect();
         });
 
-        stopButton.addEventListener('click', () => {
-            stopEffect();
-            exitFullscreen();
-        });
+
+        function stopEffect() {
+            if (interval) clearInterval(interval);
+            textContent.style.opacity = 1;
+            textContent.style.backgroundColor = blackMode.checked ? blackModeColor.value : '#fff';
+            textContent.style.color = blackMode.checked ? '#fff' : '#333';
+            textContent.classList.remove('eink-mode');
+            if (effectSelect.value === 'char' || effectSelect.value === 'eink') {
+                textContent.querySelectorAll('.char-span').forEach(span => {
+                    span.style.opacity = 1;
+                    span.style.color = blackMode.checked ? '#fff' : '#333';
+                    span.style.backgroundColor = '';
+                    span.classList.remove('current', 'eink-black');
+                });
+                textContent.querySelectorAll('.line').forEach(line => {
+                    line.classList.remove('hidden');
+                    line.style.display = 'block';
+                });
+                progress.value = 0;
+                updateProgressPercent(0);
+                progress.style.backgroundColor = '';
+            }
+            if (isTrainingActive) { // Ensure state is updated when stopped programmatically
+                toggleButton.innerText = '시작';
+                isTrainingActive = false;
+            }
+        }
+
 
         function exitFullscreen() {
             const exitFullscreen = document.exitFullscreen || document.webkitExitFullscreen;
@@ -731,31 +955,60 @@
             libraryOverlay.style.display = 'block';
 
             libraryContent.querySelectorAll('li').forEach(li => {
-                li.addEventListener('click', (e) => {
+                li.addEventListener('click', async (e) => { // Make listener async
                     e.stopPropagation();
                     const index = parseInt(li.dataset.index);
                     const file = libraryFiles[index];
                     lastFileName = file.name;
+                    libraryOverlay.style.display = 'none';
+                    showMessage('라이브러리에서 불러오는 중...');
+                    toggleButtons(true);
+                    loadingSpinner.style.display = 'block';
+
+                    await pruneFileCache(); // Prune cache before loading from library
+
+                    let cachedData = await getCachedData(lastFileName);
+                    if (cachedData) {
+                        pages = cachedData.pages;
+                        toc = cachedData.toc || [];
+                        loadLastPage();
+                        preloadPages();
+                        displayPage();
+                        showMessage('');
+                        toggleButtons(false);
+                        loadingSpinner.style.display = 'none';
+                        return; // Use cached data and exit
+                    }
+
+
                     if (file.name.endsWith('.txt')) {
                         pages = splitTextToFit(file.data, textContent.getBoundingClientRect().height);
+                        await setCachedData(lastFileName, { pages: pages, timestamp: Date.now() }); // Cache pages with timestamp
                         loadLastPage();
                         preloadPages();
                         displayPage();
                     } else if (file.name.endsWith('.epub')) {
                         book = window.ePub(file.data);
-                        book.ready.then(() => {
-                            loadEpubPages().then(pagesData => {
-                                pages = pagesData;
-                                book.loaded.navigation.then(nav => {
-                                    toc = nav.toc;
-                                });
-                                loadLastPage();
-                                preloadPages();
-                                displayPage();
-                            });
-                        });
+                        try {
+                            await book.ready;
+                            const pagesData = await loadEpubPages();
+                            pages = pagesData;
+                            const nav = await book.loaded.navigation;
+                            toc = nav.toc;
+                            await setCachedData(lastFileName, { pages: pages, toc: toc, timestamp: Date.now() }); // Cache pages and toc with timestamp
+                            loadLastPage();
+                            preloadPages();
+                            displayPage();
+                        } catch (err) {
+                            showMessage('EPUB 로드 오류: ' + err.message);
+                            toggleButtons(false);
+                            loadingSpinner.style.display = 'none';
+                            return;
+                        }
                     }
-                    libraryOverlay.style.display = 'none';
+                    showMessage('');
+                    toggleButtons(false);
+                    loadingSpinner.style.display = 'none';
                 });
             });
 
@@ -763,6 +1016,7 @@
                 libraryOverlay.style.display = 'none';
             });
         });
+
 
         speedControl.addEventListener('input', () => {
             speedInput.value = speedControl.value;
@@ -884,6 +1138,7 @@
             displayPage();
             localStorage.setItem('marginBottom', marginBottom.value);
         });
+
         marginLeft.addEventListener('input', () => {
             updateTextContentMargins();
             pages = splitTextToFit(pages.join('\n\n'), textContent.getBoundingClientRect().height);
@@ -929,8 +1184,7 @@
                 displayPage(1);
             } else if (e.key === ' ' || e.key === 'Spacebar') {
                 e.preventDefault();
-                if (interval) stopEffect();
-                else startEffect();
+                toggleButton.click(); // Simulate click on toggle button
             } else if (e.key === 'Enter') {
                 if (currentPage < pages.length - 1) {
                     currentPage++;
@@ -984,9 +1238,7 @@
                     speedPreset.value = newSpeed;
                     adjustSpeed();
                     localStorage.setItem('speed', newSpeed);
-                    message.innerText = `속도: ${newSpeed}ms`;
-                    message.style.display = 'block';
-                    setTimeout(() => message.style.display = 'none', 1000);
+                    showMessage(`속도: ${newSpeed}ms`, 1000);
                 } else if (touchEndX < window.innerWidth * 0.25) { // 좌측 하단
                     let newSpeed = Math.min(2000, parseInt(speedControl.value) + 5);
                     speedControl.value = newSpeed;
@@ -994,9 +1246,7 @@
                     speedPreset.value = newSpeed;
                     adjustSpeed();
                     localStorage.setItem('speed', newSpeed);
-                    message.innerText = `속도: ${newSpeed}ms`;
-                    message.style.display = 'block';
-                    setTimeout(() => message.style.display = 'none', 1000);
+                    showMessage(`속도: ${newSpeed}ms`, 1000);
                 }
             } else if (deltaX > 50 && currentPage > 0) {
                 currentPage--;
@@ -1021,9 +1271,7 @@
 
         function showToc() {
             if (!book || toc.length === 0) {
-                message.innerText = '목차가 없습니다.';
-                message.style.display = 'block';
-                setTimeout(() => message.style.display = 'none', 2000);
+                showMessage('목차가 없습니다.', 2000);
                 return;
             }
             tocContent.innerHTML = '<ul>' + toc.map((item, index) => {
@@ -1048,8 +1296,9 @@
             });
         }
 
-        resetSettings.addEventListener('click', () => {
+        resetSettings.addEventListener('click', async () => {
             localStorage.clear();
+            await clearIndexedDBCache();
             speedControl.value = 100;
             speedInput.value = 100;
             speedPreset.value = 100;
@@ -1072,15 +1321,22 @@
             marginLeft.value = 0;
             libraryFiles = [];
             localStorage.setItem('libraryFiles', JSON.stringify(libraryFiles));
-            updateTextContentStyles();
-            toggleBlackMode();
-            pages = splitTextToFit(pages.join('\n\n'), textContent.getBoundingClientRect().height);
-            preloadPages();
-            displayPage();
-            message.innerText = '설정이 초기화되었습니다.';
-            message.style.display = 'block';
-            setTimeout(() => message.style.display = 'none', 2000);
+            showMessage('설정이 초기화되었습니다.', 2000);
+            toggleButton.innerText = '시작'; // Reset toggle button text
+            isTrainingActive = false; // Reset training state
+            pages = []; // Clear pages
+            renderedPages = []; // Clear renderedPages
+            textContent.innerHTML = ''; // Clear text content
+            pageInfo.innerText = ''; // Clear page info
+            progress.value = 0; // Reset progress bar
+            updateProgressPercent(0); // Reset progress percent
         });
+
+        clearCacheButton.addEventListener('click', async () => {
+            await clearIndexedDBCache();
+            showMessage('캐시가 비워졌습니다.', 2000);
+        });
+
 
         function updateTextContentStyles() {
             textContent.style.fontSize = `${fontSize.value}px`;
@@ -1113,8 +1369,7 @@
         }
 
         function toggleButtons(disable) {
-            startButton.disabled = disable;
-            stopButton.disabled = disable;
+            toggleButton.disabled = disable;
             prevPage.disabled = disable;
             nextPage.disabled = disable;
             tocButton.disabled = disable;
@@ -1123,8 +1378,7 @@
 
         function startEffect() {
             if (!textContent.innerText) {
-                message.innerText = '먼저 파일을 업로드하세요.';
-                message.style.display = 'block';
+                showMessage('먼저 파일을 업로드하세요.', 2000);
                 return;
             }
             stopEffect();
@@ -1144,6 +1398,7 @@
                         updateProgressPercent(progress.value);
                     } else {
                         clearInterval(interval);
+                        if (currentPage < pages.length - 1) nextPage.click(); // Auto next page for fade effect
                     }
                 }, intervalTime);
             } else if (effect === 'char') {
@@ -1168,6 +1423,7 @@
                             setTimeout(() => line.style.display = 'none', 200);
                         });
                         clearInterval(interval);
+                        if (currentPage < pages.length - 1) nextPage.click(); // Auto next page for char effect
                     }
                 }, intervalTime / 2);
             } else if (effect === 'eink') {
@@ -1194,7 +1450,7 @@
                                 textContent.classList.remove('eink-mode');
                                 textContent.style.backgroundColor = baseBgColor;
                                 textContent.style.color = baseTextColor;
-                                if (currentPage < pages.length - 1) nextPage.click();
+                                if (currentPage < pages.length - 1) nextPage.click(); // Auto next page for eink effect
                             }, 200);
                         }
                     } else {
@@ -1205,28 +1461,6 @@
             }
         }
 
-        function stopEffect() {
-            if (interval) clearInterval(interval);
-            textContent.style.opacity = 1;
-            textContent.style.backgroundColor = blackMode.checked ? blackModeColor.value : '#fff';
-            textContent.style.color = blackMode.checked ? '#fff' : '#333';
-            textContent.classList.remove('eink-mode');
-            if (effectSelect.value === 'char' || effectSelect.value === 'eink') {
-                textContent.querySelectorAll('.char-span').forEach(span => {
-                    span.style.opacity = 1;
-                    span.style.color = blackMode.checked ? '#fff' : '#333';
-                    span.style.backgroundColor = '';
-                    span.classList.remove('current', 'eink-black');
-                });
-                textContent.querySelectorAll('.line').forEach(line => {
-                    line.classList.remove('hidden');
-                    line.style.display = 'block';
-                });
-                progress.value = 0;
-                updateProgressPercent(0);
-                progress.style.backgroundColor = '';
-            }
-        }
 
         function adjustSpeed() {
             if (interval) {
