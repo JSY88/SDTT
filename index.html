@@ -68,29 +68,24 @@
         }
 
         #toggleButton {
-            position: fixed;
-            top: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 15;
             padding: 8px 16px;
             font-size: 16px;
         }
 
         .fullscreen #toggleButton {
-            top: 5px;
+            display: none; /* 전체 화면에서 시작 버튼 숨기기 */
         }
 
         #message {
             color: red;
             position: fixed;
-            bottom: 70px; /* 더 위로 올림 */
+            bottom: 70px;
             left: 50%;
             transform: translateX(-50%);
             background: rgba(255, 255, 255, 0.9);
             padding: 5px 10px;
             border-radius: 5px;
-            z-index: 1001; /* 페이지 버튼보다 위로 */
+            z-index: 1001;
             display: none;
         }
 
@@ -444,7 +439,7 @@
         }
 
         #libraryOverlay .library-item .favorite-button.favorited {
-            color: #FFD700; /* 금색 별 */
+            color: #FFD700;
         }
 
         @keyframes spin {
@@ -499,8 +494,8 @@
 </head>
 <body>
     <input type="file" id="fileUpload" accept=".txt,.epub" aria-label="파일 업로드" multiple>
-    <button id="toggleButton" aria-label="훈련 시작/중지">시작</button>
     <div id="controls" role="toolbar">
+        <button id="toggleButton" aria-label="훈련 시작/중지">시작</button>
         <button id="prevPage" aria-label="이전 페이지"><span class="icon">◀</span> 이전</button>
         <button id="nextPage" aria-label="다음 페이지"><span class="icon">▶</span> 다음</button>
         <button id="tocButton" aria-label="목차">목차</button>
@@ -1103,7 +1098,6 @@
                 }).join('');
                 renderedPages[i] = html;
             }
-            // Clean up unused pages to save memory
             Object.keys(renderedPages).forEach(key => {
                 const pageNum = parseInt(key);
                 if (pageNum < start || pageNum >= end) {
@@ -1131,9 +1125,9 @@
                 setTimeout(() => {
                     textContent.style.transform = 'translateX(0)';
                     textContent.style.opacity = 1;
-                    if (autoRestart.checked && interval) startEffect();
+                    if (autoRestart.checked && isTrainingActive) startEffect();
                 }, 300);
-            } else if (autoRestart.checked && interval) {
+            } else if (autoRestart.checked && isTrainingActive) {
                 startEffect();
             }
             preloadPages();
@@ -1163,20 +1157,22 @@
                                 if (noSleep) noSleep.enable();
                                 isFullscreen = true;
                                 updateFullScreenButtons();
+                                startEffect(); // 전체 화면 진입 시 효과 시작
                             }, 300);
                         }).catch(() => {
                             showMessage('전체화면 모드 활성화 실패.');
                         });
                     }
+                } else {
+                    startEffect();
                 }
-                startEffect();
                 toggleButton.innerText = '정지';
                 isTrainingActive = true;
             } else {
                 stopEffect();
-                exitFullscreen();
                 toggleButton.innerText = '시작';
                 isTrainingActive = false;
+                exitFullscreen();
             }
         });
 
@@ -1196,7 +1192,10 @@
                             updateProgressPercent(progress.value);
                         } else {
                             clearInterval(interval);
-                            if (autoPageTurn.checked && currentPage < pages.length - 1) nextPage.click();
+                            if (autoPageTurn.checked && currentPage < pages.length - 1) {
+                                currentPage++;
+                                displayPage(1); // 페이지 넘김 후 효과 유지
+                            }
                         }
                     }, intervalTime);
                 } else if (effectSelect.value === 'fade') {
@@ -1212,7 +1211,10 @@
                             updateProgressPercent(progress.value);
                         } else {
                             clearInterval(interval);
-                            if (autoPageTurn.checked && currentPage < pages.length - 1) nextPage.click();
+                            if (autoPageTurn.checked && currentPage < pages.length - 1) {
+                                currentPage++;
+                                displayPage(1); // 페이지 넘김 후 효과 유지
+                            }
                         }
                     }, intervalTime);
                 } else if (effectSelect.value === 'eink') {
@@ -1229,7 +1231,10 @@
                             updateProgressPercent(progress.value);
                         } else {
                             clearInterval(interval);
-                            if (autoPageTurn.checked && currentPage < pages.length - 1) nextPage.click();
+                            if (autoPageTurn.checked && currentPage < pages.length - 1) {
+                                currentPage++;
+                                displayPage(1); // 페이지 넘김 후 효과 유지
+                            }
                         }
                     }, intervalTime);
                 }
@@ -1257,10 +1262,6 @@
                 progress.value = 0;
                 updateProgressPercent(0);
                 progress.style.backgroundColor = '';
-            }
-            if (isTrainingActive) {
-                toggleButton.innerText = '시작';
-                isTrainingActive = false;
             }
         }
 
@@ -1316,6 +1317,7 @@
                 currentPage--;
                 stopEffect();
                 displayPage(-1);
+                if (isTrainingActive) startEffect();
             }
         });
 
@@ -1324,6 +1326,7 @@
                 currentPage++;
                 stopEffect();
                 displayPage(1);
+                if (isTrainingActive) startEffect();
             }
         });
 
@@ -1598,6 +1601,7 @@
                 currentPage--;
                 stopEffect();
                 displayPage(-1);
+                if (isTrainingActive) startEffect();
             }
         });
 
@@ -1606,6 +1610,7 @@
                 currentPage++;
                 stopEffect();
                 displayPage(1);
+                if (isTrainingActive) startEffect();
             }
         });
 
@@ -1615,6 +1620,7 @@
                 currentPage = pageNum;
                 stopEffect();
                 displayPage();
+                if (isTrainingActive) startEffect();
             }
             jumpToPage.value = '';
         });
@@ -1624,10 +1630,12 @@
                 currentPage--;
                 stopEffect();
                 displayPage(-1);
+                if (isTrainingActive) startEffect();
             } else if (e.key === 'ArrowRight' && currentPage < pages.length - 1) {
                 currentPage++;
                 stopEffect();
                 displayPage(1);
+                if (isTrainingActive) startEffect();
             } else if (e.key === ' ' || e.key === 'Spacebar') {
                 e.preventDefault();
                 toggleButton.click();
@@ -1636,6 +1644,7 @@
                     currentPage++;
                     stopEffect();
                     displayPage(1);
+                    if (isTrainingActive) startEffect();
                 }
             } else if (e.key === '+') {
                 let newSpeed = Math.min(2000, parseInt(speedControl.value) + 5);
@@ -1644,6 +1653,7 @@
                 speedPreset.value = newSpeed;
                 adjustSpeed();
                 localStorage.setItem('speed', newSpeed);
+                if (isTrainingActive) startEffect();
             } else if (e.key === '-') {
                 let newSpeed = Math.max(50, parseInt(speedControl.value) - 5);
                 speedControl.value = newSpeed;
@@ -1651,14 +1661,17 @@
                 speedPreset.value = newSpeed;
                 adjustSpeed();
                 localStorage.setItem('speed', newSpeed);
+                if (isTrainingActive) startEffect();
             } else if (e.key === 'Home') {
                 currentPage = 0;
                 stopEffect();
                 displayPage();
+                if (isTrainingActive) startEffect();
             } else if (e.key === 'End') {
                 currentPage = pages.length - 1;
                 stopEffect();
                 displayPage();
+                if (isTrainingActive) startEffect();
             } else if (e.key === 'Escape' && (tocOverlay.style.display === 'block' || libraryOverlay.style.display === 'block')) {
                 tocOverlay.style.display = 'none';
                 libraryOverlay.style.display = 'none';
@@ -1685,6 +1698,7 @@
                     adjustSpeed();
                     localStorage.setItem('speed', newSpeed);
                     showMessage(`속도: ${newSpeed}ms`, 1000);
+                    if (isTrainingActive) startEffect();
                 } else if (touchEndX < window.innerWidth * 0.25) {
                     let newSpeed = Math.min(2000, parseInt(speedControl.value) + 5);
                     speedControl.value = newSpeed;
@@ -1693,15 +1707,18 @@
                     adjustSpeed();
                     localStorage.setItem('speed', newSpeed);
                     showMessage(`속도: ${newSpeed}ms`, 1000);
+                    if (isTrainingActive) startEffect();
                 }
             } else if (deltaX > 100 && currentPage > 0) {
                 currentPage--;
                 stopEffect();
                 displayPage(-1);
+                if (isTrainingActive) startEffect();
             } else if (deltaX < -100 && currentPage < pages.length - 1) {
                 currentPage++;
                 stopEffect();
                 displayPage(1);
+                if (isTrainingActive) startEffect();
             }
         });
 
@@ -1732,6 +1749,7 @@
                     currentPage = pageIndex;
                     stopEffect();
                     displayPage();
+                    if (isTrainingActive) startEffect();
                     tocOverlay.style.display = 'none';
                 });
             });
@@ -1881,5 +1899,5 @@
             textContent.style.color = blackMode.checked ? '#fff' : '#333';
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'921bc27e6a4d7b99',t:'MTc0MjIwNjg0Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'921c13e62be9450f',t:'MTc0MjIxMDE4Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</body>
 </html>
