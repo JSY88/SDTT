@@ -337,17 +337,19 @@
             top: 0;
             left: 0;
             width: 100%;
-            height: 100%;
+            height: 100vh; /* Full viewport height */
             background: rgba(0, 0, 0, 0.8);
             z-index: 20;
             color: white;
             padding: 20px;
-            overflow-y: auto;
+            overflow-y: auto; /* Ensure scrolling */
+            box-sizing: border-box;
         }
 
         #tocOverlay ul, #libraryOverlay ul {
             list-style: none;
             padding: 0;
+            margin: 0;
         }
 
         #tocOverlay li, #libraryOverlay li {
@@ -432,6 +434,17 @@
             #message {
                 bottom: 60px;
                 font-size: 14px;
+            }
+            #libraryOverlay {
+                padding: 10px; /* Reduced padding for mobile */
+                height: 100vh; /* Ensure full height */
+            }
+            #libraryOverlay .library-item img, #libraryOverlay .library-item .no-cover {
+                width: 40px; /* Smaller image size for mobile */
+                height: 56px;
+            }
+            #libraryOverlay .library-item span {
+                font-size: 14px; /* Adjust font size for mobile */
             }
         }
 
@@ -559,7 +572,7 @@
         <div id="tocContent"></div>
     </div>
     <div id="libraryOverlay">
-        <button id="closeLibrary" style="position: absolute; top: 10px; right: 80px; padding: 5px; background: #fff; border: none; cursor: pointer;">X</button>
+        <button id="closeLibrary" style="position: absolute; top: 10px; right: 10px; padding: 5px; background: #fff; border: none; cursor: pointer;">X</button>
         <div id="libraryContent"></div>
     </div>
 
@@ -824,12 +837,19 @@
             worker = new Worker(URL.createObjectURL(new Blob([workerCode], { type: 'application/javascript' })));
         }
 
-        function addToLibrary(fileName, fileData, coverUrl, isFavorite = false) {
+        function addToLibrary(fileName, fileData, coverUrl, isFavorite = false, metadata = {}) {
             const existingIndex = libraryFiles.findIndex(item => item.name === fileName);
             if (existingIndex !== -1) {
                 libraryFiles.splice(existingIndex, 1);
             }
-            libraryFiles.unshift({ name: fileName, data: fileData, cover: coverUrl, timestamp: Date.now(), favorite: isFavorite });
+            libraryFiles.unshift({ 
+                name: fileName, 
+                data: fileData, 
+                cover: coverUrl, 
+                timestamp: Date.now(), 
+                favorite: isFavorite,
+                metadata: metadata // Store EPUB metadata
+            });
             libraryFiles = libraryFiles.slice(0, 10);
             localStorage.setItem('libraryFiles', JSON.stringify(libraryFiles));
             pruneFileCache();
@@ -908,7 +928,7 @@
                     progress.value = 0;
                     toggleButtons(false);
                     loadingSpinner.style.display = 'none';
-                    addToLibrary(file.name, fileData, cachedData.coverUrl || null, cachedData.favorite || false);
+                    addToLibrary(file.name, fileData, cachedData.cover, cachedData.favorite || false, cachedData.metadata || {});
                     return;
                 }
 
@@ -966,11 +986,22 @@
                         await book.ready;
                         showMessage('EPUB 파싱 중...');
                         const coverUrl = await book.coverUrl();
+                        const metadata = await book.loaded.metadata; // Fetch EPUB metadata
                         const pagesData = await loadEpubPages();
                         pages = pagesData.pages;
                         toc = pagesData.toc;
 
-                        await setCachedData(lastFileName, { pages: pages, toc: toc, coverUrl: coverUrl, timestamp: Date.now() });
+                        await setCachedData(lastFileName, { 
+                            pages: pages, 
+                            toc: toc, 
+                            cover: coverUrl, 
+                            timestamp: Date.now(),
+                            metadata: {
+                                title: metadata.title || 'Unknown Title',
+                                author: metadata.creator || 'Unknown Author',
+                                publisher: metadata.publisher || 'Unknown Publisher'
+                            }
+                        });
 
                         loadLastPage();
                         preloadPages();
@@ -979,7 +1010,11 @@
                         progress.value = 0;
                         toggleButtons(false);
                         loadingSpinner.style.display = 'none';
-                        addToLibrary(file.name, fileData, coverUrl);
+                        addToLibrary(file.name, fileData, coverUrl, false, {
+                            title: metadata.title || 'Unknown Title',
+                            author: metadata.creator || 'Unknown Author',
+                            publisher: metadata.publisher || 'Unknown Publisher'
+                        });
                     } catch (err) {
                         showMessage('EPUB 로드 오류: ' + err.message);
                         toggleButtons(false);
@@ -1260,9 +1295,10 @@
 
         libraryButton.addEventListener('click', () => {
             libraryContent.innerHTML = '<ul>' + libraryFiles.sort((a, b) => b.timestamp - a.timestamp).map((file, index) => {
-                const cover = file.cover ? `<img src="${file.cover}" alt="${file.name} 표지">` : `<div class="no-cover">${file.name}</div>`;
+                const cover = file.cover ? `<img src="${file.cover}" alt="${file.metadata?.title || file.name} 표지">` : `<div class="no-cover">${file.metadata?.title || file.name}</div>`;
                 const favoriteClass = file.favorite ? 'style="color: yellow;"' : '';
-                return `<li class="library-item" data-index="${index}">${cover}<span ${favoriteClass}>${file.name}</span><button class="favorite-button" data-index="${index}">${file.favorite ? '★' : '☆'}</button><button class="delete-button" data-index="${index}">삭제</button></li>`;
+                const displayName = file.metadata?.title ? `${file.metadata.title} - ${file.metadata.author} (${file.metadata.publisher})` : file.name;
+                return `<li class="library-item" data-index="${index}">${cover}<span ${favoriteClass}>${displayName}</span><button class="favorite-button" data-index="${index}">${file.favorite ? '★' : '☆'}</button><button class="delete-button" data-index="${index}">삭제</button></li>`;
             }).join('') + '</ul>';
             libraryOverlay.style.display = 'block';
 
@@ -1306,7 +1342,18 @@
                             const pagesData = await loadEpubPages();
                             pages = pagesData.pages;
                             toc = pagesData.toc;
-                            await setCachedData(lastFileName, { pages: pages, toc: toc, timestamp: Date.now() });
+                            const metadata = await book.loaded.metadata;
+                            await setCachedData(lastFileName, { 
+                                pages: pages, 
+                                toc: toc, 
+                                cover: file.cover, 
+                                timestamp: Date.now(),
+                                metadata: {
+                                    title: metadata.title || 'Unknown Title',
+                                    author: metadata.creator || 'Unknown Author',
+                                    publisher: metadata.publisher || 'Unknown Publisher'
+                                }
+                            });
                             loadLastPage();
                             preloadPages();
                             displayPage();
@@ -1355,8 +1402,9 @@
                 return;
             }
             libraryContent.innerHTML = '<ul>' + favoriteFiles.map((file, index) => {
-                const cover = file.cover ? `<img src="${file.cover}" alt="${file.name} 표지">` : `<div class="no-cover">${file.name}</div>`;
-                return `<li class="library-item" data-index="${libraryFiles.indexOf(file)}">${cover}<span style="color: yellow;">${file.name}</span><button class="favorite-button" data-index="${libraryFiles.indexOf(file)}">★</button><button class="delete-button" data-index="${libraryFiles.indexOf(file)}">삭제</button></li>`;
+                const cover = file.cover ? `<img src="${file.cover}" alt="${file.metadata?.title || file.name} 표지">` : `<div class="no-cover">${file.metadata?.title || file.name}</div>`;
+                const displayName = file.metadata?.title ? `${file.metadata.title} - ${file.metadata.author} (${file.metadata.publisher})` : file.name;
+                return `<li class="library-item" data-index="${libraryFiles.indexOf(file)}">${cover}<span style="color: yellow;">${displayName}</span><button class="favorite-button" data-index="${libraryFiles.indexOf(file)}">★</button><button class="delete-button" data-index="${libraryFiles.indexOf(file)}">삭제</button></li>`;
             }).join('') + '</ul>';
             libraryOverlay.style.display = 'block';
 
@@ -1400,7 +1448,18 @@
                             const pagesData = await loadEpubPages();
                             pages = pagesData.pages;
                             toc = pagesData.toc;
-                            await setCachedData(lastFileName, { pages: pages, toc: toc, timestamp: Date.now() });
+                            const metadata = await book.loaded.metadata;
+                            await setCachedData(lastFileName, { 
+                                pages: pages, 
+                                toc: toc, 
+                                cover: file.cover, 
+                                timestamp: Date.now(),
+                                metadata: {
+                                    title: metadata.title || 'Unknown Title',
+                                    author: metadata.creator || 'Unknown Author',
+                                    publisher: metadata.publisher || 'Unknown Publisher'
+                                }
+                            });
                             loadLastPage();
                             preloadPages();
                             displayPage();
@@ -1855,7 +1914,7 @@
                 rightPageButton.style.display = 'block';
                 leftPageButton.style.width = `${fullScreenButtonWidth.value}vw`;
                 rightPageButton.style.width = `${fullScreenButtonWidth.value}vw`;
-                leftPageButton.style.height = `${fullScreenButtonHeight.value}vh`;
+                     leftPageButton.style.height = `${fullScreenButtonHeight.value}vh`;
                 rightPageButton.style.height = `${fullScreenButtonHeight.value}vh`;
             } else {
                 leftPageButton.style.display = 'none';
@@ -1863,21 +1922,41 @@
             }
         }
 
-        function toggleButtons(disable) {
-            toggleButton.disabled = disable;
-            prevPage.disabled = disable;
-            nextPage.disabled = disable;
-            tocButton.disabled = disable;
-            libraryButton.disabled = disable;
-            favoritesButton.disabled = disable;
-            jumpToPage.disabled = disable;
+        function toggleBlackMode() {
+            if (blackMode.checked) {
+                document.body.classList.add('black-mode');
+                textContent.style.backgroundColor = blackModeColor.value;
+                textContent.style.color = '#fff';
+            } else {
+                document.body.classList.remove('black-mode');
+                textContent.style.backgroundColor = '#fff';
+                textContent.style.color = '#333';
+            }
         }
 
-        function toggleBlackMode() {
-            document.body.classList.toggle('black-mode', blackMode.checked);
-            textContent.style.backgroundColor = blackMode.checked ? blackModeColor.value : '#fff';
-            textContent.style.color = blackMode.checked ? '#fff' : '#333';
+        function toggleButtons(disabled) {
+            toggleButton.disabled = disabled;
+            prevPage.disabled = disabled;
+            nextPage.disabled = disabled;
+            tocButton.disabled = disabled;
+            libraryButton.disabled = disabled;
+            favoritesButton.disabled = disabled;
+            jumpToPage.disabled = disabled;
         }
+
+        window.addEventListener('resize', () => {
+            if (pages.length > 0) {
+                pages = splitTextToFit(pages.join('\n\n'), textContent.getBoundingClientRect().height);
+                preloadPages();
+                displayPage();
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            updateTextContentStyles();
+            toggleBlackMode();
+            updateFullScreenButtons();
+        });
     </script>
 </body>
 </html>
