@@ -5,27 +5,42 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>사라지는 텍스트 훈련</title>
     <style>
+        :root {
+            --font-size: 18px;
+            --line-height: 1.6;
+            --letter-spacing: 0px;
+            --text-height: 70vh;
+            --margin-top: 0vh;
+            --margin-right: 0vw;
+            --margin-bottom: 0vh;
+            --margin-left: 0vw;
+        }
+
         body {
             font-family: Arial, sans-serif;
             margin: 0;
             padding: 5px;
-            transition: opacity 0.3s, background-color 0.3s;
             background-color: #f5f5f5;
             overscroll-behavior: none;
             position: relative;
             touch-action: pan-y;
             overflow-x: hidden;
         }
+
         #textContent {
-            font-size: 18px;
-            line-height: 1.6;
+            font-size: var(--font-size);
+            line-height: var(--line-height);
+            letter-spacing: var(--letter-spacing);
             white-space: pre-wrap;
             position: relative;
             overflow-y: hidden;
             overflow-x: hidden;
-            width: 100%;
-            height: calc(70vh - 80px);
-            margin: 0 auto;
+            width: calc(100% - var(--margin-left) - var(--margin-right));
+            height: calc(var(--text-height) - var(--margin-top) - var(--margin-bottom) - 80px);
+            margin-top: var(--margin-top);
+            margin-right: var(--margin-right);
+            margin-bottom: var(--margin-bottom);
+            margin-left: var(--margin-left);
             padding: 10px;
             box-sizing: border-box;
             background-color: #fff;
@@ -33,14 +48,16 @@
             border-radius: 8px;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
             z-index: 1;
-            transition: transform 0.3s ease, background-color 0.3s, color 0.3s;
             color: #333;
             user-select: none;
+            transition: opacity 0.3s, background-color 0.3s, color 0.3s;
         }
+
         #textContent.eink-mode {
             background-color: #000 !important;
             color: #000 !important;
         }
+
         #controls {
             margin: 10px 0;
             display: flex;
@@ -48,6 +65,7 @@
             gap: 5px;
             justify-content: center;
         }
+
         #message {
             color: red;
             position: fixed;
@@ -60,27 +78,82 @@
             z-index: 10;
             display: none;
         }
+
         #pageInfo {
             position: fixed;
             bottom: 10px;
             right: 10px;
             font-size: 14px;
-            background: rgba(255, 255, 255, 0.9);
-            padding: 3px 8px;
+            background: rgba(255, 255, 255, 0);
+            padding: 5px 10px;
             border-radius: 5px;
-            z-index: 10;
+            z-index: 1000;
+            cursor: pointer;
+            border: none;
+            color: #333;
         }
+
+        .fullscreen #pageInfo {
+            position: fixed;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            right: auto;
+            background: rgba(255, 255, 255, 0);
+            padding: 5px 10px;
+            border-radius: 5px;
+            z-index: 1000;
+            cursor: pointer;
+            border: none;
+            color: #333;
+        }
+
+        #leftPageButton, #rightPageButton {
+            display: none;
+            position: fixed;
+            top: 0;
+            height: 100vh;
+            width: 30vw;
+            background: rgba(0, 0, 0, 0);
+            border: none;
+            z-index: 999;
+            cursor: pointer;
+            transition: none;
+        }
+
+        #leftPageButton:hover, #rightPageButton:hover,
+        #leftPageButton:focus, #rightPageButton:focus,
+        #leftPageButton:active, #rightPageButton:active {
+            background: rgba(0, 0, 0, 0);
+            transform: none;
+            outline: none;
+        }
+
+        #leftPageButton {
+            left: 0;
+        }
+
+        #rightPageButton {
+            right: 0;
+        }
+
+        .fullscreen #leftPageButton, .fullscreen #rightPageButton {
+            display: block;
+        }
+
         #progressContainer {
             position: relative;
             width: 100%;
             margin: 5px 0;
         }
+
         #progress {
             width: 100%;
             height: 4px;
             opacity: 0.7;
-            transition: background-color 0.3s;
+            transition: none;
         }
+
         #progressPercent {
             position: absolute;
             top: -20px;
@@ -88,7 +161,9 @@
             transform: translateX(-50%);
             font-size: 12px;
             color: #333;
+            display: none;
         }
+
         #loadingSpinner {
             display: none;
             position: fixed;
@@ -103,6 +178,7 @@
             animation: spin 1s linear infinite;
             z-index: 5;
         }
+
         button {
             padding: 8px 12px;
             font-size: 14px;
@@ -114,56 +190,113 @@
             transition: background-color 0.3s, transform 0.1s;
             max-width: 100px;
         }
+
         button:hover {
             background-color: #2980b9;
             transform: scale(1.05);
         }
+
         button:focus {
             outline: 2px solid #2980b9;
             outline-offset: 2px;
         }
+
         button:disabled {
             opacity: 0.5;
             cursor: not-allowed;
         }
+
         details {
             margin: 10px 0;
             width: 100%;
             z-index: 30;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
+
         summary {
             padding: 10px;
             background-color: #ecf0f1;
             border-radius: 5px;
             cursor: pointer;
+            font-weight: bold;
         }
+
+        #advancedControls {
+            padding: 15px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            align-items: center;
+        }
+
+        #advancedControls label {
+            font-size: 14px;
+            color: #333;
+        }
+
+        #advancedControls input[type="text"],
+        #advancedControls input[type="range"],
+        #advancedControls select,
+        #advancedControls input[type="color"] {
+            width: 100%;
+            padding: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        #advancedControls input[type="checkbox"] {
+            margin-left: 5px;
+        }
+
+        #advancedControls button {
+            max-width: none;
+            width: 100%;
+        }
+
+        @keyframes charFade {
+            to { opacity: 0; }
+        }
+
         .char-span {
-            transition: opacity 0.3s, color 0.3s, background-color 0.1s;
-            color: inherit;
+            transition: none;
         }
+
+        .char-span.fade {
+            animation: charFade 0.3s forwards;
+        }
+
         .char-span.current {
-            background-color: rgba(255, 255, 0, 0.3);
+            background-color: transparent;
         }
+
         .char-span.eink-black {
             background-color: #000 !important;
             color: #000 !important;
         }
+
         .line {
             display: block;
             transition: opacity 0.2s;
         }
+
         .line.hidden {
             opacity: 0;
         }
+
         .fullscreen #controls, .fullscreen #progressContainer, .fullscreen #message, .fullscreen details, .fullscreen #fileUpload {
             display: none;
         }
+
         .fullscreen #textContent {
             width: 100vw;
-            height: 100vh; /* Modified to cover full viewport height */
+            height: 100vh;
             margin: 0;
             padding: 20px;
         }
+
         #fileUpload {
             display: block;
             width: 100%;
@@ -177,9 +310,11 @@
             cursor: pointer;
             transition: background-color 0.3s;
         }
+
         #fileUpload:hover, #fileUpload.dragover {
             background-color: #e6f0fa;
         }
+
         #tocOverlay, #libraryOverlay {
             display: none;
             position: fixed;
@@ -193,28 +328,34 @@
             padding: 20px;
             overflow-y: auto;
         }
+
         #tocOverlay ul, #libraryOverlay ul {
             list-style: none;
             padding: 0;
         }
+
         #tocOverlay li, #libraryOverlay li {
             padding: 10px;
             cursor: pointer;
         }
+
         #tocOverlay li:hover, #libraryOverlay li:hover {
             background: rgba(255, 255, 255, 0.1);
         }
+
         #libraryOverlay .library-item {
             display: flex;
             align-items: center;
             gap: 10px;
             margin-bottom: 10px;
         }
+
         #libraryOverlay .library-item img {
             width: 50px;
             height: 70px;
             object-fit: cover;
         }
+
         #libraryOverlay .library-item .no-cover {
             width: 50px;
             height: 70px;
@@ -226,15 +367,32 @@
             font-size: 12px;
             color: #fff;
         }
+
+        #libraryOverlay .library-item button {
+            margin-left: 10px;
+            padding: 2px 5px;
+            font-size: 12px;
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        #libraryOverlay .library-item button:hover {
+            background-color: #c0392b;
+        }
+
         @keyframes spin {
             0% { transform: translate(-50%, -50%) rotate(0deg); }
             100% { transform: translate(-50%, -50%) rotate(360deg); }
         }
+
         @media (max-width: 600px) {
             body { padding: 5px; }
             #textContent {
                 font-size: 16px;
-                height: calc(60vh - 60px);
+                height: calc(var(--text-height) - 60px);
                 padding: 8px;
             }
             #controls {
@@ -247,19 +405,8 @@
                 max-width: 100%;
             }
             #advancedControls {
-                display: flex;
-                flex-direction: column;
+                grid-template-columns: 1fr;
                 gap: 8px;
-                padding: 8px;
-            }
-            input, select {
-                width: 100%;
-                padding: 8px;
-                font-size: 14px;
-                box-sizing: border-box;
-            }
-            #progress {
-                height: 3px;
             }
             #pageInfo {
                 font-size: 12px;
@@ -271,33 +418,33 @@
                 font-size: 14px;
             }
         }
+
         .black-mode body { background-color: #1a1a1a; }
         .black-mode #textContent { background-color: #2d2d2d; color: #fff; border-color: #444; }
         .black-mode summary { background-color: #3a3a3a; }
         .black-mode #fileUpload { background-color: #333; border-color: #555; }
         .black-mode #fileUpload:hover { background-color: #444; }
+        .black-mode #pageInfo { color: #fff; }
 
-        /* New Toggle Button Style and Position */
         #toggleButton {
             position: fixed;
             bottom: 20px;
             left: 20px;
-            z-index: 15; /* Ensure it's above other elements if needed */
+            z-index: 15;
         }
+
         .fullscreen #toggleButton {
             bottom: 10px;
             left: 10px;
         }
     </style>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://unpkg.com/epubjs/dist/epub.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/nosleep.js@1.1.0/dist/NoSleep.min.js"></script>
 </head>
 <body>
     <input type="file" id="fileUpload" accept=".txt,.epub" aria-label="파일 업로드" multiple>
     <div id="controls" role="toolbar">
-        <button id="toggleButton" aria-label="훈련 시작/중지">시작</button> <!-- Toggle Button -->
+        <button id="toggleButton" aria-label="훈련 시작/중지">시작</button>
         <button id="prevPage" aria-label="이전 페이지"><span class="icon">◀</span> 이전</button>
         <button id="nextPage" aria-label="다음 페이지"><span class="icon">▶</span> 다음</button>
         <button id="tocButton" aria-label="목차">목차</button>
@@ -307,9 +454,9 @@
     <details>
         <summary>고급 설정</summary>
         <div id="advancedControls">
-            <label for="speedControl">속도 (빠름: 50ms ~ 느림: 2000ms):</label>
-            <input type="range" id="speedControl" min="50" max="2000" step="1" value="100">
-            <input type="number" id="speedInput" min="50" max="2000" step="1" value="100" style="width: 80px; margin-left: 10px;">
+            <label for="speedControl">속도 (50ms ~ 2000ms):</label>
+            <div><input type="range" id="speedControl" min="50" max="2000" step="1" value="100">
+                 <input type="text" id="speedInput" value="100" style="width: 80px;"></div>
             <label for="speedPreset">속도 프리셋:</label>
             <select id="speedPreset">
                 <option value="50">빠르게</option>
@@ -324,8 +471,10 @@
                 <option value="fade">페이드 아웃</option>
                 <option value="eink">전자잉크 모드</option>
             </select>
+            <label for="delayBeforeEffect">효과 시작 전 딜레이 (ms):</label>
+            <div><input type="text" id="delayBeforeEffect" value="400"></div>
             <label for="fontSize">글꼴 크기:</label>
-            <input type="number" id="fontSize" min="12" max="36" value="18">px
+            <div><input type="text" id="fontSize" value="18">px</div>
             <label for="fontFamily">글꼴 스타일:</label>
             <select id="fontFamily">
                 <option value="Arial, sans-serif">Arial</option>
@@ -333,11 +482,15 @@
                 <option value="'Noto Sans KR', sans-serif">Noto Sans KR</option>
             </select>
             <label for="lineHeight">줄 간격:</label>
-            <input type="number" id="lineHeight" min="1" max="3" step="0.1" value="1.6">
+            <div><input type="text" id="lineHeight" value="1.6"></div>
             <label for="letterSpacing">글자 간격:</label>
-            <input type="number" id="letterSpacing" min="0" max="5" step="0.1" value="0">px
+            <div><input type="text" id="letterSpacing" value="0">px</div>
             <label for="preloadRange">프리로드 범위 (±페이지):</label>
-            <input type="number" id="preloadRange" min="1" max="10" value="2">
+            <div><input type="text" id="preloadRange" value="2"></div>
+            <label for="textHeight">텍스트 영역 높이 (%):</label>
+            <div><input type="text" id="textHeight" value="70"></div>
+            <label for="pageInfoSize">페이지 표시 크기:</label>
+            <div><input type="text" id="pageInfoSize" value="14">px</div>
             <label for="autoRestart">페이지 전환 시 재시작:</label>
             <input type="checkbox" id="autoRestart">
             <label for="pageAnimation">페이지 전환 애니메이션:</label>
@@ -351,13 +504,21 @@
             <label for="blackModeColor">블랙 모드 색상:</label>
             <input type="color" id="blackModeColor" value="#2d2d2d">
             <label for="marginTop">위쪽 여백 (%):</label>
-            <input type="number" id="marginTop" min="0" max="50" value="0" step="1">
+            <div><input type="text" id="marginTop" value="0"></div>
             <label for="marginRight">오른쪽 여백 (%):</label>
-            <input type="number" id="marginRight" min="0" max="50" value="0" step="1">
+            <div><input type="text" id="marginRight" value="0"></div>
             <label for="marginBottom">아래쪽 여백 (%):</label>
-            <input type="number" id="marginBottom" min="0" max="50" value="0" step="1">
+            <div><input type="text" id="marginBottom" value="0"></div>
             <label for="marginLeft">왼쪽 여백 (%):</label>
-            <input type="number" id="marginLeft" min="0" max="50" value="0" step="1">
+            <div><input type="text" id="marginLeft" value="0"></div>
+            <label for="enableFullScreenButtons">전체화면 버튼 활성화:</label>
+            <input type="checkbox" id="enableFullScreenButtons" checked>
+            <label for="fullScreenButtonWidth">전체화면 버튼 너비 (%):</label>
+            <div><input type="text" id="fullScreenButtonWidth" value="30"></div>
+            <label for="fullScreenButtonHeight">전체화면 버튼 높이 (%):</label>
+            <div><input type="text" id="fullScreenButtonHeight" value="100"></div>
+            <label for="autoPageTurn">글자 사라짐 후 자동 페이지 넘김:</label>
+            <input type="checkbox" id="autoPageTurn" checked>
             <button id="resetSettings" aria-label="설정 초기화">설정 초기화</button>
             <button id="clearCacheButton" aria-label="캐시 비우기">캐시 비우기</button>
         </div>
@@ -366,9 +527,10 @@
         <progress id="progress" value="0" max="100"></progress>
         <span id="progressPercent">0%</span>
     </div>
-    <div id="textContent" role="region" aria-label="텍스트 표시 영역">
-        <div id="pageInfo" aria-live="polite"></div>
-    </div>
+    <div id="textContent" role="region" aria-label="텍스트 표시 영역"></div>
+    <button id="pageInfo" aria-live="polite"></button>
+    <button id="leftPageButton" aria-label="이전 페이지로 이동"></button>
+    <button id="rightPageButton" aria-label="다음 페이지로 이동"></button>
     <div id="loadingSpinner"></div>
     <div id="message" aria-live="assertive"></div>
     <div id="tocOverlay">
@@ -395,11 +557,14 @@
         const speedPreset = document.getElementById('speedPreset');
         const mobileSpeedControl = document.getElementById('mobileSpeedControl');
         const effectSelect = document.getElementById('effectSelect');
+        const delayBeforeEffect = document.getElementById('delayBeforeEffect');
         const fontSize = document.getElementById('fontSize');
         const fontFamily = document.getElementById('fontFamily');
         const lineHeight = document.getElementById('lineHeight');
         const letterSpacing = document.getElementById('letterSpacing');
         const preloadRange = document.getElementById('preloadRange');
+        const textHeight = document.getElementById('textHeight');
+        const pageInfoSize = document.getElementById('pageInfoSize');
         const autoRestart = document.getElementById('autoRestart');
         const pageAnimation = document.getElementById('pageAnimation');
         const showPageInfo = document.getElementById('showPageInfo');
@@ -410,13 +575,19 @@
         const marginRight = document.getElementById('marginRight');
         const marginBottom = document.getElementById('marginBottom');
         const marginLeft = document.getElementById('marginLeft');
-        const toggleButton = document.getElementById('toggleButton'); // Changed from startButton and stopButton
+        const enableFullScreenButtons = document.getElementById('enableFullScreenButtons');
+        const fullScreenButtonWidth = document.getElementById('fullScreenButtonWidth');
+        const fullScreenButtonHeight = document.getElementById('fullScreenButtonHeight');
+        const autoPageTurn = document.getElementById('autoPageTurn');
+        const toggleButton = document.getElementById('toggleButton');
         const prevPage = document.getElementById('prevPage');
         const nextPage = document.getElementById('nextPage');
         const tocButton = document.getElementById('tocButton');
         const libraryButton = document.getElementById('libraryButton');
         const jumpToPage = document.getElementById('jumpToPage');
         const pageInfo = document.getElementById('pageInfo');
+        const leftPageButton = document.getElementById('leftPageButton');
+        const rightPageButton = document.getElementById('rightPageButton');
         const message = document.getElementById('message');
         const progress = document.getElementById('progress');
         const progressPercent = document.getElementById('progressPercent');
@@ -433,16 +604,15 @@
         let renderedPages = [];
         let isFullscreen = false;
         let libraryFiles = JSON.parse(localStorage.getItem('libraryFiles')) || [];
-        let isTrainingActive = false; // Track training state
+        let isTrainingActive = false;
         let messageTimer;
+        let lastSettings = {};
 
-        // IndexedDB setup
         const DB_NAME = 'vanishingTextDB';
         const DB_VERSION = 1;
         const CACHE_STORE_NAME = 'fileCacheStore';
         let db;
 
-        // Initialize IndexedDB
         const dbPromise = new Promise((resolve, reject) => {
             const request = indexedDB.open(DB_NAME, DB_VERSION);
 
@@ -464,7 +634,6 @@
             };
         });
 
-        // Function to get data from IndexedDB
         async function getCachedData(fileName) {
             await dbPromise;
             return new Promise((resolve, reject) => {
@@ -483,7 +652,6 @@
             });
         }
 
-        // Function to store data in IndexedDB
         async function setCachedData(fileName, data) {
             await dbPromise;
             return new Promise((resolve, reject) => {
@@ -502,7 +670,6 @@
             });
         }
 
-        // Function to delete data from IndexedDB
         async function deleteCachedData(fileName) {
             await dbPromise;
             return new Promise((resolve, reject) => {
@@ -521,7 +688,6 @@
             });
         }
 
-        // Function to clear IndexedDB cache
         async function clearIndexedDBCache() {
             await dbPromise;
             return new Promise((resolve, reject) => {
@@ -540,11 +706,9 @@
             });
         }
 
-
-        // Function to prune IndexedDB cache (remove oldest entries)
         async function pruneFileCache() {
             await dbPromise;
-            const MAX_CACHE_ENTRIES = 5; // Adjust as needed
+            const MAX_CACHE_ENTRIES = 5;
             const cachedFiles = [];
 
             return new Promise((resolve, reject) => {
@@ -557,10 +721,10 @@
                     if (cursor) {
                         const fileName = cursor.key;
                         const cacheEntry = cursor.value;
-                        cachedFiles.push({ name: fileName, timestamp: cacheEntry.timestamp || Date.now() }); // Assuming timestamp is stored in cache entry
+                        cachedFiles.push({ name: fileName, timestamp: cacheEntry.timestamp || Date.now() });
                         cursor.continue();
                     } else {
-                        cachedFiles.sort((a, b) => a.timestamp - b.timestamp); // Oldest first
+                        cachedFiles.sort((a, b) => a.timestamp - b.timestamp);
                         while (cachedFiles.length > MAX_CACHE_ENTRIES) {
                             const fileToRemove = cachedFiles.shift();
                             await deleteCachedData(fileToRemove.name);
@@ -576,17 +740,19 @@
             });
         }
 
-
         speedControl.value = localStorage.getItem('speed') || 100;
-        speedInput.value = speedControl.value;
+        speedInput.value = localStorage.getItem('speed') || 100;
         speedPreset.value = localStorage.getItem('speedPreset') || 100;
         mobileSpeedControl.checked = localStorage.getItem('mobileSpeedControl') === 'true';
         effectSelect.value = localStorage.getItem('effect') || 'char';
+        delayBeforeEffect.value = localStorage.getItem('delayBeforeEffect') || 400;
         fontSize.value = localStorage.getItem('fontSize') || 18;
         fontFamily.value = localStorage.getItem('fontFamily') || 'Arial, sans-serif';
         lineHeight.value = localStorage.getItem('lineHeight') || 1.6;
         letterSpacing.value = localStorage.getItem('letterSpacing') || 0;
         preloadRange.value = localStorage.getItem('preloadRange') || 2;
+        textHeight.value = localStorage.getItem('textHeight') || 70;
+        pageInfoSize.value = localStorage.getItem('pageInfoSize') || 14;
         autoRestart.checked = localStorage.getItem('autoRestart') === 'true';
         pageAnimation.checked = localStorage.getItem('pageAnimation') !== 'false';
         showPageInfo.checked = localStorage.getItem('showPageInfo') !== 'false';
@@ -597,21 +763,30 @@
         marginRight.value = localStorage.getItem('marginRight') || 0;
         marginBottom.value = localStorage.getItem('marginBottom') || 0;
         marginLeft.value = localStorage.getItem('marginLeft') || 0;
+        enableFullScreenButtons.checked = localStorage.getItem('enableFullScreenButtons') !== 'false';
+        fullScreenButtonWidth.value = localStorage.getItem('fullScreenButtonWidth') || 30;
+        fullScreenButtonHeight.value = localStorage.getItem('fullScreenButtonHeight') || 100;
+        autoPageTurn.checked = localStorage.getItem('autoPageTurn') !== 'false';
         updateTextContentStyles();
         toggleBlackMode();
+        updateFullScreenButtons();
 
         if (window.Worker) {
             const workerCode = `
                 self.onmessage = function(e) {
-                    const { text, maxHeight } = e.data;
+                    const { text, maxHeight, fontSize, lineHeight, letterSpacing, fontFamily } = e.data;
                     const lines = text.split('\\n').filter(line => line.trim().length > 0);
                     const pages = [];
                     let currentPageText = '';
-                    const maxLinesPerPage = Math.floor(maxHeight / 20);
+                    const testDiv = { innerText: '', getBoundingClientRect: () => ({ height: 0 }) }; // 더미 객체
+                    let currentHeight = 0;
+                    const lineHeightPx = parseFloat(lineHeight) * parseFloat(fontSize);
                     for (let line of lines) {
-                        if (currentPageText.split('\\n').length >= maxLinesPerPage) {
+                        currentHeight += lineHeightPx;
+                        if (currentHeight > maxHeight) {
                             pages.push(currentPageText.trim());
                             currentPageText = line + '\\n';
+                            currentHeight = lineHeightPx;
                         } else {
                             currentPageText += line + '\\n';
                         }
@@ -623,16 +798,15 @@
             worker = new Worker(URL.createObjectURL(new Blob([workerCode], { type: 'application/javascript' })));
         }
 
-
         function addToLibrary(fileName, fileData, coverUrl) {
             const existingIndex = libraryFiles.findIndex(item => item.name === fileName);
             if (existingIndex !== -1) {
                 libraryFiles.splice(existingIndex, 1);
             }
             libraryFiles.unshift({ name: fileName, data: fileData, cover: coverUrl, timestamp: Date.now() });
-            libraryFiles = libraryFiles.slice(0, 10); // 최대 10개 유지
+            libraryFiles = libraryFiles.slice(0, 10);
             localStorage.setItem('libraryFiles', JSON.stringify(libraryFiles));
-            pruneFileCache(); // Check and prune cache after adding new file
+            pruneFileCache();
         }
 
         fileInput.addEventListener('change', function(event) {
@@ -663,9 +837,23 @@
             }, duration);
         }
 
+        async function loadEpubLibraries() {
+            if (!window.ePub || !window.JSZip) {
+                showMessage('EPUB 라이브러리 로드 중...');
+                const script1 = document.createElement('script');
+                script1.src = 'https://unpkg.com/epubjs/dist/epub.min.js';
+                const script2 = document.createElement('script');
+                script2.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+                document.head.appendChild(script1);
+                document.head.appendChild(script2);
+                await new Promise(resolve => {
+                    script2.onload = resolve;
+                });
+            }
+        }
 
         async function handleFileUpload(file) {
-            await pruneFileCache(); // Prune cache at the start of file loading
+            await pruneFileCache();
             if (!file) {
                 showMessage('파일을 선택해주세요.');
                 loadingSpinner.style.display = 'none';
@@ -694,14 +882,15 @@
                     progress.value = 0;
                     toggleButtons(false);
                     loadingSpinner.style.display = 'none';
-                    return; // Use cached data and exit
+                    addToLibrary(file.name, fileData, cachedData.coverUrl || null);
+                    return;
                 }
 
                 if (file.name.endsWith('.txt')) {
                     if (worker) {
                         worker.onmessage = async function(e) {
                             pages = e.data.pages;
-                            await setCachedData(lastFileName, { pages: pages, timestamp: Date.now() }); // Cache pages with timestamp
+                            await setCachedData(lastFileName, { pages: pages, timestamp: Date.now() });
                             loadLastPage();
                             preloadPages();
                             displayPage();
@@ -716,10 +905,17 @@
                             toggleButtons(false);
                             loadingSpinner.style.display = 'none';
                         };
-                        worker.postMessage({ text: fileData, maxHeight: textContent.getBoundingClientRect().height });
+                        worker.postMessage({
+                            text: fileData,
+                            maxHeight: textContent.getBoundingClientRect().height,
+                            fontSize: fontSize.value,
+                            lineHeight: lineHeight.value,
+                            letterSpacing: letterSpacing.value,
+                            fontFamily: fontFamily.value
+                        });
                     } else {
                         pages = splitTextToFit(fileData, textContent.getBoundingClientRect().height);
-                        await setCachedData(lastFileName, { pages: pages, timestamp: Date.now() }); // Cache pages with timestamp
+                        await setCachedData(lastFileName, { pages: pages, timestamp: Date.now() });
                         loadLastPage();
                         preloadPages();
                         displayPage();
@@ -730,6 +926,7 @@
                         addToLibrary(file.name, fileData, null);
                     }
                 } else if (file.name.endsWith('.epub')) {
+                    await loadEpubLibraries();
                     if (!window.ePub || !window.JSZip) {
                         showMessage('epub.js 또는 JSZip 로딩 실패.');
                         toggleButtons(false);
@@ -738,7 +935,7 @@
                     }
                     book = window.ePub(fileData);
                     try {
-                        await book.ready; // Wait for book to be ready
+                        await book.ready;
                         showMessage('EPUB 파싱 중...');
                         const coverUrl = await book.coverUrl();
                         const pagesData = await loadEpubPages();
@@ -746,7 +943,7 @@
                         const nav = await book.loaded.navigation;
                         toc = nav.toc;
 
-                        await setCachedData(lastFileName, { pages: pages, toc: toc, timestamp: Date.now() }); // Cache pages and toc with timestamp
+                        await setCachedData(lastFileName, { pages: pages, toc: toc, coverUrl: coverUrl, timestamp: Date.now() });
 
                         loadLastPage();
                         preloadPages();
@@ -756,7 +953,6 @@
                         toggleButtons(false);
                         loadingSpinner.style.display = 'none';
                         addToLibrary(file.name, fileData, coverUrl);
-
                     } catch (err) {
                         showMessage('EPUB 로드 오류: ' + err.message);
                         toggleButtons(false);
@@ -781,9 +977,8 @@
             let fullText = '';
             let loadedCount = 0;
             const sections = book.spine.items;
-            // 기존 rendition destroy 코드를 여기에 둡니다.
             book.rendition = book.renderTo('textContent', {
-                ignoreContainerRead: true, // 이미지 로드 비활성화 옵션 추가
+                ignoreContainerRead: true,
                 flow: 'paginated',
                 width: '100%',
                 height: '100%'
@@ -795,12 +990,12 @@
                 progress.value = (loadedCount / sections.length) * 50;
                 const div = document.createElement('div');
                 div.appendChild(content.cloneNode(true));
+                div.querySelectorAll('a').forEach(link => link.parentNode.removeChild(link));
                 const text = div.innerText.trim();
                 if (text) fullText += text + '\n\n';
             }
             return splitTextToFit(fullText, textContent.getBoundingClientRect().height);
         }
-
 
         function splitTextToFit(text, containerHeight) {
             const lines = text.split('\n').filter(line => line.trim().length > 0);
@@ -825,7 +1020,7 @@
 
         function preloadPages() {
             renderedPages = [];
-            const range = parseInt(preloadRange.value);
+            const range = parseInt(preloadRange.value) || 2;
             const start = Math.max(0, currentPage - range);
             const end = Math.min(pages.length, currentPage + range + 1);
             for (let i = start; i < end; i++) {
@@ -840,28 +1035,30 @@
         }
 
         function displayPage(direction = 0) {
-            const startTime = performance.now();
-            if (!renderedPages[currentPage]) loadingSpinner.style.display = 'block';
+            const fragment = document.createDocumentFragment();
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = renderedPages[currentPage] || '';
+            while (tempDiv.firstChild) fragment.appendChild(tempDiv.firstChild);
+            textContent.innerHTML = '';
+            textContent.appendChild(fragment);
+
+            pageInfo.innerText = showPageInfo.checked || isFullscreen ? `${currentPage + 1}/${pages.length}` : '';
+            pageInfo.style.fontSize = `${pageInfoSize.value}px`;
+            progress.value = 0;
+            updateProgressPercent(0);
             if (pageAnimation.checked && direction !== 0) {
                 textContent.style.transform = direction > 0 ? 'translateX(-100%)' : 'translateX(100%)';
                 textContent.style.opacity = 0;
-            }
-            setTimeout(() => {
-                textContent.innerHTML = renderedPages[currentPage] || '';
-                updateTextContentStyles();
-                pageInfo.innerText = showPageInfo.checked ? `${currentPage + 1} / ${pages.length}` : '';
-                progress.value = 0;
-                updateProgressPercent(0);
-                const loadTime = performance.now() - startTime;
-                if (loadTime < 100) loadingSpinner.style.display = 'none';
-                if (pageAnimation.checked) {
+                setTimeout(() => {
                     textContent.style.transform = 'translateX(0)';
                     textContent.style.opacity = 1;
-                    setTimeout(() => { if (autoRestart.checked && interval) startEffect(); }, 300);
-                } else if (autoRestart.checked && interval) startEffect();
-                preloadPages();
-                saveLastPage();
-            }, 50);
+                    if (autoRestart.checked && interval) startEffect();
+                }, 300);
+            } else if (autoRestart.checked && interval) {
+                startEffect();
+            }
+            preloadPages();
+            saveLastPage();
         }
 
         function loadLastPage() {
@@ -874,7 +1071,7 @@
             localStorage.setItem(`lastPage_${lastFileName}`, currentPage);
         }
 
-        toggleButton.addEventListener('click', () => { // Toggle Button Listener
+        toggleButton.addEventListener('click', () => {
             if (!isTrainingActive) {
                 if (fullscreenMode.checked) {
                     const requestFullscreen = document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen;
@@ -886,21 +1083,77 @@
                                 document.body.style.opacity = 1;
                                 if (noSleep) noSleep.enable();
                                 isFullscreen = true;
+                                updateFullScreenButtons();
                             }, 300);
                         });
                     }
                 }
                 startEffect();
-                toggleButton.innerText = '정지'; // Change button text to "Stop"
+                toggleButton.innerText = '정지';
                 isTrainingActive = true;
             } else {
                 stopEffect();
                 exitFullscreen();
-                toggleButton.innerText = '시작'; // Change button text back to "Start"
+                toggleButton.innerText = '시작';
                 isTrainingActive = false;
             }
         });
 
+        function startEffect() {
+            stopEffect();
+            setTimeout(() => {
+                if (effectSelect.value === 'char') {
+                    const spans = textContent.querySelectorAll('.char-span:not(.char-space)');
+                    let charIndex = 0;
+                    const totalChars = spans.length;
+                    const intervalTime = parseInt(speedControl.value) / 2;
+                    interval = setInterval(() => {
+                        if (charIndex < spans.length) {
+                            spans[charIndex].classList.add('fade');
+                            charIndex++;
+                            progress.value = (charIndex / totalChars) * 100;
+                            updateProgressPercent(progress.value);
+                        } else {
+                            clearInterval(interval);
+                            if (autoPageTurn.checked && currentPage < pages.length - 1) nextPage.click();
+                        }
+                    }, intervalTime);
+                } else if (effectSelect.value === 'fade') {
+                    const lines = textContent.querySelectorAll('.line');
+                    let lineIndex = 0;
+                    const totalLines = lines.length;
+                    const intervalTime = parseInt(speedControl.value);
+                    interval = setInterval(() => {
+                        if (lineIndex < lines.length) {
+                            lines[lineIndex].classList.add('hidden');
+                            lineIndex++;
+                            progress.value = (lineIndex / totalLines) * 100;
+                            updateProgressPercent(progress.value);
+                        } else {
+                            clearInterval(interval);
+                            if (autoPageTurn.checked && currentPage < pages.length - 1) nextPage.click();
+                        }
+                    }, intervalTime);
+                } else if (effectSelect.value === 'eink') {
+                    const spans = textContent.querySelectorAll('.char-span:not(.char-space)');
+                    let charIndex = 0;
+                    const totalChars = spans.length;
+                    const intervalTime = parseInt(speedControl.value) / 2;
+                    textContent.classList.add('eink-mode');
+                    interval = setInterval(() => {
+                        if (charIndex < spans.length) {
+                            spans[charIndex].classList.add('eink-black');
+                            charIndex++;
+                            progress.value = (charIndex / totalChars) * 100;
+                            updateProgressPercent(progress.value);
+                        } else {
+                            clearInterval(interval);
+                            if (autoPageTurn.checked && currentPage < pages.length - 1) nextPage.click();
+                        }
+                    }, intervalTime);
+                }
+            }, parseInt(delayBeforeEffect.value));
+        }
 
         function stopEffect() {
             if (interval) clearInterval(interval);
@@ -913,7 +1166,7 @@
                     span.style.opacity = 1;
                     span.style.color = blackMode.checked ? '#fff' : '#333';
                     span.style.backgroundColor = '';
-                    span.classList.remove('current', 'eink-black');
+                    span.classList.remove('current', 'eink-black', 'fade');
                 });
                 textContent.querySelectorAll('.line').forEach(line => {
                     line.classList.remove('hidden');
@@ -923,12 +1176,11 @@
                 updateProgressPercent(0);
                 progress.style.backgroundColor = '';
             }
-            if (isTrainingActive) { // Ensure state is updated when stopped programmatically
+            if (isTrainingActive) {
                 toggleButton.innerText = '시작';
                 isTrainingActive = false;
             }
         }
-
 
         function exitFullscreen() {
             const exitFullscreen = document.exitFullscreen || document.webkitExitFullscreen;
@@ -940,22 +1192,46 @@
                         document.body.style.opacity = 1;
                         if (noSleep) noSleep.disable();
                         isFullscreen = false;
+                        updateFullScreenButtons();
                     });
                 }, 300);
             }
         }
 
+        pageInfo.addEventListener('click', () => {
+            if (isFullscreen) {
+                stopEffect();
+                exitFullscreen();
+            }
+        });
+
+        leftPageButton.addEventListener('click', () => {
+            if (currentPage > 0) {
+                currentPage--;
+                stopEffect();
+                displayPage(-1);
+            }
+        });
+
+        rightPageButton.addEventListener('click', () => {
+            if (currentPage < pages.length - 1) {
+                currentPage++;
+                stopEffect();
+                displayPage(1);
+            }
+        });
+
         tocButton.addEventListener('click', showToc);
 
         libraryButton.addEventListener('click', () => {
-            libraryContent.innerHTML = '<ul>' + libraryFiles.map((file, index) => {
+            libraryContent.innerHTML = '<ul>' + libraryFiles.sort((a, b) => b.timestamp - a.timestamp).map((file, index) => {
                 const cover = file.cover ? `<img src="${file.cover}" alt="${file.name} 표지">` : `<div class="no-cover">${file.name}</div>`;
-                return `<li class="library-item" data-index="${index}">${cover}<span>${file.name}</span></li>`;
+                return `<li class="library-item" data-index="${index}">${cover}<span>${file.name}</span><button class="delete-button" data-index="${index}">삭제</button></li>`;
             }).join('') + '</ul>';
             libraryOverlay.style.display = 'block';
 
             libraryContent.querySelectorAll('li').forEach(li => {
-                li.addEventListener('click', async (e) => { // Make listener async
+                li.addEventListener('click', async (e) => {
                     e.stopPropagation();
                     const index = parseInt(li.dataset.index);
                     const file = libraryFiles[index];
@@ -965,7 +1241,7 @@
                     toggleButtons(true);
                     loadingSpinner.style.display = 'block';
 
-                    await pruneFileCache(); // Prune cache before loading from library
+                    await pruneFileCache();
 
                     let cachedData = await getCachedData(lastFileName);
                     if (cachedData) {
@@ -977,17 +1253,17 @@
                         showMessage('');
                         toggleButtons(false);
                         loadingSpinner.style.display = 'none';
-                        return; // Use cached data and exit
+                        return;
                     }
-
 
                     if (file.name.endsWith('.txt')) {
                         pages = splitTextToFit(file.data, textContent.getBoundingClientRect().height);
-                        await setCachedData(lastFileName, { pages: pages, timestamp: Date.now() }); // Cache pages with timestamp
+                        await setCachedData(lastFileName, { pages: pages, timestamp: Date.now() });
                         loadLastPage();
                         preloadPages();
                         displayPage();
                     } else if (file.name.endsWith('.epub')) {
+                        await loadEpubLibraries();
                         book = window.ePub(file.data);
                         try {
                             await book.ready;
@@ -995,7 +1271,7 @@
                             pages = pagesData;
                             const nav = await book.loaded.navigation;
                             toc = nav.toc;
-                            await setCachedData(lastFileName, { pages: pages, toc: toc, timestamp: Date.now() }); // Cache pages and toc with timestamp
+                            await setCachedData(lastFileName, { pages: pages, toc: toc, timestamp: Date.now() });
                             loadLastPage();
                             preloadPages();
                             displayPage();
@@ -1010,6 +1286,16 @@
                     toggleButtons(false);
                     loadingSpinner.style.display = 'none';
                 });
+
+                const deleteButton = li.querySelector('.delete-button');
+                deleteButton.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const index = parseInt(deleteButton.dataset.index);
+                    libraryFiles.splice(index, 1);
+                    localStorage.setItem('libraryFiles', JSON.stringify(libraryFiles));
+                    libraryButton.click(); // 라이브러리 목록 갱신
+                    showMessage('파일이 삭제되었습니다.', 2000);
+                });
             });
 
             document.getElementById('closeLibrary').addEventListener('click', () => {
@@ -1017,6 +1303,13 @@
             });
         });
 
+        function debounce(func, wait) {
+            let timeout;
+            return function(...args) {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(this, args), wait);
+            };
+        }
 
         speedControl.addEventListener('input', () => {
             speedInput.value = speedControl.value;
@@ -1027,13 +1320,11 @@
         });
 
         speedInput.addEventListener('input', () => {
-            let value = Math.min(2000, Math.max(50, parseInt(speedInput.value) || 50));
-            speedInput.value = value;
-            speedControl.value = value;
-            speedPreset.value = value;
+            speedControl.value = speedInput.value;
+            speedPreset.value = speedInput.value;
             adjustSpeed();
             if (!interval) previewEffect();
-            localStorage.setItem('speed', value);
+            localStorage.setItem('speed', speedInput.value);
         });
 
         speedPreset.addEventListener('change', () => {
@@ -1057,46 +1348,52 @@
             localStorage.setItem('effect', effectSelect.value);
         });
 
-        fontSize.addEventListener('input', () => {
-            let value = Math.min(36, Math.max(12, fontSize.value));
-            fontSize.value = value;
-            textContent.style.fontSize = `${value}px`;
+        delayBeforeEffect.addEventListener('input', () => {
+            localStorage.setItem('delayBeforeEffect', delayBeforeEffect.value);
+        });
+
+        const debouncedUpdateStyles = debounce(() => {
+            updateTextContentStyles();
             pages = splitTextToFit(pages.join('\n\n'), textContent.getBoundingClientRect().height);
             preloadPages();
             displayPage();
-            localStorage.setItem('fontSize', value);
+        }, 300);
+
+        fontSize.addEventListener('input', () => {
+            localStorage.setItem('fontSize', fontSize.value);
+            debouncedUpdateStyles();
         });
 
         fontFamily.addEventListener('change', () => {
-            textContent.style.fontFamily = fontFamily.value;
-            pages = splitTextToFit(pages.join('\n\n'), textContent.getBoundingClientRect().height);
-            preloadPages();
-            displayPage();
             localStorage.setItem('fontFamily', fontFamily.value);
+            debouncedUpdateStyles();
         });
 
-        lineHeight.addEventListener('change', () => {
-            textContent.style.lineHeight = lineHeight.value;
-            pages = splitTextToFit(pages.join('\n\n'), textContent.getBoundingClientRect().height);
-            preloadPages();
-            displayPage();
+        lineHeight.addEventListener('input', () => {
             localStorage.setItem('lineHeight', lineHeight.value);
+            debouncedUpdateStyles();
         });
 
-        letterSpacing.addEventListener('change', () => {
-            textContent.style.letterSpacing = `${letterSpacing.value}px`;
-            pages = splitTextToFit(pages.join('\n\n'), textContent.getBoundingClientRect().height);
-            preloadPages();
-            displayPage();
+        letterSpacing.addEventListener('input', () => {
             localStorage.setItem('letterSpacing', letterSpacing.value);
+            debouncedUpdateStyles();
         });
 
         preloadRange.addEventListener('input', () => {
-            let value = Math.min(10, Math.max(1, preloadRange.value));
-            preloadRange.value = value;
             preloadPages();
             displayPage();
-            localStorage.setItem('preloadRange', value);
+            localStorage.setItem('preloadRange', preloadRange.value);
+        });
+
+        textHeight.addEventListener('input', () => {
+            localStorage.setItem('textHeight', textHeight.value);
+            debouncedUpdateStyles();
+        });
+
+        pageInfoSize.addEventListener('input', () => {
+            pageInfo.style.fontSize = `${pageInfoSize.value}px`;
+            localStorage.setItem('pageInfoSize', pageInfoSize.value);
+            displayPage();
         });
 
         autoRestart.addEventListener('change', () => localStorage.setItem('autoRestart', autoRestart.checked));
@@ -1117,34 +1414,37 @@
             localStorage.setItem('blackModeColor', blackModeColor.value);
             toggleBlackMode();
         });
+
         marginTop.addEventListener('input', () => {
-            updateTextContentMargins();
-            pages = splitTextToFit(pages.join('\n\n'), textContent.getBoundingClientRect().height);
-            preloadPages();
-            displayPage();
             localStorage.setItem('marginTop', marginTop.value);
+            debouncedUpdateStyles();
         });
         marginRight.addEventListener('input', () => {
-            updateTextContentMargins();
-            pages = splitTextToFit(pages.join('\n\n'), textContent.getBoundingClientRect().height);
-            preloadPages();
-            displayPage();
             localStorage.setItem('marginRight', marginRight.value);
+            debouncedUpdateStyles();
         });
         marginBottom.addEventListener('input', () => {
-            updateTextContentMargins();
-            pages = splitTextToFit(pages.join('\n\n'), textContent.getBoundingClientRect().height);
-            preloadPages();
-            displayPage();
             localStorage.setItem('marginBottom', marginBottom.value);
+            debouncedUpdateStyles();
         });
-
         marginLeft.addEventListener('input', () => {
-            updateTextContentMargins();
-            pages = splitTextToFit(pages.join('\n\n'), textContent.getBoundingClientRect().height);
-            preloadPages();
-            displayPage();
             localStorage.setItem('marginLeft', marginLeft.value);
+            debouncedUpdateStyles();
+        });
+        enableFullScreenButtons.addEventListener('change', () => {
+            localStorage.setItem('enableFullScreenButtons', enableFullScreenButtons.checked);
+            updateFullScreenButtons();
+        });
+        fullScreenButtonWidth.addEventListener('input', () => {
+            localStorage.setItem('fullScreenButtonWidth', fullScreenButtonWidth.value);
+            updateFullScreenButtons();
+        });
+        fullScreenButtonHeight.addEventListener('input', () => {
+            localStorage.setItem('fullScreenButtonHeight', fullScreenButtonHeight.value);
+            updateFullScreenButtons();
+        });
+        autoPageTurn.addEventListener('change', () => {
+            localStorage.setItem('autoPageTurn', autoPageTurn.checked);
         });
 
         prevPage.addEventListener('click', () => {
@@ -1184,7 +1484,7 @@
                 displayPage(1);
             } else if (e.key === ' ' || e.key === 'Spacebar') {
                 e.preventDefault();
-                toggleButton.click(); // Simulate click on toggle button
+                toggleButton.click();
             } else if (e.key === 'Enter') {
                 if (currentPage < pages.length - 1) {
                     currentPage++;
@@ -1192,14 +1492,14 @@
                     displayPage(1);
                 }
             } else if (e.key === '+') {
-                let newSpeed = Math.max(50, parseInt(speedControl.value) - 5);
+                let newSpeed = parseInt(speedControl.value) - 5;
                 speedControl.value = newSpeed;
                 speedInput.value = newSpeed;
                 speedPreset.value = newSpeed;
                 adjustSpeed();
                 localStorage.setItem('speed', newSpeed);
             } else if (e.key === '-') {
-                let newSpeed = Math.min(2000, parseInt(speedControl.value) + 5);
+                let newSpeed = parseInt(speedControl.value) + 5;
                 speedControl.value = newSpeed;
                 speedInput.value = newSpeed;
                 speedPreset.value = newSpeed;
@@ -1231,16 +1531,16 @@
             const windowHeight = window.innerHeight;
 
             if (mobileSpeedControl.checked && touchEndY > windowHeight * 0.8) {
-                if (touchEndX > window.innerWidth * 0.75) { // 우측 하단
-                    let newSpeed = Math.max(50, parseInt(speedControl.value) - 5);
+                if (touchEndX > window.innerWidth * 0.75) {
+                    let newSpeed = parseInt(speedControl.value) - 5;
                     speedControl.value = newSpeed;
                     speedInput.value = newSpeed;
                     speedPreset.value = newSpeed;
                     adjustSpeed();
                     localStorage.setItem('speed', newSpeed);
                     showMessage(`속도: ${newSpeed}ms`, 1000);
-                } else if (touchEndX < window.innerWidth * 0.25) { // 좌측 하단
-                    let newSpeed = Math.min(2000, parseInt(speedControl.value) + 5);
+                } else if (touchEndX < window.innerWidth * 0.25) {
+                    let newSpeed = parseInt(speedControl.value) + 5;
                     speedControl.value = newSpeed;
                     speedInput.value = newSpeed;
                     speedPreset.value = newSpeed;
@@ -1304,11 +1604,14 @@
             speedPreset.value = 100;
             mobileSpeedControl.checked = false;
             effectSelect.value = 'char';
+            delayBeforeEffect.value = 400;
             fontSize.value = 18;
             fontFamily.value = 'Arial, sans-serif';
             lineHeight.value = 1.6;
             letterSpacing.value = 0;
             preloadRange.value = 2;
+            textHeight.value = 70;
+            pageInfoSize.value = 14;
             autoRestart.checked = false;
             pageAnimation.checked = true;
             showPageInfo.checked = true;
@@ -1319,17 +1622,22 @@
             marginRight.value = 0;
             marginBottom.value = 0;
             marginLeft.value = 0;
+            enableFullScreenButtons.checked = true;
+            fullScreenButtonWidth.value = 30;
+            fullScreenButtonHeight.value = 100;
+            autoPageTurn.checked = true;
             libraryFiles = [];
             localStorage.setItem('libraryFiles', JSON.stringify(libraryFiles));
             showMessage('설정이 초기화되었습니다.', 2000);
-            toggleButton.innerText = '시작'; // Reset toggle button text
-            isTrainingActive = false; // Reset training state
-            pages = []; // Clear pages
-            renderedPages = []; // Clear renderedPages
-            textContent.innerHTML = ''; // Clear text content
-            pageInfo.innerText = ''; // Clear page info
-            progress.value = 0; // Reset progress bar
-            updateProgressPercent(0); // Reset progress percent
+            toggleButton.innerText = '시작';
+            isTrainingActive = false;
+            pages = [];
+            renderedPages = [];
+            textContent.innerHTML = '';
+            pageInfo.innerText = '';
+            progress.value = 0;
+            updateProgressPercent(0);
+            updateFullScreenButtons();
         });
 
         clearCacheButton.addEventListener('click', async () => {
@@ -1337,34 +1645,66 @@
             showMessage('캐시가 비워졌습니다.', 2000);
         });
 
+        function adjustSpeed() {
+            if (interval) {
+                clearInterval(interval);
+                startEffect();
+            }
+        }
+
+        function previewEffect() {
+            stopEffect();
+            startEffect();
+            setTimeout(stopEffect, 2000);
+        }
+
+        function updateProgressPercent(value) {
+            progressPercent.innerText = `${Math.round(value)}%`;
+            progressPercent.style.display = value > 0 ? 'block' : 'none';
+        }
 
         function updateTextContentStyles() {
-            textContent.style.fontSize = `${fontSize.value}px`;
-            textContent.style.fontFamily = fontFamily.value;
-            textContent.style.lineHeight = lineHeight.value;
-            textContent.style.letterSpacing = `${letterSpacing.value}px`;
+            const currentSettings = {
+                fontSize: fontSize.value,
+                fontFamily: fontFamily.value,
+                lineHeight: lineHeight.value,
+                letterSpacing: letterSpacing.value
+            };
+            if (JSON.stringify(currentSettings) === JSON.stringify(lastSettings)) return;
+            lastSettings = { ...currentSettings };
+            document.documentElement.style.setProperty('--font-size', `${fontSize.value}px`);
+            document.documentElement.style.setProperty('--line-height', lineHeight.value);
+            document.documentElement.style.setProperty('--letter-spacing', `${letterSpacing.value}px`);
+            document.documentElement.style.setProperty('--text-height', `${textHeight.value}vh`);
+            document.documentElement.style.setProperty('--margin-top', `${marginTop.value}vh`);
+            document.documentElement.style.setProperty('--margin-right', `${marginRight.value}vw`);
+            document.documentElement.style.setProperty('--margin-bottom', `${marginBottom.value}vh`);
+            document.documentElement.style.setProperty('--margin-left', `${marginLeft.value}vw`);
             updateTextContentMargins();
             toggleBlackMode();
+            pages = splitTextToFit(pages.join('\n\n'), textContent.getBoundingClientRect().height);
+            preloadPages();
+            displayPage();
         }
 
         function updateTextContentMargins() {
             textContent.style.marginTop = `${marginTop.value}vh`;
             textContent.style.marginRight = `${marginRight.value}vw`;
             textContent.style.marginBottom = `${marginBottom.value}vh`;
-            textContent.style.width = `calc(100% - ${marginLeft.value}vw - ${marginRight.value}vw)`;
-            textContent.style.height = `calc(70vh - ${marginTop.value}vh - ${marginBottom.value}vh - 80px)`;
-            document.documentElement.style.setProperty('--margin-bottom', `${marginBottom.value}vh`);
+            textContent.style.marginLeft = `${marginLeft.value}vw`;
         }
 
-        function toggleBlackMode() {
-            if (blackMode.checked) {
-                document.body.classList.add('black-mode');
-                textContent.style.backgroundColor = blackModeColor.value;
-                textContent.style.color = '#fff';
+        function updateFullScreenButtons() {
+            if (enableFullScreenButtons.checked && isFullscreen) {
+                leftPageButton.style.display = 'block';
+                rightPageButton.style.display = 'block';
+                leftPageButton.style.width = `${fullScreenButtonWidth.value}vw`;
+                rightPageButton.style.width = `${fullScreenButtonWidth.value}vw`;
+                leftPageButton.style.height = `${fullScreenButtonHeight.value}vh`;
+                rightPageButton.style.height = `${fullScreenButtonHeight.value}vh`;
             } else {
-                document.body.classList.remove('black-mode');
-                textContent.style.backgroundColor = '#fff';
-                textContent.style.color = '#333';
+                leftPageButton.style.display = 'none';
+                rightPageButton.style.display = 'none';
             }
         }
 
@@ -1374,132 +1714,13 @@
             nextPage.disabled = disable;
             tocButton.disabled = disable;
             libraryButton.disabled = disable;
+            jumpToPage.disabled = disable;
         }
 
-        function startEffect() {
-            if (!textContent.innerText) {
-                showMessage('먼저 파일을 업로드하세요.', 2000);
-                return;
-            }
-            stopEffect();
-            const effect = effectSelect.value;
-            const intervalTime = parseInt(speedControl.value);
-            const fadeStep = Math.min(0.05, 10 / intervalTime);
-            const baseBgColor = blackMode.checked ? blackModeColor.value : '#fff';
-            const baseTextColor = blackMode.checked ? '#fff' : '#333';
-
-            if (effect === 'fade') {
-                let opacity = 1;
-                interval = setInterval(() => {
-                    if (opacity > 0) {
-                        opacity -= fadeStep;
-                        textContent.style.opacity = opacity;
-                        progress.value = (1 - opacity) * 100;
-                        updateProgressPercent(progress.value);
-                    } else {
-                        clearInterval(interval);
-                        if (currentPage < pages.length - 1) nextPage.click(); // Auto next page for fade effect
-                    }
-                }, intervalTime);
-            } else if (effect === 'char') {
-                const spans = textContent.querySelectorAll('.char-span:not(.char-space)');
-                let charIndex = 0;
-                const totalChars = spans.length;
-                interval = setInterval(() => {
-                    if (charIndex < spans.length) {
-                        if (charIndex > 0) spans[charIndex - 1].classList.remove('current');
-                        spans[charIndex].classList.add('current');
-                        spans[charIndex].style.opacity = 0;
-                        charIndex++;
-                        const completedChars = Array.from(spans).filter(span => span.style.opacity === '0').length;
-                        progress.value = (completedChars / totalChars) * 100;
-                        updateProgressPercent(progress.value);
-                        progress.style.backgroundColor = `hsl(${progress.value * 1.2}, 70%, 50%)`;
-                    } else {
-                        if (charIndex > 0) spans[charIndex - 1].classList.remove('current');
-                        const lines = textContent.querySelectorAll('.line');
-                        lines.forEach(line => {
-                            line.classList.add('hidden');
-                            setTimeout(() => line.style.display = 'none', 200);
-                        });
-                        clearInterval(interval);
-                        if (currentPage < pages.length - 1) nextPage.click(); // Auto next page for char effect
-                    }
-                }, intervalTime / 2);
-            } else if (effect === 'eink') {
-                const spans = textContent.querySelectorAll('.char-span:not(.char-space)');
-                let charIndex = 0;
-                const totalChars = spans.length;
-                interval = setInterval(() => {
-                    if (charIndex < spans.length) {
-                        if (charIndex > 0) spans[charIndex - 1].classList.remove('current');
-                        spans[charIndex].classList.add('current');
-                        spans[charIndex].classList.add('eink-black');
-                        setTimeout(() => {
-                            spans[charIndex].classList.remove('eink-black');
-                            spans[charIndex].style.backgroundColor = baseBgColor;
-                            spans[charIndex].style.color = baseTextColor;
-                        }, 100);
-                        charIndex++;
-                        progress.value = (charIndex / totalChars) * 100;
-                        updateProgressPercent(progress.value);
-                        progress.style.backgroundColor = `hsl(${progress.value * 1.2}, 70%, 50%)`;
-                        if (charIndex === totalChars) {
-                            textContent.classList.add('eink-mode');
-                            setTimeout(() => {
-                                textContent.classList.remove('eink-mode');
-                                textContent.style.backgroundColor = baseBgColor;
-                                textContent.style.color = baseTextColor;
-                                if (currentPage < pages.length - 1) nextPage.click(); // Auto next page for eink effect
-                            }, 200);
-                        }
-                    } else {
-                        if (charIndex > 0) spans[charIndex - 1].classList.remove('current');
-                        clearInterval(interval);
-                    }
-                }, intervalTime / 2);
-            }
-        }
-
-
-        function adjustSpeed() {
-            if (interval) {
-                stopEffect();
-                startEffect();
-            }
-        }
-
-        function previewEffect() {
-            if (interval) return;
-            const spans = textContent.querySelectorAll('.char-span:not(.char-space)');
-            let index = 0;
-            const preview = setInterval(() => {
-                if (index < spans.length) {
-                    if (effectSelect.value === 'char') spans[index].style.opacity = 0;
-                    else if (effectSelect.value === 'fade') spans[index].style.opacity = 0.5;
-                    else if (effectSelect.value === 'eink') {
-                        spans[index].classList.add('eink-black');
-                        setTimeout(() => {
-                            spans[index].classList.remove('eink-black');
-                            spans[index].style.color = blackMode.checked ? '#fff' : '#333';
-                            spans[index].style.backgroundColor = '';
-                        }, 100);
-                    }
-                    index++;
-                } else {
-                    clearInterval(preview);
-                    spans.forEach(span => {
-                        span.style.opacity = 1;
-                        span.style.color = blackMode.checked ? '#fff' : '#333';
-                        span.style.backgroundColor = '';
-                        span.classList.remove('eink-black');
-                    });
-                }
-            }, speedControl.value);
-        }
-
-        function updateProgressPercent(value) {
-            progressPercent.innerText = `${Math.round(value)}%`;
+        function toggleBlackMode() {
+            document.body.classList.toggle('black-mode', blackMode.checked);
+            textContent.style.backgroundColor = blackMode.checked ? blackModeColor.value : '#fff';
+            textContent.style.color = blackMode.checked ? '#fff' : '#333';
         }
     </script>
 </body>
