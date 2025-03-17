@@ -5,6 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>사라지는 텍스트 훈련</title>
     <style>
+        @font-face {
+            font-family: 'CustomArial';
+            src: url('fonts/arial.ttf') format('truetype');
+        }
+        @font-face {
+            font-family: 'CustomGeorgia';
+            src: url('fonts/georgia.ttf') format('truetype');
+        }
+        @font-face {
+            font-family: 'CustomNotoSansKR';
+            src: url('fonts/NotoSansKR-Regular.ttf') format('truetype');
+        }
         :root {
             --font-size: 18px;
             --line-height: 1.6;
@@ -14,6 +26,8 @@
             --margin-right: 0vw;
             --margin-bottom: 0vh;
             --margin-left: 0vw;
+            --font-weight: 400;
+            --paragraph-spacing: 1em;
         }
 
         body {
@@ -31,6 +45,7 @@
             font-size: var(--font-size);
             line-height: var(--line-height);
             letter-spacing: var(--letter-spacing);
+            font-weight: var(--font-weight);
             white-space: pre-wrap;
             position: relative;
             overflow-y: hidden;
@@ -280,6 +295,7 @@
         .line {
             display: block;
             transition: opacity 0.2s;
+            margin-bottom: var(--paragraph-spacing);
         }
 
         .line.hidden {
@@ -292,7 +308,7 @@
 
         .fullscreen #textContent {
             width: 100vw;
-            height: 100vh;
+            height: calc(100vh - 40px); /* Adjusted to stay above page info button */
             margin: 0;
             padding: 20px;
         }
@@ -427,15 +443,11 @@
         .black-mode #pageInfo { color: #fff; }
 
         #toggleButton {
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            z-index: 15;
+            position: static; /* Moved to controls */
         }
 
         .fullscreen #toggleButton {
-            bottom: 10px;
-            left: 10px;
+            display: none; /* Hidden in fullscreen */
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
@@ -449,6 +461,7 @@
         <button id="nextPage" aria-label="다음 페이지"><span class="icon">▶</span> 다음</button>
         <button id="tocButton" aria-label="목차">목차</button>
         <button id="libraryButton" aria-label="라이브러리">라이브러리</button>
+        <button id="favoritesButton" aria-label="즐겨찾기">즐겨찾기</button>
         <input type="number" id="jumpToPage" min="1" placeholder="페이지로 이동" style="width: 100px; padding: 5px;">
     </div>
     <details>
@@ -477,14 +490,22 @@
             <div><input type="text" id="fontSize" value="18">px</div>
             <label for="fontFamily">글꼴 스타일:</label>
             <select id="fontFamily">
-                <option value="Arial, sans-serif">Arial</option>
-                <option value="Georgia, serif">Georgia</option>
-                <option value="'Noto Sans KR', sans-serif">Noto Sans KR</option>
+                <option value="'CustomArial', sans-serif">Arial</option>
+                <option value="'CustomGeorgia', serif">Georgia</option>
+                <option value="'CustomNotoSansKR', sans-serif">Noto Sans KR</option>
+            </select>
+            <label for="fontWeight">글꼴 굵기:</label>
+            <select id="fontWeight">
+                <option value="300">얇게</option>
+                <option value="400" selected>보통</option>
+                <option value="700">굵게</option>
             </select>
             <label for="lineHeight">줄 간격:</label>
             <div><input type="text" id="lineHeight" value="1.6"></div>
             <label for="letterSpacing">글자 간격:</label>
             <div><input type="text" id="letterSpacing" value="0">px</div>
+            <label for="paragraphSpacing">문단 간격:</label>
+            <div><input type="text" id="paragraphSpacing" value="1">em</div>
             <label for="preloadRange">프리로드 범위 (±페이지):</label>
             <div><input type="text" id="preloadRange" value="2"></div>
             <label for="textHeight">텍스트 영역 높이 (%):</label>
@@ -538,7 +559,7 @@
         <div id="tocContent"></div>
     </div>
     <div id="libraryOverlay">
-        <button id="closeLibrary" style="position: absolute; top: 10px; right: 10px; padding: 5px; background: #fff; border: none; cursor: pointer;">X</button>
+        <button id="closeLibrary" style="position: absolute; top: 10px; right: 80px; padding: 5px; background: #fff; border: none; cursor: pointer;">X</button>
         <div id="libraryContent"></div>
     </div>
 
@@ -560,8 +581,10 @@
         const delayBeforeEffect = document.getElementById('delayBeforeEffect');
         const fontSize = document.getElementById('fontSize');
         const fontFamily = document.getElementById('fontFamily');
+        const fontWeight = document.getElementById('fontWeight');
         const lineHeight = document.getElementById('lineHeight');
         const letterSpacing = document.getElementById('letterSpacing');
+        const paragraphSpacing = document.getElementById('paragraphSpacing');
         const preloadRange = document.getElementById('preloadRange');
         const textHeight = document.getElementById('textHeight');
         const pageInfoSize = document.getElementById('pageInfoSize');
@@ -584,6 +607,7 @@
         const nextPage = document.getElementById('nextPage');
         const tocButton = document.getElementById('tocButton');
         const libraryButton = document.getElementById('libraryButton');
+        const favoritesButton = document.getElementById('favoritesButton');
         const jumpToPage = document.getElementById('jumpToPage');
         const pageInfo = document.getElementById('pageInfo');
         const leftPageButton = document.getElementById('leftPageButton');
@@ -747,9 +771,11 @@
         effectSelect.value = localStorage.getItem('effect') || 'char';
         delayBeforeEffect.value = localStorage.getItem('delayBeforeEffect') || 400;
         fontSize.value = localStorage.getItem('fontSize') || 18;
-        fontFamily.value = localStorage.getItem('fontFamily') || 'Arial, sans-serif';
+        fontFamily.value = localStorage.getItem('fontFamily') || "'CustomArial', sans-serif";
+        fontWeight.value = localStorage.getItem('fontWeight') || 400;
         lineHeight.value = localStorage.getItem('lineHeight') || 1.6;
         letterSpacing.value = localStorage.getItem('letterSpacing') || 0;
+        paragraphSpacing.value = localStorage.getItem('paragraphSpacing') || 1;
         preloadRange.value = localStorage.getItem('preloadRange') || 2;
         textHeight.value = localStorage.getItem('textHeight') || 70;
         pageInfoSize.value = localStorage.getItem('pageInfoSize') || 14;
@@ -774,7 +800,7 @@
         if (window.Worker) {
             const workerCode = `
                 self.onmessage = function(e) {
-                    const { text, maxHeight, fontSize, lineHeight, letterSpacing, fontFamily } = e.data;
+                    const { text, maxHeight, fontSize, lineHeight, letterSpacing, fontFamily, fontWeight, paragraphSpacing } = e.data;
                     const lines = text.split('\\n').filter(line => line.trim().length > 0);
                     const pages = [];
                     let currentPageText = '';
@@ -782,11 +808,11 @@
                     let currentHeight = 0;
                     const lineHeightPx = parseFloat(lineHeight) * parseFloat(fontSize);
                     for (let line of lines) {
-                        currentHeight += lineHeightPx;
+                        currentHeight += lineHeightPx + parseFloat(paragraphSpacing);
                         if (currentHeight > maxHeight) {
                             pages.push(currentPageText.trim());
                             currentPageText = line + '\\n';
-                            currentHeight = lineHeightPx;
+                            currentHeight = lineHeightPx + parseFloat(paragraphSpacing);
                         } else {
                             currentPageText += line + '\\n';
                         }
@@ -798,12 +824,12 @@
             worker = new Worker(URL.createObjectURL(new Blob([workerCode], { type: 'application/javascript' })));
         }
 
-        function addToLibrary(fileName, fileData, coverUrl) {
+        function addToLibrary(fileName, fileData, coverUrl, isFavorite = false) {
             const existingIndex = libraryFiles.findIndex(item => item.name === fileName);
             if (existingIndex !== -1) {
                 libraryFiles.splice(existingIndex, 1);
             }
-            libraryFiles.unshift({ name: fileName, data: fileData, cover: coverUrl, timestamp: Date.now() });
+            libraryFiles.unshift({ name: fileName, data: fileData, cover: coverUrl, timestamp: Date.now(), favorite: isFavorite });
             libraryFiles = libraryFiles.slice(0, 10);
             localStorage.setItem('libraryFiles', JSON.stringify(libraryFiles));
             pruneFileCache();
@@ -882,7 +908,7 @@
                     progress.value = 0;
                     toggleButtons(false);
                     loadingSpinner.style.display = 'none';
-                    addToLibrary(file.name, fileData, cachedData.coverUrl || null);
+                    addToLibrary(file.name, fileData, cachedData.coverUrl || null, cachedData.favorite || false);
                     return;
                 }
 
@@ -911,7 +937,9 @@
                             fontSize: fontSize.value,
                             lineHeight: lineHeight.value,
                             letterSpacing: letterSpacing.value,
-                            fontFamily: fontFamily.value
+                            fontFamily: fontFamily.value,
+                            fontWeight: fontWeight.value,
+                            paragraphSpacing: paragraphSpacing.value
                         });
                     } else {
                         pages = splitTextToFit(fileData, textContent.getBoundingClientRect().height);
@@ -939,9 +967,8 @@
                         showMessage('EPUB 파싱 중...');
                         const coverUrl = await book.coverUrl();
                         const pagesData = await loadEpubPages();
-                        pages = pagesData;
-                        const nav = await book.loaded.navigation;
-                        toc = nav.toc;
+                        pages = pagesData.pages;
+                        toc = pagesData.toc;
 
                         await setCachedData(lastFileName, { pages: pages, toc: toc, coverUrl: coverUrl, timestamp: Date.now() });
 
@@ -974,15 +1001,18 @@
 
         async function loadEpubPages() {
             if (book && book.rendition) book.rendition.destroy();
-            let fullText = '';
+            let pages = [];
             let loadedCount = 0;
             const sections = book.spine.items;
+            const nav = await book.loaded.navigation;
+            toc = nav.toc;
             book.rendition = book.renderTo('textContent', {
                 ignoreContainerRead: true,
                 flow: 'paginated',
                 width: '100%',
                 height: '100%'
             });
+
             for (let i = 0; i < sections.length; i++) {
                 const section = book.spine.get(i);
                 const content = await section.load(book.load.bind(book));
@@ -990,11 +1020,16 @@
                 progress.value = (loadedCount / sections.length) * 50;
                 const div = document.createElement('div');
                 div.appendChild(content.cloneNode(true));
-                div.querySelectorAll('a').forEach(link => link.parentNode.removeChild(link));
+
+                // Remove hyperlinks, footnotes, and titles
+                div.querySelectorAll('a, sup, h1, h2, h3, h4, h5, h6').forEach(el => el.parentNode.removeChild(el));
                 const text = div.innerText.trim();
-                if (text) fullText += text + '\n\n';
+                if (text) {
+                    const chapterTitle = toc[i] ? toc[i].label : `Chapter ${i + 1}`;
+                    pages.push(`${chapterTitle}\n\n${text}`);
+                }
             }
-            return splitTextToFit(fullText, textContent.getBoundingClientRect().height);
+            return { pages, toc };
         }
 
         function splitTextToFit(text, containerHeight) {
@@ -1002,7 +1037,7 @@
             const pages = [];
             let currentPageText = '';
             const testDiv = document.createElement('div');
-            testDiv.style.cssText = `font-size: ${fontSize.value}px; line-height: ${lineHeight.value}; white-space: pre-wrap; visibility: hidden; position: absolute; padding: 10px; font-family: ${fontFamily.value}; letter-spacing: ${letterSpacing.value}px;`;
+            testDiv.style.cssText = `font-size: ${fontSize.value}px; line-height: ${lineHeight.value}; font-weight: ${fontWeight.value}; white-space: pre-wrap; visibility: hidden; position: absolute; padding: 10px; font-family: ${fontFamily.value}; letter-spacing: ${letterSpacing.value}px; margin-bottom: ${paragraphSpacing.value}em;`;
             document.body.appendChild(testDiv);
             for (let line of lines) {
                 testDiv.innerText = currentPageText + line + '\n';
@@ -1226,7 +1261,8 @@
         libraryButton.addEventListener('click', () => {
             libraryContent.innerHTML = '<ul>' + libraryFiles.sort((a, b) => b.timestamp - a.timestamp).map((file, index) => {
                 const cover = file.cover ? `<img src="${file.cover}" alt="${file.name} 표지">` : `<div class="no-cover">${file.name}</div>`;
-                return `<li class="library-item" data-index="${index}">${cover}<span>${file.name}</span><button class="delete-button" data-index="${index}">삭제</button></li>`;
+                const favoriteClass = file.favorite ? 'style="color: yellow;"' : '';
+                return `<li class="library-item" data-index="${index}">${cover}<span ${favoriteClass}>${file.name}</span><button class="favorite-button" data-index="${index}">${file.favorite ? '★' : '☆'}</button><button class="delete-button" data-index="${index}">삭제</button></li>`;
             }).join('') + '</ul>';
             libraryOverlay.style.display = 'block';
 
@@ -1268,9 +1304,8 @@
                         try {
                             await book.ready;
                             const pagesData = await loadEpubPages();
-                            pages = pagesData;
-                            const nav = await book.loaded.navigation;
-                            toc = nav.toc;
+                            pages = pagesData.pages;
+                            toc = pagesData.toc;
                             await setCachedData(lastFileName, { pages: pages, toc: toc, timestamp: Date.now() });
                             loadLastPage();
                             preloadPages();
@@ -1287,13 +1322,117 @@
                     loadingSpinner.style.display = 'none';
                 });
 
+                const favoriteButton = li.querySelector('.favorite-button');
+                favoriteButton.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const index = parseInt(favoriteButton.dataset.index);
+                    libraryFiles[index].favorite = !libraryFiles[index].favorite;
+                    localStorage.setItem('libraryFiles', JSON.stringify(libraryFiles));
+                    libraryButton.click(); // Refresh library
+                    showMessage(libraryFiles[index].favorite ? '즐겨찾기에 추가되었습니다.' : '즐겨찾기에서 제거되었습니다.', 2000);
+                });
+
                 const deleteButton = li.querySelector('.delete-button');
                 deleteButton.addEventListener('click', (e) => {
                     e.stopPropagation();
                     const index = parseInt(deleteButton.dataset.index);
                     libraryFiles.splice(index, 1);
                     localStorage.setItem('libraryFiles', JSON.stringify(libraryFiles));
-                    libraryButton.click(); // 라이브러리 목록 갱신
+                    libraryButton.click(); // Refresh library
+                    showMessage('파일이 삭제되었습니다.', 2000);
+                });
+            });
+
+            document.getElementById('closeLibrary').addEventListener('click', () => {
+                libraryOverlay.style.display = 'none';
+            });
+        });
+
+        favoritesButton.addEventListener('click', () => {
+            const favoriteFiles = libraryFiles.filter(file => file.favorite);
+            if (favoriteFiles.length === 0) {
+                showMessage('즐겨찾기한 책이 없습니다.', 2000);
+                return;
+            }
+            libraryContent.innerHTML = '<ul>' + favoriteFiles.map((file, index) => {
+                const cover = file.cover ? `<img src="${file.cover}" alt="${file.name} 표지">` : `<div class="no-cover">${file.name}</div>`;
+                return `<li class="library-item" data-index="${libraryFiles.indexOf(file)}">${cover}<span style="color: yellow;">${file.name}</span><button class="favorite-button" data-index="${libraryFiles.indexOf(file)}">★</button><button class="delete-button" data-index="${libraryFiles.indexOf(file)}">삭제</button></li>`;
+            }).join('') + '</ul>';
+            libraryOverlay.style.display = 'block';
+
+            libraryContent.querySelectorAll('li').forEach(li => {
+                li.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    const index = parseInt(li.dataset.index);
+                    const file = libraryFiles[index];
+                    lastFileName = file.name;
+                    libraryOverlay.style.display = 'none';
+                    showMessage('즐겨찾기에서 불러오는 중...');
+                    toggleButtons(true);
+                    loadingSpinner.style.display = 'block';
+
+                    await pruneFileCache();
+
+                    let cachedData = await getCachedData(lastFileName);
+                    if (cachedData) {
+                        pages = cachedData.pages;
+                        toc = cachedData.toc || [];
+                        loadLastPage();
+                        preloadPages();
+                        displayPage();
+                        showMessage('');
+                        toggleButtons(false);
+                        loadingSpinner.style.display = 'none';
+                        return;
+                    }
+
+                    if (file.name.endsWith('.txt')) {
+                        pages = splitTextToFit(file.data, textContent.getBoundingClientRect().height);
+                        await setCachedData(lastFileName, { pages: pages, timestamp: Date.now() });
+                        loadLastPage();
+                        preloadPages();
+                        displayPage();
+                    } else if (file.name.endsWith('.epub')) {
+                        await loadEpubLibraries();
+                        book = window.ePub(file.data);
+                        try {
+                            await book.ready;
+                            const pagesData = await loadEpubPages();
+                            pages = pagesData.pages;
+                            toc = pagesData.toc;
+                            await setCachedData(lastFileName, { pages: pages, toc: toc, timestamp: Date.now() });
+                            loadLastPage();
+                            preloadPages();
+                            displayPage();
+                        } catch (err) {
+                            showMessage('EPUB 로드 오류: ' + err.message);
+                            toggleButtons(false);
+                            loadingSpinner.style.display = 'none';
+                            return;
+                        }
+                    }
+                    showMessage('');
+                    toggleButtons(false);
+                    loadingSpinner.style.display = 'none';
+                });
+
+                const favoriteButton = li.querySelector('.favorite-button');
+                favoriteButton.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const index = parseInt(favoriteButton.dataset.index);
+                    libraryFiles[index].favorite = false;
+                    localStorage.setItem('libraryFiles', JSON.stringify(libraryFiles));
+                    favoritesButton.click(); // Refresh favorites
+                    showMessage('즐겨찾기에서 제거되었습니다.', 2000);
+                });
+
+                const deleteButton = li.querySelector('.delete-button');
+                deleteButton.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const index = parseInt(deleteButton.dataset.index);
+                    libraryFiles.splice(index, 1);
+                    localStorage.setItem('libraryFiles', JSON.stringify(libraryFiles));
+                    favoritesButton.click(); // Refresh favorites
                     showMessage('파일이 삭제되었습니다.', 2000);
                 });
             });
@@ -1369,6 +1508,11 @@
             debouncedUpdateStyles();
         });
 
+        fontWeight.addEventListener('change', () => {
+            localStorage.setItem('fontWeight', fontWeight.value);
+            debouncedUpdateStyles();
+        });
+
         lineHeight.addEventListener('input', () => {
             localStorage.setItem('lineHeight', lineHeight.value);
             debouncedUpdateStyles();
@@ -1376,6 +1520,11 @@
 
         letterSpacing.addEventListener('input', () => {
             localStorage.setItem('letterSpacing', letterSpacing.value);
+            debouncedUpdateStyles();
+        });
+
+        paragraphSpacing.addEventListener('input', () => {
+            localStorage.setItem('paragraphSpacing', paragraphSpacing.value);
             debouncedUpdateStyles();
         });
 
@@ -1570,7 +1719,7 @@
         history.pushState(null, null, window.location.href);
 
         function showToc() {
-            if (!book || toc.length === 0) {
+            if (!toc || toc.length === 0) {
                 showMessage('목차가 없습니다.', 2000);
                 return;
             }
@@ -1606,9 +1755,11 @@
             effectSelect.value = 'char';
             delayBeforeEffect.value = 400;
             fontSize.value = 18;
-            fontFamily.value = 'Arial, sans-serif';
+            fontFamily.value = "'CustomArial', sans-serif";
+            fontWeight.value = 400;
             lineHeight.value = 1.6;
             letterSpacing.value = 0;
+            paragraphSpacing.value = 1;
             preloadRange.value = 2;
             textHeight.value = 70;
             pageInfoSize.value = 14;
@@ -1667,14 +1818,18 @@
             const currentSettings = {
                 fontSize: fontSize.value,
                 fontFamily: fontFamily.value,
+                fontWeight: fontWeight.value,
                 lineHeight: lineHeight.value,
-                letterSpacing: letterSpacing.value
+                letterSpacing: letterSpacing.value,
+                paragraphSpacing: paragraphSpacing.value
             };
             if (JSON.stringify(currentSettings) === JSON.stringify(lastSettings)) return;
             lastSettings = { ...currentSettings };
             document.documentElement.style.setProperty('--font-size', `${fontSize.value}px`);
             document.documentElement.style.setProperty('--line-height', lineHeight.value);
             document.documentElement.style.setProperty('--letter-spacing', `${letterSpacing.value}px`);
+            document.documentElement.style.setProperty('--font-weight', fontWeight.value);
+            document.documentElement.style.setProperty('--paragraph-spacing', `${paragraphSpacing.value}em`);
             document.documentElement.style.setProperty('--text-height', `${textHeight.value}vh`);
             document.documentElement.style.setProperty('--margin-top', `${marginTop.value}vh`);
             document.documentElement.style.setProperty('--margin-right', `${marginRight.value}vw`);
@@ -1714,6 +1869,7 @@
             nextPage.disabled = disable;
             tocButton.disabled = disable;
             libraryButton.disabled = disable;
+            favoritesButton.disabled = disable;
             jumpToPage.disabled = disable;
         }
 
