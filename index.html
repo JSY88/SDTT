@@ -5,18 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>사라지는 텍스트 훈련</title>
     <style>
-        @font-face {
-            font-family: 'CustomArial';
-            src: url('fonts/arial.ttf') format('truetype');
-        }
-        @font-face {
-            font-family: 'CustomGeorgia';
-            src: url('fonts/georgia.ttf') format('truetype');
-        }
-        @font-face {
-            font-family: 'CustomNotoSansKR';
-            src: url('fonts/NotoSansKR-Regular.ttf') format('truetype');
-        }
         :root {
             --font-size: 18px;
             --line-height: 1.6;
@@ -26,8 +14,6 @@
             --margin-right: 0vw;
             --margin-bottom: 0vh;
             --margin-left: 0vw;
-            --font-weight: 400;
-            --paragraph-spacing: 1em;
         }
 
         body {
@@ -45,7 +31,6 @@
             font-size: var(--font-size);
             line-height: var(--line-height);
             letter-spacing: var(--letter-spacing);
-            font-weight: var(--font-weight);
             white-space: pre-wrap;
             position: relative;
             overflow-y: hidden;
@@ -94,48 +79,33 @@
             display: none;
         }
 
-        #pageInfoContainer {
+        #pageInfo {
             position: fixed;
             bottom: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            align-items: center;
-            z-index: 1000;
-        }
-
-        #speedDownButton, #speedUpButton {
-            width: 40px;
-            height: 40px;
-            background: transparent;
-            border: none;
-            cursor: pointer;
-            opacity: 0; /* 보이지 않게 */
-            transition: none; /* 반투명 효과 제거 */
-        }
-
-        #speedDownButton:hover, #speedUpButton:hover,
-        #speedDownButton:focus, #speedUpButton:focus,
-        #speedDownButton:active, #speedUpButton:active {
-            background: transparent; /* 반투명 효과 제거 */
-            outline: none;
-        }
-
-        #pageInfo {
+            right: 10px;
             font-size: 14px;
             background: rgba(255, 255, 255, 0);
             padding: 5px 10px;
             border-radius: 5px;
+            z-index: 1000;
             cursor: pointer;
             border: none;
             color: #333;
-            margin: 0; /* 버튼과 딱 붙도록 */
         }
 
-        .fullscreen #pageInfoContainer {
+        .fullscreen #pageInfo {
+            position: fixed;
             bottom: 10px;
             left: 50%;
             transform: translateX(-50%);
+            right: auto;
+            background: rgba(255, 255, 255, 0);
+            padding: 5px 10px;
+            border-radius: 5px;
+            z-index: 1000;
+            cursor: pointer;
+            border: none;
+            color: #333;
         }
 
         #leftPageButton, #rightPageButton {
@@ -310,7 +280,6 @@
         .line {
             display: block;
             transition: opacity 0.2s;
-            margin-bottom: var(--paragraph-spacing);
         }
 
         .line.hidden {
@@ -323,7 +292,7 @@
 
         .fullscreen #textContent {
             width: 100vw;
-            height: calc(100vh - 40px);
+            height: 100vh;
             margin: 0;
             padding: 20px;
         }
@@ -352,19 +321,17 @@
             top: 0;
             left: 0;
             width: 100%;
-            height: 100vh;
+            height: 100%;
             background: rgba(0, 0, 0, 0.8);
             z-index: 20;
             color: white;
             padding: 20px;
             overflow-y: auto;
-            box-sizing: border-box;
         }
 
         #tocOverlay ul, #libraryOverlay ul {
             list-style: none;
             padding: 0;
-            margin: 0;
         }
 
         #tocOverlay li, #libraryOverlay li {
@@ -387,7 +354,6 @@
             width: 50px;
             height: 70px;
             object-fit: cover;
-            display: block;
         }
 
         #libraryOverlay .library-item .no-cover {
@@ -400,9 +366,6 @@
             text-align: center;
             font-size: 12px;
             color: #fff;
-            padding: 5px;
-            word-break: break-word;
-            overflow: hidden;
         }
 
         #libraryOverlay .library-item button {
@@ -447,20 +410,11 @@
             }
             #pageInfo {
                 font-size: 12px;
+                bottom: 5px;
+                right: 5px;
             }
             #message {
                 bottom: 60px;
-                font-size: 14px;
-            }
-            #libraryOverlay {
-                padding: 10px;
-                height: 100vh;
-            }
-            #libraryOverlay .library-item img, #libraryOverlay .library-item .no-cover {
-                width: 40px;
-                height: 56px;
-            }
-            #libraryOverlay .library-item span {
                 font-size: 14px;
             }
         }
@@ -471,6 +425,18 @@
         .black-mode #fileUpload { background-color: #333; border-color: #555; }
         .black-mode #fileUpload:hover { background-color: #444; }
         .black-mode #pageInfo { color: #fff; }
+
+        #toggleButton {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            z-index: 15;
+        }
+
+        .fullscreen #toggleButton {
+            bottom: 10px;
+            left: 10px;
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/nosleep.js@1.1.0/dist/NoSleep.min.js"></script>
@@ -483,7 +449,6 @@
         <button id="nextPage" aria-label="다음 페이지"><span class="icon">▶</span> 다음</button>
         <button id="tocButton" aria-label="목차">목차</button>
         <button id="libraryButton" aria-label="라이브러리">라이브러리</button>
-        <button id="favoritesButton" aria-label="즐겨찾기">즐겨찾기</button>
         <input type="number" id="jumpToPage" min="1" placeholder="페이지로 이동" style="width: 100px; padding: 5px;">
     </div>
     <details>
@@ -512,22 +477,14 @@
             <div><input type="text" id="fontSize" value="18">px</div>
             <label for="fontFamily">글꼴 스타일:</label>
             <select id="fontFamily">
-                <option value="'CustomArial', sans-serif">Arial</option>
-                <option value="'CustomGeorgia', serif">Georgia</option>
-                <option value="'CustomNotoSansKR', sans-serif">Noto Sans KR</option>
-            </select>
-            <label for="fontWeight">글꼴 굵기:</label>
-            <select id="fontWeight">
-                <option value="300">얇게</option>
-                <option value="400" selected>보통</option>
-                <option value="700">굵게</option>
+                <option value="Arial, sans-serif">Arial</option>
+                <option value="Georgia, serif">Georgia</option>
+                <option value="'Noto Sans KR', sans-serif">Noto Sans KR</option>
             </select>
             <label for="lineHeight">줄 간격:</label>
             <div><input type="text" id="lineHeight" value="1.6"></div>
             <label for="letterSpacing">글자 간격:</label>
             <div><input type="text" id="letterSpacing" value="0">px</div>
-            <label for="paragraphSpacing">문단 간격:</label>
-            <div><input type="text" id="paragraphSpacing" value="1">em</div>
             <label for="preloadRange">프리로드 범위 (±페이지):</label>
             <div><input type="text" id="preloadRange" value="2"></div>
             <label for="textHeight">텍스트 영역 높이 (%):</label>
@@ -571,11 +528,7 @@
         <span id="progressPercent">0%</span>
     </div>
     <div id="textContent" role="region" aria-label="텍스트 표시 영역"></div>
-    <div id="pageInfoContainer">
-        <button id="speedDownButton" aria-label="속도 감소"></button>
-        <button id="pageInfo" aria-live="polite"></button>
-        <button id="speedUpButton" aria-label="속도 증가"></button>
-    </div>
+    <button id="pageInfo" aria-live="polite"></button>
     <button id="leftPageButton" aria-label="이전 페이지로 이동"></button>
     <button id="rightPageButton" aria-label="다음 페이지로 이동"></button>
     <div id="loadingSpinner"></div>
@@ -607,10 +560,8 @@
         const delayBeforeEffect = document.getElementById('delayBeforeEffect');
         const fontSize = document.getElementById('fontSize');
         const fontFamily = document.getElementById('fontFamily');
-        const fontWeight = document.getElementById('fontWeight');
         const lineHeight = document.getElementById('lineHeight');
         const letterSpacing = document.getElementById('letterSpacing');
-        const paragraphSpacing = document.getElementById('paragraphSpacing');
         const preloadRange = document.getElementById('preloadRange');
         const textHeight = document.getElementById('textHeight');
         const pageInfoSize = document.getElementById('pageInfoSize');
@@ -633,11 +584,8 @@
         const nextPage = document.getElementById('nextPage');
         const tocButton = document.getElementById('tocButton');
         const libraryButton = document.getElementById('libraryButton');
-        const favoritesButton = document.getElementById('favoritesButton');
         const jumpToPage = document.getElementById('jumpToPage');
         const pageInfo = document.getElementById('pageInfo');
-        const speedDownButton = document.getElementById('speedDownButton');
-        const speedUpButton = document.getElementById('speedUpButton');
         const leftPageButton = document.getElementById('leftPageButton');
         const rightPageButton = document.getElementById('rightPageButton');
         const message = document.getElementById('message');
@@ -799,11 +747,9 @@
         effectSelect.value = localStorage.getItem('effect') || 'char';
         delayBeforeEffect.value = localStorage.getItem('delayBeforeEffect') || 400;
         fontSize.value = localStorage.getItem('fontSize') || 18;
-        fontFamily.value = localStorage.getItem('fontFamily') || "'CustomArial', sans-serif";
-        fontWeight.value = localStorage.getItem('fontWeight') || 400;
+        fontFamily.value = localStorage.getItem('fontFamily') || 'Arial, sans-serif';
         lineHeight.value = localStorage.getItem('lineHeight') || 1.6;
         letterSpacing.value = localStorage.getItem('letterSpacing') || 0;
-        paragraphSpacing.value = localStorage.getItem('paragraphSpacing') || 1;
         preloadRange.value = localStorage.getItem('preloadRange') || 2;
         textHeight.value = localStorage.getItem('textHeight') || 70;
         pageInfoSize.value = localStorage.getItem('pageInfoSize') || 14;
@@ -828,19 +774,19 @@
         if (window.Worker) {
             const workerCode = `
                 self.onmessage = function(e) {
-                    const { text, maxHeight, fontSize, lineHeight, letterSpacing, fontFamily, fontWeight, paragraphSpacing } = e.data;
+                    const { text, maxHeight, fontSize, lineHeight, letterSpacing, fontFamily } = e.data;
                     const lines = text.split('\\n').filter(line => line.trim().length > 0);
                     const pages = [];
                     let currentPageText = '';
-                    const testDiv = { innerText: '', getBoundingClientRect: () => ({ height: 0 }) };
+                    const testDiv = { innerText: '', getBoundingClientRect: () => ({ height: 0 }) }; // 더미 객체
                     let currentHeight = 0;
                     const lineHeightPx = parseFloat(lineHeight) * parseFloat(fontSize);
                     for (let line of lines) {
-                        currentHeight += lineHeightPx + parseFloat(paragraphSpacing);
+                        currentHeight += lineHeightPx;
                         if (currentHeight > maxHeight) {
                             pages.push(currentPageText.trim());
                             currentPageText = line + '\\n';
-                            currentHeight = lineHeightPx + parseFloat(paragraphSpacing);
+                            currentHeight = lineHeightPx;
                         } else {
                             currentPageText += line + '\\n';
                         }
@@ -852,19 +798,12 @@
             worker = new Worker(URL.createObjectURL(new Blob([workerCode], { type: 'application/javascript' })));
         }
 
-        function addToLibrary(fileName, fileData, coverUrl, isFavorite = false, metadata = {}) {
+        function addToLibrary(fileName, fileData, coverUrl) {
             const existingIndex = libraryFiles.findIndex(item => item.name === fileName);
             if (existingIndex !== -1) {
                 libraryFiles.splice(existingIndex, 1);
             }
-            libraryFiles.unshift({ 
-                name: fileName, 
-                data: fileData, 
-                cover: coverUrl, 
-                timestamp: Date.now(), 
-                favorite: isFavorite,
-                metadata: metadata 
-            });
+            libraryFiles.unshift({ name: fileName, data: fileData, cover: coverUrl, timestamp: Date.now() });
             libraryFiles = libraryFiles.slice(0, 10);
             localStorage.setItem('libraryFiles', JSON.stringify(libraryFiles));
             pruneFileCache();
@@ -943,7 +882,7 @@
                     progress.value = 0;
                     toggleButtons(false);
                     loadingSpinner.style.display = 'none';
-                    addToLibrary(file.name, fileData, cachedData.cover, cachedData.favorite || false, cachedData.metadata || {});
+                    addToLibrary(file.name, fileData, cachedData.coverUrl || null);
                     return;
                 }
 
@@ -972,9 +911,7 @@
                             fontSize: fontSize.value,
                             lineHeight: lineHeight.value,
                             letterSpacing: letterSpacing.value,
-                            fontFamily: fontFamily.value,
-                            fontWeight: fontWeight.value,
-                            paragraphSpacing: paragraphSpacing.value
+                            fontFamily: fontFamily.value
                         });
                     } else {
                         pages = splitTextToFit(fileData, textContent.getBoundingClientRect().height);
@@ -1001,27 +938,12 @@
                         await book.ready;
                         showMessage('EPUB 파싱 중...');
                         const coverUrl = await book.coverUrl();
-                        const metadata = await book.loaded.metadata;
-                        let coverBlobUrl = null;
-                        if (coverUrl) {
-                            const coverBlob = await fetch(coverUrl).then(res => res.blob());
-                            coverBlobUrl = URL.createObjectURL(coverBlob);
-                        }
                         const pagesData = await loadEpubPages();
-                        pages = pagesData.pages;
-                        toc = pagesData.toc;
+                        pages = pagesData;
+                        const nav = await book.loaded.navigation;
+                        toc = nav.toc;
 
-                        await setCachedData(lastFileName, { 
-                            pages: pages, 
-                            toc: toc, 
-                            cover: coverBlobUrl, 
-                            timestamp: Date.now(),
-                            metadata: {
-                                title: metadata.title || 'Unknown Title',
-                                author: metadata.creator || 'Unknown Author',
-                                publisher: metadata.publisher || 'Unknown Publisher'
-                            }
-                        });
+                        await setCachedData(lastFileName, { pages: pages, toc: toc, coverUrl: coverUrl, timestamp: Date.now() });
 
                         loadLastPage();
                         preloadPages();
@@ -1030,11 +952,7 @@
                         progress.value = 0;
                         toggleButtons(false);
                         loadingSpinner.style.display = 'none';
-                        addToLibrary(file.name, fileData, coverBlobUrl, false, {
-                            title: metadata.title || 'Unknown Title',
-                            author: metadata.creator || 'Unknown Author',
-                            publisher: metadata.publisher || 'Unknown Publisher'
-                        });
+                        addToLibrary(file.name, fileData, coverUrl);
                     } catch (err) {
                         showMessage('EPUB 로드 오류: ' + err.message);
                         toggleButtons(false);
@@ -1056,18 +974,15 @@
 
         async function loadEpubPages() {
             if (book && book.rendition) book.rendition.destroy();
-            let pages = [];
+            let fullText = '';
             let loadedCount = 0;
             const sections = book.spine.items;
-            const nav = await book.loaded.navigation;
-            toc = nav.toc;
             book.rendition = book.renderTo('textContent', {
                 ignoreContainerRead: true,
                 flow: 'paginated',
                 width: '100%',
                 height: '100%'
             });
-
             for (let i = 0; i < sections.length; i++) {
                 const section = book.spine.get(i);
                 const content = await section.load(book.load.bind(book));
@@ -1075,15 +990,11 @@
                 progress.value = (loadedCount / sections.length) * 50;
                 const div = document.createElement('div');
                 div.appendChild(content.cloneNode(true));
-
-                div.querySelectorAll('a, sup, h1, h2, h3, h4, h5, h6').forEach(el => el.parentNode.removeChild(el));
+                div.querySelectorAll('a').forEach(link => link.parentNode.removeChild(link));
                 const text = div.innerText.trim();
-                if (text) {
-                    const chapterTitle = toc[i] ? toc[i].label : `Chapter ${i + 1}`;
-                    pages.push(`${chapterTitle}\n\n${text}`);
-                }
+                if (text) fullText += text + '\n\n';
             }
-            return { pages, toc };
+            return splitTextToFit(fullText, textContent.getBoundingClientRect().height);
         }
 
         function splitTextToFit(text, containerHeight) {
@@ -1091,7 +1002,7 @@
             const pages = [];
             let currentPageText = '';
             const testDiv = document.createElement('div');
-            testDiv.style.cssText = `font-size: ${fontSize.value}px; line-height: ${lineHeight.value}; font-weight: ${fontWeight.value}; white-space: pre-wrap; visibility: hidden; position: absolute; padding: 10px; font-family: ${fontFamily.value}; letter-spacing: ${letterSpacing.value}px; margin-bottom: ${paragraphSpacing.value}em;`;
+            testDiv.style.cssText = `font-size: ${fontSize.value}px; line-height: ${lineHeight.value}; white-space: pre-wrap; visibility: hidden; position: absolute; padding: 10px; font-family: ${fontFamily.value}; letter-spacing: ${letterSpacing.value}px;`;
             document.body.appendChild(testDiv);
             for (let line of lines) {
                 testDiv.innerText = currentPageText + line + '\n';
@@ -1294,30 +1205,6 @@
             }
         });
 
-speedDownButton.addEventListener('click', () => {
-    let newSpeed = parseInt(speedControl.value) -5; // 속도 감소
-    if (newSpeed <= 2000) { // 최대값 제한
-        speedControl.value = newSpeed;
-        speedInput.value = newSpeed;
-        speedPreset.value = newSpeed;
-        adjustSpeed();
-        localStorage.setItem('speed', newSpeed);
-        showMessage(`속도: ${newSpeed}ms`, 1000);
-    }
-});
-
-speedUpButton.addEventListener('click', () => {
-    let newSpeed = parseInt(speedControl.value) +5; // 속도 증가
-    if (newSpeed >= 50) { // 최소값 제한
-        speedControl.value = newSpeed;
-        speedInput.value = newSpeed;
-        speedPreset.value = newSpeed;
-        adjustSpeed();
-        localStorage.setItem('speed', newSpeed);
-        showMessage(`속도: ${newSpeed}ms`, 1000);
-    }
-});
-
         leftPageButton.addEventListener('click', () => {
             if (currentPage > 0) {
                 currentPage--;
@@ -1338,12 +1225,8 @@ speedUpButton.addEventListener('click', () => {
 
         libraryButton.addEventListener('click', () => {
             libraryContent.innerHTML = '<ul>' + libraryFiles.sort((a, b) => b.timestamp - a.timestamp).map((file, index) => {
-                const cover = file.cover ? 
-                    `<img src="${file.cover}" alt="${file.metadata?.title || file.name} 표지" onerror="this.style.display='none';this.nextSibling.style.display='flex';">` : 
-                    `<div class="no-cover">${file.metadata?.title || file.name}</div>`;
-                const favoriteClass = file.favorite ? 'style="color: yellow;"' : '';
-                const displayName = file.metadata?.title ? `${file.metadata.title} - ${file.metadata.author} (${file.metadata.publisher})` : file.name;
-                return `<li class="library-item" data-index="${index}">${cover}<span ${favoriteClass}>${displayName}</span><button class="favorite-button" data-index="${index}">${file.favorite ? '★' : '☆'}</button><button class="delete-button" data-index="${index}">삭제</button></li>`;
+                const cover = file.cover ? `<img src="${file.cover}" alt="${file.name} 표지">` : `<div class="no-cover">${file.name}</div>`;
+                return `<li class="library-item" data-index="${index}">${cover}<span>${file.name}</span><button class="delete-button" data-index="${index}">삭제</button></li>`;
             }).join('') + '</ul>';
             libraryOverlay.style.display = 'block';
 
@@ -1385,26 +1268,10 @@ speedUpButton.addEventListener('click', () => {
                         try {
                             await book.ready;
                             const pagesData = await loadEpubPages();
-                            pages = pagesData.pages;
-                            toc = pagesData.toc;
-                            const metadata = await book.loaded.metadata;
-                            const coverUrl = await book.coverUrl();
-                            let coverBlobUrl = null;
-                            if (coverUrl) {
-                                const coverBlob = await fetch(coverUrl).then(res => res.blob());
-                                coverBlobUrl = URL.createObjectURL(coverBlob);
-                            }
-                            await setCachedData(lastFileName, { 
-                                pages: pages, 
-                                toc: toc, 
-                                cover: coverBlobUrl, 
-                                timestamp: Date.now(),
-                                metadata: {
-                                    title: metadata.title || 'Unknown Title',
-                                    author: metadata.creator || 'Unknown Author',
-                                    publisher: metadata.publisher || 'Unknown Publisher'
-                                }
-                            });
+                            pages = pagesData;
+                            const nav = await book.loaded.navigation;
+                            toc = nav.toc;
+                            await setCachedData(lastFileName, { pages: pages, toc: toc, timestamp: Date.now() });
                             loadLastPage();
                             preloadPages();
                             displayPage();
@@ -1420,137 +1287,13 @@ speedUpButton.addEventListener('click', () => {
                     loadingSpinner.style.display = 'none';
                 });
 
-                const favoriteButton = li.querySelector('.favorite-button');
-                favoriteButton.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    const index = parseInt(favoriteButton.dataset.index);
-                    libraryFiles[index].favorite = !libraryFiles[index].favorite;
-                    localStorage.setItem('libraryFiles', JSON.stringify(libraryFiles));
-                    libraryButton.click();
-                    showMessage(libraryFiles[index].favorite ? '즐겨찾기에 추가되었습니다.' : '즐겨찾기에서 제거되었습니다.', 2000);
-                });
-
                 const deleteButton = li.querySelector('.delete-button');
                 deleteButton.addEventListener('click', (e) => {
                     e.stopPropagation();
                     const index = parseInt(deleteButton.dataset.index);
                     libraryFiles.splice(index, 1);
                     localStorage.setItem('libraryFiles', JSON.stringify(libraryFiles));
-                    libraryButton.click();
-                    showMessage('파일이 삭제되었습니다.', 2000);
-                });
-            });
-
-            document.getElementById('closeLibrary').addEventListener('click', () => {
-                libraryOverlay.style.display = 'none';
-            });
-        });
-
-        favoritesButton.addEventListener('click', () => {
-            const favoriteFiles = libraryFiles.filter(file => file.favorite);
-            if (favoriteFiles.length === 0) {
-                showMessage('즐겨찾기한 책이 없습니다.', 2000);
-                return;
-            }
-            libraryContent.innerHTML = '<ul>' + favoriteFiles.map((file, index) => {
-                const cover = file.cover ? 
-                    `<img src="${file.cover}" alt="${file.metadata?.title || file.name} 표지" onerror="this.style.display='none';this.nextSibling.style.display='flex';">` : 
-                    `<div class="no-cover">${file.metadata?.title || file.name}</div>`;
-                const displayName = file.metadata?.title ? `${file.metadata.title} - ${file.metadata.author} (${file.metadata.publisher})` : file.name;
-                return `<li class="library-item" data-index="${libraryFiles.indexOf(file)}">${cover}<span style="color: yellow;">${displayName}</span><button class="favorite-button" data-index="${libraryFiles.indexOf(file)}">★</button><button class="delete-button" data-index="${libraryFiles.indexOf(file)}">삭제</button></li>`;
-            }).join('') + '</ul>';
-            libraryOverlay.style.display = 'block';
-
-            libraryContent.querySelectorAll('li').forEach(li => {
-                li.addEventListener('click', async (e) => {
-                    e.stopPropagation();
-                    const index = parseInt(li.dataset.index);
-                    const file = libraryFiles[index];
-                    lastFileName = file.name;
-                    libraryOverlay.style.display = 'none';
-                    showMessage('즐겨찾기에서 불러오는 중...');
-                    toggleButtons(true);
-                    loadingSpinner.style.display = 'block';
-
-                    await pruneFileCache();
-
-                    let cachedData = await getCachedData(lastFileName);
-                    if (cachedData) {
-                        pages = cachedData.pages;
-                        toc = cachedData.toc || [];
-                        loadLastPage();
-                        preloadPages();
-                        displayPage();
-                        showMessage('');
-                        toggleButtons(false);
-                        loadingSpinner.style.display = 'none';
-                        return;
-                    }
-
-                    if (file.name.endsWith('.txt')) {
-                        pages = splitTextToFit(file.data, textContent.getBoundingClientRect().height);
-                        await setCachedData(lastFileName, { pages: pages, timestamp: Date.now() });
-                        loadLastPage();
-                        preloadPages();
-                        displayPage();
-                    } else if (file.name.endsWith('.epub')) {
-                        await loadEpubLibraries();
-                        book = window.ePub(file.data);
-                        try {
-                            await book.ready;
-                            const pagesData = await loadEpubPages();
-                            pages = pagesData.pages;
-                            toc = pagesData.toc;
-                            const metadata = await book.loaded.metadata;
-                            const coverUrl = await book.coverUrl();
-                            let coverBlobUrl = null;
-                            if (coverUrl) {
-                                const coverBlob = await fetch(coverUrl).then(res => res.blob());
-                                coverBlobUrl = URL.createObjectURL(coverBlob);
-                            }
-                            await setCachedData(lastFileName, { 
-                                pages: pages, 
-                                toc: toc, 
-                                cover: coverBlobUrl, 
-                                timestamp: Date.now(),
-                                metadata: {
-                                    title: metadata.title || 'Unknown Title',
-                                    author: metadata.creator || 'Unknown Author',
-                                    publisher: metadata.publisher || 'Unknown Publisher'
-                                }
-                            });
-                            loadLastPage();
-                            preloadPages();
-                            displayPage();
-                        } catch (err) {
-                            showMessage('EPUB 로드 오류: ' + err.message);
-                            toggleButtons(false);
-                            loadingSpinner.style.display = 'none';
-                            return;
-                        }
-                    }
-                    showMessage('');
-                    toggleButtons(false);
-                    loadingSpinner.style.display = 'none';
-                });
-
-                const favoriteButton = li.querySelector('.favorite-button');
-                favoriteButton.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    const index = parseInt(favoriteButton.dataset.index);
-                    libraryFiles[index].favorite = false;
-                    localStorage.setItem('libraryFiles', JSON.stringify(libraryFiles));
-                    favoritesButton.click();
-                    showMessage('즐겨찾기에서 제거되었습니다.', 2000);
-                });
-
-                const deleteButton = li.querySelector('.delete-button');
-                deleteButton.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    const index = parseInt(deleteButton.dataset.index);
-                    libraryFiles.splice(index, 1);
-                    localStorage.setItem('libraryFiles', JSON.stringify(libraryFiles));
-                    favoritesButton.click();
+                    libraryButton.click(); // 라이브러리 목록 갱신
                     showMessage('파일이 삭제되었습니다.', 2000);
                 });
             });
@@ -1626,11 +1369,6 @@ speedUpButton.addEventListener('click', () => {
             debouncedUpdateStyles();
         });
 
-        fontWeight.addEventListener('change', () => {
-            localStorage.setItem('fontWeight', fontWeight.value);
-            debouncedUpdateStyles();
-        });
-
         lineHeight.addEventListener('input', () => {
             localStorage.setItem('lineHeight', lineHeight.value);
             debouncedUpdateStyles();
@@ -1638,11 +1376,6 @@ speedUpButton.addEventListener('click', () => {
 
         letterSpacing.addEventListener('input', () => {
             localStorage.setItem('letterSpacing', letterSpacing.value);
-            debouncedUpdateStyles();
-        });
-
-        paragraphSpacing.addEventListener('input', () => {
-            localStorage.setItem('paragraphSpacing', paragraphSpacing.value);
             debouncedUpdateStyles();
         });
 
@@ -1837,7 +1570,7 @@ speedUpButton.addEventListener('click', () => {
         history.pushState(null, null, window.location.href);
 
         function showToc() {
-            if (!toc || toc.length === 0) {
+            if (!book || toc.length === 0) {
                 showMessage('목차가 없습니다.', 2000);
                 return;
             }
@@ -1873,11 +1606,9 @@ speedUpButton.addEventListener('click', () => {
             effectSelect.value = 'char';
             delayBeforeEffect.value = 400;
             fontSize.value = 18;
-            fontFamily.value = "'CustomArial', sans-serif";
-            fontWeight.value = 400;
+            fontFamily.value = 'Arial, sans-serif';
             lineHeight.value = 1.6;
             letterSpacing.value = 0;
-            paragraphSpacing.value = 1;
             preloadRange.value = 2;
             textHeight.value = 70;
             pageInfoSize.value = 14;
@@ -1929,25 +1660,38 @@ speedUpButton.addEventListener('click', () => {
 
         function updateProgressPercent(value) {
             progressPercent.innerText = `${Math.round(value)}%`;
-            if (value > 0) {
-                progressPercent.style.display = 'block';
-            } else {
-                progressPercent.style.display = 'none';
-            }
+            progressPercent.style.display = value > 0 ? 'block' : 'none';
         }
 
         function updateTextContentStyles() {
+            const currentSettings = {
+                fontSize: fontSize.value,
+                fontFamily: fontFamily.value,
+                lineHeight: lineHeight.value,
+                letterSpacing: letterSpacing.value
+            };
+            if (JSON.stringify(currentSettings) === JSON.stringify(lastSettings)) return;
+            lastSettings = { ...currentSettings };
             document.documentElement.style.setProperty('--font-size', `${fontSize.value}px`);
             document.documentElement.style.setProperty('--line-height', lineHeight.value);
             document.documentElement.style.setProperty('--letter-spacing', `${letterSpacing.value}px`);
-            document.documentElement.style.setProperty('--font-weight', fontWeight.value);
             document.documentElement.style.setProperty('--text-height', `${textHeight.value}vh`);
             document.documentElement.style.setProperty('--margin-top', `${marginTop.value}vh`);
             document.documentElement.style.setProperty('--margin-right', `${marginRight.value}vw`);
             document.documentElement.style.setProperty('--margin-bottom', `${marginBottom.value}vh`);
             document.documentElement.style.setProperty('--margin-left', `${marginLeft.value}vw`);
-            document.documentElement.style.setProperty('--paragraph-spacing', `${paragraphSpacing.value}em`);
-            textContent.style.fontFamily = fontFamily.value;
+            updateTextContentMargins();
+            toggleBlackMode();
+            pages = splitTextToFit(pages.join('\n\n'), textContent.getBoundingClientRect().height);
+            preloadPages();
+            displayPage();
+        }
+
+        function updateTextContentMargins() {
+            textContent.style.marginTop = `${marginTop.value}vh`;
+            textContent.style.marginRight = `${marginRight.value}vw`;
+            textContent.style.marginBottom = `${marginBottom.value}vh`;
+            textContent.style.marginLeft = `${marginLeft.value}vw`;
         }
 
         function updateFullScreenButtons() {
@@ -1964,41 +1708,20 @@ speedUpButton.addEventListener('click', () => {
             }
         }
 
+        function toggleButtons(disable) {
+            toggleButton.disabled = disable;
+            prevPage.disabled = disable;
+            nextPage.disabled = disable;
+            tocButton.disabled = disable;
+            libraryButton.disabled = disable;
+            jumpToPage.disabled = disable;
+        }
+
         function toggleBlackMode() {
-            if (blackMode.checked) {
-                document.body.classList.add('black-mode');
-                textContent.style.backgroundColor = blackModeColor.value;
-                textContent.style.color = '#fff';
-            } else {
-                document.body.classList.remove('black-mode');
-                textContent.style.backgroundColor = '#fff';
-                textContent.style.color = '#333';
-            }
+            document.body.classList.toggle('black-mode', blackMode.checked);
+            textContent.style.backgroundColor = blackMode.checked ? blackModeColor.value : '#fff';
+            textContent.style.color = blackMode.checked ? '#fff' : '#333';
         }
-
-        function toggleButtons(disabled) {
-            toggleButton.disabled = disabled;
-            prevPage.disabled = disabled;
-            nextPage.disabled = disabled;
-            tocButton.disabled = disabled;
-            libraryButton.disabled = disabled;
-            favoritesButton.disabled = disabled;
-            jumpToPage.disabled = disabled;
-        }
-
-        window.addEventListener('resize', () => {
-            if (pages.length > 0) {
-                pages = splitTextToFit(pages.join('\n\n'), textContent.getBoundingClientRect().height);
-                preloadPages();
-                displayPage();
-            }
-        });
-
-        document.addEventListener('DOMContentLoaded', () => {
-            updateTextContentStyles();
-            toggleBlackMode();
-            updateFullScreenButtons();
-        });
     </script>
 </body>
 </html>
