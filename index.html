@@ -5,12 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>사라지는 텍스트 훈련</title>
     <style>
-        /* 🌟 기본 바디 스타일링 */
+        :root {
+            --font-size: 18px;
+            --line-height: 1.6;
+            --letter-spacing: 0px;
+            --text-height: 70vh;
+            --margin-top: 0vh;
+            --margin-right: 0vw;
+            --margin-bottom: 0vh;
+            --margin-left: 0vw;
+        }
+
         body {
             font-family: Arial, sans-serif;
             margin: 0;
             padding: 5px;
-            transition: opacity 0.3s, background-color 0.3s;
             background-color: #f5f5f5;
             overscroll-behavior: none;
             position: relative;
@@ -18,17 +27,20 @@
             overflow-x: hidden;
         }
 
-        /* 📝 텍스트 콘텐츠 영역 스타일 */
         #textContent {
-            font-size: 18px;
-            line-height: 1.6;
+            font-size: var(--font-size);
+            line-height: var(--line-height);
+            letter-spacing: var(--letter-spacing);
             white-space: pre-wrap;
             position: relative;
             overflow-y: hidden;
             overflow-x: hidden;
-            width: 100%;
-            height: calc(70vh - 80px);
-            margin: 0 auto;
+            width: calc(100% - var(--margin-left) - var(--margin-right));
+            height: calc(var(--text-height) - var(--margin-top) - var(--margin-bottom) - 80px);
+            margin-top: var(--margin-top);
+            margin-right: var(--margin-right);
+            margin-bottom: var(--margin-bottom);
+            margin-left: var(--margin-left);
             padding: 10px;
             box-sizing: border-box;
             background-color: #fff;
@@ -36,18 +48,16 @@
             border-radius: 8px;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
             z-index: 1;
-            transition: transform 0.3s ease, background-color 0.3s, color 0.3s;
             color: #333;
             user-select: none;
+            transition: opacity 0.3s, background-color 0.3s, color 0.3s;
         }
 
-        /* ⚡ 전자잉크 모드 스타일 */
         #textContent.eink-mode {
             background-color: #000 !important;
             color: #000 !important;
         }
 
-        /* 🎮 컨트롤 버튼 영역 */
         #controls {
             margin: 10px 0;
             display: flex;
@@ -56,7 +66,6 @@
             justify-content: center;
         }
 
-        /* 🚨 메시지 스타일 */
         #message {
             color: red;
             position: fixed;
@@ -70,7 +79,6 @@
             display: none;
         }
 
-        /* 📖 페이지 정보 버튼 (일반 화면) */
         #pageInfo {
             position: fixed;
             bottom: 10px;
@@ -85,7 +93,6 @@
             color: #333;
         }
 
-        /* 🖥️ 전체화면에서 페이지 정보 버튼 스타일 */
         .fullscreen #pageInfo {
             position: fixed;
             bottom: 10px;
@@ -101,56 +108,52 @@
             color: #333;
         }
 
-        /* 🌐 전체화면 전용 버튼 (왼쪽/오른쪽) */
         #leftPageButton, #rightPageButton {
-            display: none; /* 기본적으로 숨김 */
+            display: none;
             position: fixed;
             top: 0;
-            height: 100vh; /* 기본 높이 */
-            width: 30vw; /* 기본 넓이 */
-            background: rgba(0, 0, 0, 0); /* 투명 배경 */
+            height: 100vh;
+            width: 30vw;
+            background: rgba(0, 0, 0, 0);
             border: none;
             z-index: 999;
             cursor: pointer;
-	    /* UI 반응 제거 */
-            transition: none; /* 애니메이션 제거 */
+            transition: none;
         }
 
-
-#leftPageButton:hover, #rightPageButton:hover,
-#leftPageButton:focus, #rightPageButton:focus,
-#leftPageButton:active, #rightPageButton:active {
-    background: rgba(0, 0, 0, 0); /* 호버/포커스/액티브 시 배경 변화 없음 */
-    transform: none; /* 스케일 변화 없음 */
-    outline: none; /* 포커스 아웃라인 제거 */
-}
+        #leftPageButton:hover, #rightPageButton:hover,
+        #leftPageButton:focus, #rightPageButton:focus,
+        #leftPageButton:active, #rightPageButton:active {
+            background: rgba(0, 0, 0, 0);
+            transform: none;
+            outline: none;
+        }
 
         #leftPageButton {
             left: 0;
         }
+
         #rightPageButton {
             right: 0;
         }
+
         .fullscreen #leftPageButton, .fullscreen #rightPageButton {
-            display: block; /* 전체화면에서만 보임 */
+            display: block;
         }
 
-        /* 📊 진행률 컨테이너 */
         #progressContainer {
             position: relative;
             width: 100%;
             margin: 5px 0;
         }
 
-        /* 📈 진행률 바 */
         #progress {
             width: 100%;
             height: 4px;
             opacity: 0.7;
-            transition: background-color 0.3s;
+            transition: none;
         }
 
-        /* 💯 진행률 퍼센트 표시 */
         #progressPercent {
             position: absolute;
             top: -20px;
@@ -158,10 +161,9 @@
             transform: translateX(-50%);
             font-size: 12px;
             color: #333;
-            display: none; /* 퍼센트 숨김 */
+            display: none;
         }
 
-        /* ⏳ 로딩 스피너 */
         #loadingSpinner {
             display: none;
             position: fixed;
@@ -177,7 +179,6 @@
             z-index: 5;
         }
 
-        /* 🛠️ 버튼 기본 스타일 */
         button {
             padding: 8px 12px;
             font-size: 14px;
@@ -190,25 +191,21 @@
             max-width: 100px;
         }
 
-        /* ✨ 버튼 호버 효과 */
         button:hover {
             background-color: #2980b9;
             transform: scale(1.05);
         }
 
-        /* 🔍 버튼 포커스 효과 */
         button:focus {
             outline: 2px solid #2980b9;
             outline-offset: 2px;
         }
 
-        /* 🚫 비활성화 버튼 */
         button:disabled {
             opacity: 0.5;
             cursor: not-allowed;
         }
 
-        /* 📜 디테일 요소 (고급 설정) */
         details {
             margin: 10px 0;
             width: 100%;
@@ -218,7 +215,6 @@
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
 
-        /* 📋 서머리 스타일 */
         summary {
             padding: 10px;
             background-color: #ecf0f1;
@@ -227,18 +223,19 @@
             font-weight: bold;
         }
 
-        /* ⚙️ 고급 설정 UI 개선 */
         #advancedControls {
             padding: 15px;
             display: grid;
-            grid-template-columns: 1fr 1fr; /* 두 열로 나눔 */
+            grid-template-columns: 1fr 1fr;
             gap: 10px;
             align-items: center;
         }
+
         #advancedControls label {
             font-size: 14px;
             color: #333;
         }
+
         #advancedControls input[type="text"],
         #advancedControls input[type="range"],
         #advancedControls select,
@@ -249,48 +246,50 @@
             border-radius: 4px;
             box-sizing: border-box;
         }
+
         #advancedControls input[type="checkbox"] {
             margin-left: 5px;
         }
+
         #advancedControls button {
             max-width: none;
             width: 100%;
         }
 
-        /* ✏️ 문자 단위 스타일 */
+        @keyframes charFade {
+            to { opacity: 0; }
+        }
+
         .char-span {
-            transition: opacity 0.3s, color 0.3s, background-color 0.1s;
-            color: inherit;
+            transition: none;
         }
 
-        /* 🌈 현재 문자 강조 */
+        .char-span.fade {
+            animation: charFade 0.3s forwards;
+        }
+
         .char-span.current {
-            background-color: transparent; /* 노란색 제거 */
+            background-color: transparent;
         }
 
-        /* ⚫ 전자잉크 블랙 효과 */
         .char-span.eink-black {
             background-color: #000 !important;
             color: #000 !important;
         }
 
-        /* 📏 줄 스타일 */
         .line {
             display: block;
             transition: opacity 0.2s;
         }
 
-        /* 🙈 숨겨진 줄 */
         .line.hidden {
             opacity: 0;
         }
 
-        /* 🖥️ 전체화면에서 숨길 요소 */
         .fullscreen #controls, .fullscreen #progressContainer, .fullscreen #message, .fullscreen details, .fullscreen #fileUpload {
             display: none;
         }
 
-        /* 📺 전체화면 텍스트 콘텐츠 */
         .fullscreen #textContent {
             width: 100vw;
             height: 100vh;
@@ -298,7 +297,6 @@
             padding: 20px;
         }
 
-        /* 📂 파일 업로드 영역 */
         #fileUpload {
             display: block;
             width: 100%;
@@ -313,12 +311,10 @@
             transition: background-color 0.3s;
         }
 
-        /* 🌈 파일 업로드 호버/드래그 효과 */
         #fileUpload:hover, #fileUpload.dragover {
             background-color: #e6f0fa;
         }
 
-        /* 📑 목차 및 라이브러리 오버레이 */
         #tocOverlay, #libraryOverlay {
             display: none;
             position: fixed;
@@ -333,33 +329,33 @@
             overflow-y: auto;
         }
 
-        /* 📋 오버레이 리스트 스타일 */
         #tocOverlay ul, #libraryOverlay ul {
             list-style: none;
             padding: 0;
         }
 
-        /* 🔍 오버레이 항목 호버 효과 */
         #tocOverlay li, #libraryOverlay li {
             padding: 10px;
             cursor: pointer;
         }
+
         #tocOverlay li:hover, #libraryOverlay li:hover {
             background: rgba(255, 255, 255, 0.1);
         }
 
-        /* 📚 라이브러리 아이템 스타일 */
         #libraryOverlay .library-item {
             display: flex;
             align-items: center;
             gap: 10px;
             margin-bottom: 10px;
         }
+
         #libraryOverlay .library-item img {
             width: 50px;
             height: 70px;
             object-fit: cover;
         }
+
         #libraryOverlay .library-item .no-cover {
             width: 50px;
             height: 70px;
@@ -372,18 +368,31 @@
             color: #fff;
         }
 
-        /* ⏲️ 스핀 애니메이션 */
+        #libraryOverlay .library-item button {
+            margin-left: 10px;
+            padding: 2px 5px;
+            font-size: 12px;
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        #libraryOverlay .library-item button:hover {
+            background-color: #c0392b;
+        }
+
         @keyframes spin {
             0% { transform: translate(-50%, -50%) rotate(0deg); }
             100% { transform: translate(-50%, -50%) rotate(360deg); }
         }
 
-        /* 📱 모바일 반응형 스타일 */
         @media (max-width: 600px) {
             body { padding: 5px; }
             #textContent {
                 font-size: 16px;
-                height: calc(60vh - 60px);
+                height: calc(var(--text-height) - 60px);
                 padding: 8px;
             }
             #controls {
@@ -396,7 +405,7 @@
                 max-width: 100%;
             }
             #advancedControls {
-                grid-template-columns: 1fr; /* 모바일에선 한 열 */
+                grid-template-columns: 1fr;
                 gap: 8px;
             }
             #pageInfo {
@@ -410,7 +419,6 @@
             }
         }
 
-        /* 🌙 블랙 모드 스타일 */
         .black-mode body { background-color: #1a1a1a; }
         .black-mode #textContent { background-color: #2d2d2d; color: #fff; border-color: #444; }
         .black-mode summary { background-color: #3a3a3a; }
@@ -418,20 +426,18 @@
         .black-mode #fileUpload:hover { background-color: #444; }
         .black-mode #pageInfo { color: #fff; }
 
-        /* 📍 토글 버튼 위치 */
         #toggleButton {
             position: fixed;
             bottom: 20px;
             left: 20px;
             z-index: 15;
         }
+
         .fullscreen #toggleButton {
             bottom: 10px;
             left: 10px;
         }
     </style>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://unpkg.com/epubjs/dist/epub.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/nosleep.js@1.1.0/dist/NoSleep.min.js"></script>
 </head>
@@ -465,6 +471,8 @@
                 <option value="fade">페이드 아웃</option>
                 <option value="eink">전자잉크 모드</option>
             </select>
+            <label for="delayBeforeEffect">효과 시작 전 딜레이 (ms):</label>
+            <div><input type="text" id="delayBeforeEffect" value="400"></div>
             <label for="fontSize">글꼴 크기:</label>
             <div><input type="text" id="fontSize" value="18">px</div>
             <label for="fontFamily">글꼴 스타일:</label>
@@ -549,6 +557,7 @@
         const speedPreset = document.getElementById('speedPreset');
         const mobileSpeedControl = document.getElementById('mobileSpeedControl');
         const effectSelect = document.getElementById('effectSelect');
+        const delayBeforeEffect = document.getElementById('delayBeforeEffect');
         const fontSize = document.getElementById('fontSize');
         const fontFamily = document.getElementById('fontFamily');
         const lineHeight = document.getElementById('lineHeight');
@@ -597,6 +606,7 @@
         let libraryFiles = JSON.parse(localStorage.getItem('libraryFiles')) || [];
         let isTrainingActive = false;
         let messageTimer;
+        let lastSettings = {};
 
         const DB_NAME = 'vanishingTextDB';
         const DB_VERSION = 1;
@@ -735,6 +745,7 @@
         speedPreset.value = localStorage.getItem('speedPreset') || 100;
         mobileSpeedControl.checked = localStorage.getItem('mobileSpeedControl') === 'true';
         effectSelect.value = localStorage.getItem('effect') || 'char';
+        delayBeforeEffect.value = localStorage.getItem('delayBeforeEffect') || 400;
         fontSize.value = localStorage.getItem('fontSize') || 18;
         fontFamily.value = localStorage.getItem('fontFamily') || 'Arial, sans-serif';
         lineHeight.value = localStorage.getItem('lineHeight') || 1.6;
@@ -763,15 +774,19 @@
         if (window.Worker) {
             const workerCode = `
                 self.onmessage = function(e) {
-                    const { text, maxHeight } = e.data;
+                    const { text, maxHeight, fontSize, lineHeight, letterSpacing, fontFamily } = e.data;
                     const lines = text.split('\\n').filter(line => line.trim().length > 0);
                     const pages = [];
                     let currentPageText = '';
-                    const maxLinesPerPage = Math.floor(maxHeight / 20);
+                    const testDiv = { innerText: '', getBoundingClientRect: () => ({ height: 0 }) }; // 더미 객체
+                    let currentHeight = 0;
+                    const lineHeightPx = parseFloat(lineHeight) * parseFloat(fontSize);
                     for (let line of lines) {
-                        if (currentPageText.split('\\n').length >= maxLinesPerPage) {
+                        currentHeight += lineHeightPx;
+                        if (currentHeight > maxHeight) {
                             pages.push(currentPageText.trim());
                             currentPageText = line + '\\n';
+                            currentHeight = lineHeightPx;
                         } else {
                             currentPageText += line + '\\n';
                         }
@@ -822,6 +837,21 @@
             }, duration);
         }
 
+        async function loadEpubLibraries() {
+            if (!window.ePub || !window.JSZip) {
+                showMessage('EPUB 라이브러리 로드 중...');
+                const script1 = document.createElement('script');
+                script1.src = 'https://unpkg.com/epubjs/dist/epub.min.js';
+                const script2 = document.createElement('script');
+                script2.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+                document.head.appendChild(script1);
+                document.head.appendChild(script2);
+                await new Promise(resolve => {
+                    script2.onload = resolve;
+                });
+            }
+        }
+
         async function handleFileUpload(file) {
             await pruneFileCache();
             if (!file) {
@@ -852,6 +882,7 @@
                     progress.value = 0;
                     toggleButtons(false);
                     loadingSpinner.style.display = 'none';
+                    addToLibrary(file.name, fileData, cachedData.coverUrl || null);
                     return;
                 }
 
@@ -874,7 +905,14 @@
                             toggleButtons(false);
                             loadingSpinner.style.display = 'none';
                         };
-                        worker.postMessage({ text: fileData, maxHeight: textContent.getBoundingClientRect().height });
+                        worker.postMessage({
+                            text: fileData,
+                            maxHeight: textContent.getBoundingClientRect().height,
+                            fontSize: fontSize.value,
+                            lineHeight: lineHeight.value,
+                            letterSpacing: letterSpacing.value,
+                            fontFamily: fontFamily.value
+                        });
                     } else {
                         pages = splitTextToFit(fileData, textContent.getBoundingClientRect().height);
                         await setCachedData(lastFileName, { pages: pages, timestamp: Date.now() });
@@ -888,6 +926,7 @@
                         addToLibrary(file.name, fileData, null);
                     }
                 } else if (file.name.endsWith('.epub')) {
+                    await loadEpubLibraries();
                     if (!window.ePub || !window.JSZip) {
                         showMessage('epub.js 또는 JSZip 로딩 실패.');
                         toggleButtons(false);
@@ -904,7 +943,7 @@
                         const nav = await book.loaded.navigation;
                         toc = nav.toc;
 
-                        await setCachedData(lastFileName, { pages: pages, toc: toc, timestamp: Date.now() });
+                        await setCachedData(lastFileName, { pages: pages, toc: toc, coverUrl: coverUrl, timestamp: Date.now() });
 
                         loadLastPage();
                         preloadPages();
@@ -914,7 +953,6 @@
                         toggleButtons(false);
                         loadingSpinner.style.display = 'none';
                         addToLibrary(file.name, fileData, coverUrl);
-
                     } catch (err) {
                         showMessage('EPUB 로드 오류: ' + err.message);
                         toggleButtons(false);
@@ -997,29 +1035,30 @@
         }
 
         function displayPage(direction = 0) {
-            const startTime = performance.now();
-            if (!renderedPages[currentPage]) loadingSpinner.style.display = 'block';
+            const fragment = document.createDocumentFragment();
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = renderedPages[currentPage] || '';
+            while (tempDiv.firstChild) fragment.appendChild(tempDiv.firstChild);
+            textContent.innerHTML = '';
+            textContent.appendChild(fragment);
+
+            pageInfo.innerText = showPageInfo.checked || isFullscreen ? `${currentPage + 1}/${pages.length}` : '';
+            pageInfo.style.fontSize = `${pageInfoSize.value}px`;
+            progress.value = 0;
+            updateProgressPercent(0);
             if (pageAnimation.checked && direction !== 0) {
                 textContent.style.transform = direction > 0 ? 'translateX(-100%)' : 'translateX(100%)';
                 textContent.style.opacity = 0;
-            }
-            setTimeout(() => {
-                textContent.innerHTML = renderedPages[currentPage] || '';
-                updateTextContentStyles();
-                pageInfo.innerText = showPageInfo.checked || isFullscreen ? `${currentPage + 1}/${pages.length}` : '';
-                pageInfo.style.fontSize = `${pageInfoSize.value}px`;
-                progress.value = 0;
-                updateProgressPercent(0);
-                const loadTime = performance.now() - startTime;
-                if (loadTime < 100) loadingSpinner.style.display = 'none';
-                if (pageAnimation.checked) {
+                setTimeout(() => {
                     textContent.style.transform = 'translateX(0)';
                     textContent.style.opacity = 1;
-                    setTimeout(() => { if (autoRestart.checked && interval) startEffect(); }, 300);
-                } else if (autoRestart.checked && interval) startEffect();
-                preloadPages();
-                saveLastPage();
-            }, 50);
+                    if (autoRestart.checked && interval) startEffect();
+                }, 300);
+            } else if (autoRestart.checked && interval) {
+                startEffect();
+            }
+            preloadPages();
+            saveLastPage();
         }
 
         function loadLastPage() {
@@ -1060,6 +1099,62 @@
             }
         });
 
+        function startEffect() {
+            stopEffect();
+            setTimeout(() => {
+                if (effectSelect.value === 'char') {
+                    const spans = textContent.querySelectorAll('.char-span:not(.char-space)');
+                    let charIndex = 0;
+                    const totalChars = spans.length;
+                    const intervalTime = parseInt(speedControl.value) / 2;
+                    interval = setInterval(() => {
+                        if (charIndex < spans.length) {
+                            spans[charIndex].classList.add('fade');
+                            charIndex++;
+                            progress.value = (charIndex / totalChars) * 100;
+                            updateProgressPercent(progress.value);
+                        } else {
+                            clearInterval(interval);
+                            if (autoPageTurn.checked && currentPage < pages.length - 1) nextPage.click();
+                        }
+                    }, intervalTime);
+                } else if (effectSelect.value === 'fade') {
+                    const lines = textContent.querySelectorAll('.line');
+                    let lineIndex = 0;
+                    const totalLines = lines.length;
+                    const intervalTime = parseInt(speedControl.value);
+                    interval = setInterval(() => {
+                        if (lineIndex < lines.length) {
+                            lines[lineIndex].classList.add('hidden');
+                            lineIndex++;
+                            progress.value = (lineIndex / totalLines) * 100;
+                            updateProgressPercent(progress.value);
+                        } else {
+                            clearInterval(interval);
+                            if (autoPageTurn.checked && currentPage < pages.length - 1) nextPage.click();
+                        }
+                    }, intervalTime);
+                } else if (effectSelect.value === 'eink') {
+                    const spans = textContent.querySelectorAll('.char-span:not(.char-space)');
+                    let charIndex = 0;
+                    const totalChars = spans.length;
+                    const intervalTime = parseInt(speedControl.value) / 2;
+                    textContent.classList.add('eink-mode');
+                    interval = setInterval(() => {
+                        if (charIndex < spans.length) {
+                            spans[charIndex].classList.add('eink-black');
+                            charIndex++;
+                            progress.value = (charIndex / totalChars) * 100;
+                            updateProgressPercent(progress.value);
+                        } else {
+                            clearInterval(interval);
+                            if (autoPageTurn.checked && currentPage < pages.length - 1) nextPage.click();
+                        }
+                    }, intervalTime);
+                }
+            }, parseInt(delayBeforeEffect.value));
+        }
+
         function stopEffect() {
             if (interval) clearInterval(interval);
             textContent.style.opacity = 1;
@@ -1071,7 +1166,7 @@
                     span.style.opacity = 1;
                     span.style.color = blackMode.checked ? '#fff' : '#333';
                     span.style.backgroundColor = '';
-                    span.classList.remove('current', 'eink-black');
+                    span.classList.remove('current', 'eink-black', 'fade');
                 });
                 textContent.querySelectorAll('.line').forEach(line => {
                     line.classList.remove('hidden');
@@ -1129,9 +1224,9 @@
         tocButton.addEventListener('click', showToc);
 
         libraryButton.addEventListener('click', () => {
-            libraryContent.innerHTML = '<ul>' + libraryFiles.map((file, index) => {
+            libraryContent.innerHTML = '<ul>' + libraryFiles.sort((a, b) => b.timestamp - a.timestamp).map((file, index) => {
                 const cover = file.cover ? `<img src="${file.cover}" alt="${file.name} 표지">` : `<div class="no-cover">${file.name}</div>`;
-                return `<li class="library-item" data-index="${index}">${cover}<span>${file.name}</span></li>`;
+                return `<li class="library-item" data-index="${index}">${cover}<span>${file.name}</span><button class="delete-button" data-index="${index}">삭제</button></li>`;
             }).join('') + '</ul>';
             libraryOverlay.style.display = 'block';
 
@@ -1168,6 +1263,7 @@
                         preloadPages();
                         displayPage();
                     } else if (file.name.endsWith('.epub')) {
+                        await loadEpubLibraries();
                         book = window.ePub(file.data);
                         try {
                             await book.ready;
@@ -1190,12 +1286,30 @@
                     toggleButtons(false);
                     loadingSpinner.style.display = 'none';
                 });
+
+                const deleteButton = li.querySelector('.delete-button');
+                deleteButton.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const index = parseInt(deleteButton.dataset.index);
+                    libraryFiles.splice(index, 1);
+                    localStorage.setItem('libraryFiles', JSON.stringify(libraryFiles));
+                    libraryButton.click(); // 라이브러리 목록 갱신
+                    showMessage('파일이 삭제되었습니다.', 2000);
+                });
             });
 
             document.getElementById('closeLibrary').addEventListener('click', () => {
                 libraryOverlay.style.display = 'none';
             });
         });
+
+        function debounce(func, wait) {
+            let timeout;
+            return function(...args) {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(this, args), wait);
+            };
+        }
 
         speedControl.addEventListener('input', () => {
             speedInput.value = speedControl.value;
@@ -1234,36 +1348,35 @@
             localStorage.setItem('effect', effectSelect.value);
         });
 
-        fontSize.addEventListener('input', () => {
-            textContent.style.fontSize = `${fontSize.value}px`;
+        delayBeforeEffect.addEventListener('input', () => {
+            localStorage.setItem('delayBeforeEffect', delayBeforeEffect.value);
+        });
+
+        const debouncedUpdateStyles = debounce(() => {
+            updateTextContentStyles();
             pages = splitTextToFit(pages.join('\n\n'), textContent.getBoundingClientRect().height);
             preloadPages();
             displayPage();
+        }, 300);
+
+        fontSize.addEventListener('input', () => {
             localStorage.setItem('fontSize', fontSize.value);
+            debouncedUpdateStyles();
         });
 
         fontFamily.addEventListener('change', () => {
-            textContent.style.fontFamily = fontFamily.value;
-            pages = splitTextToFit(pages.join('\n\n'), textContent.getBoundingClientRect().height);
-            preloadPages();
-            displayPage();
             localStorage.setItem('fontFamily', fontFamily.value);
+            debouncedUpdateStyles();
         });
 
         lineHeight.addEventListener('input', () => {
-            textContent.style.lineHeight = lineHeight.value;
-            pages = splitTextToFit(pages.join('\n\n'), textContent.getBoundingClientRect().height);
-            preloadPages();
-            displayPage();
             localStorage.setItem('lineHeight', lineHeight.value);
+            debouncedUpdateStyles();
         });
 
         letterSpacing.addEventListener('input', () => {
-            textContent.style.letterSpacing = `${letterSpacing.value}px`;
-            pages = splitTextToFit(pages.join('\n\n'), textContent.getBoundingClientRect().height);
-            preloadPages();
-            displayPage();
             localStorage.setItem('letterSpacing', letterSpacing.value);
+            debouncedUpdateStyles();
         });
 
         preloadRange.addEventListener('input', () => {
@@ -1273,11 +1386,8 @@
         });
 
         textHeight.addEventListener('input', () => {
-            updateTextContentMargins();
-            pages = splitTextToFit(pages.join('\n\n'), textContent.getBoundingClientRect().height);
-            preloadPages();
-            displayPage();
             localStorage.setItem('textHeight', textHeight.value);
+            debouncedUpdateStyles();
         });
 
         pageInfoSize.addEventListener('input', () => {
@@ -1304,33 +1414,22 @@
             localStorage.setItem('blackModeColor', blackModeColor.value);
             toggleBlackMode();
         });
+
         marginTop.addEventListener('input', () => {
-            updateTextContentMargins();
-            pages = splitTextToFit(pages.join('\n\n'), textContent.getBoundingClientRect().height);
-            preloadPages();
-            displayPage();
             localStorage.setItem('marginTop', marginTop.value);
+            debouncedUpdateStyles();
         });
         marginRight.addEventListener('input', () => {
-            updateTextContentMargins();
-            pages = splitTextToFit(pages.join('\n\n'), textContent.getBoundingClientRect().height);
-            preloadPages();
-            displayPage();
             localStorage.setItem('marginRight', marginRight.value);
+            debouncedUpdateStyles();
         });
         marginBottom.addEventListener('input', () => {
-            updateTextContentMargins();
-            pages = splitTextToFit(pages.join('\n\n'), textContent.getBoundingClientRect().height);
-            preloadPages();
-            displayPage();
             localStorage.setItem('marginBottom', marginBottom.value);
+            debouncedUpdateStyles();
         });
         marginLeft.addEventListener('input', () => {
-            updateTextContentMargins();
-            pages = splitTextToFit(pages.join('\n\n'), textContent.getBoundingClientRect().height);
-            preloadPages();
-            displayPage();
             localStorage.setItem('marginLeft', marginLeft.value);
+            debouncedUpdateStyles();
         });
         enableFullScreenButtons.addEventListener('change', () => {
             localStorage.setItem('enableFullScreenButtons', enableFullScreenButtons.checked);
@@ -1505,6 +1604,7 @@
             speedPreset.value = 100;
             mobileSpeedControl.checked = false;
             effectSelect.value = 'char';
+            delayBeforeEffect.value = 400;
             fontSize.value = 18;
             fontFamily.value = 'Arial, sans-serif';
             lineHeight.value = 1.6;
@@ -1545,48 +1645,67 @@
             showMessage('캐시가 비워졌습니다.', 2000);
         });
 
+        function adjustSpeed() {
+            if (interval) {
+                clearInterval(interval);
+                startEffect();
+            }
+        }
+
+        function previewEffect() {
+            stopEffect();
+            startEffect();
+            setTimeout(stopEffect, 2000);
+        }
+
+        function updateProgressPercent(value) {
+            progressPercent.innerText = `${Math.round(value)}%`;
+            progressPercent.style.display = value > 0 ? 'block' : 'none';
+        }
+
         function updateTextContentStyles() {
-            textContent.style.fontSize = `${fontSize.value}px`;
-            textContent.style.fontFamily = fontFamily.value;
-            textContent.style.lineHeight = lineHeight.value;
-            textContent.style.letterSpacing = `${letterSpacing.value}px`;
+            const currentSettings = {
+                fontSize: fontSize.value,
+                fontFamily: fontFamily.value,
+                lineHeight: lineHeight.value,
+                letterSpacing: letterSpacing.value
+            };
+            if (JSON.stringify(currentSettings) === JSON.stringify(lastSettings)) return;
+            lastSettings = { ...currentSettings };
+            document.documentElement.style.setProperty('--font-size', `${fontSize.value}px`);
+            document.documentElement.style.setProperty('--line-height', lineHeight.value);
+            document.documentElement.style.setProperty('--letter-spacing', `${letterSpacing.value}px`);
+            document.documentElement.style.setProperty('--text-height', `${textHeight.value}vh`);
+            document.documentElement.style.setProperty('--margin-top', `${marginTop.value}vh`);
+            document.documentElement.style.setProperty('--margin-right', `${marginRight.value}vw`);
+            document.documentElement.style.setProperty('--margin-bottom', `${marginBottom.value}vh`);
+            document.documentElement.style.setProperty('--margin-left', `${marginLeft.value}vw`);
             updateTextContentMargins();
             toggleBlackMode();
+            pages = splitTextToFit(pages.join('\n\n'), textContent.getBoundingClientRect().height);
+            preloadPages();
+            displayPage();
         }
 
         function updateTextContentMargins() {
             textContent.style.marginTop = `${marginTop.value}vh`;
             textContent.style.marginRight = `${marginRight.value}vw`;
             textContent.style.marginBottom = `${marginBottom.value}vh`;
-            textContent.style.width = `calc(100% - ${marginLeft.value}vw - ${marginRight.value}vw)`;
-            textContent.style.height = `calc(${textHeight.value}vh - ${marginTop.value}vh - ${marginBottom.value}vh - 80px)`;
-            document.documentElement.style.setProperty('--margin-bottom', `${marginBottom.value}vh`);
-        }
-
-        function toggleBlackMode() {
-            if (blackMode.checked) {
-                document.body.classList.add('black-mode');
-                textContent.style.backgroundColor = blackModeColor.value;
-                textContent.style.color = '#fff';
-            } else {
-                document.body.classList.remove('black-mode');
-                textContent.style.backgroundColor = '#fff';
-                textContent.style.color = '#333';
-            }
+            textContent.style.marginLeft = `${marginLeft.value}vw`;
         }
 
         function updateFullScreenButtons() {
             if (enableFullScreenButtons.checked && isFullscreen) {
                 leftPageButton.style.display = 'block';
                 rightPageButton.style.display = 'block';
+                leftPageButton.style.width = `${fullScreenButtonWidth.value}vw`;
+                rightPageButton.style.width = `${fullScreenButtonWidth.value}vw`;
+                leftPageButton.style.height = `${fullScreenButtonHeight.value}vh`;
+                rightPageButton.style.height = `${fullScreenButtonHeight.value}vh`;
             } else {
                 leftPageButton.style.display = 'none';
                 rightPageButton.style.display = 'none';
             }
-            leftPageButton.style.width = `${fullScreenButtonWidth.value}vw`;
-            rightPageButton.style.width = `${fullScreenButtonWidth.value}vw`;
-            leftPageButton.style.height = `${fullScreenButtonHeight.value}vh`;
-            rightPageButton.style.height = `${fullScreenButtonHeight.value}vh`;
         }
 
         function toggleButtons(disable) {
@@ -1595,131 +1714,13 @@
             nextPage.disabled = disable;
             tocButton.disabled = disable;
             libraryButton.disabled = disable;
+            jumpToPage.disabled = disable;
         }
 
-        function startEffect() {
-            if (!textContent.innerText) {
-                showMessage('먼저 파일을 업로드하세요.', 2000);
-                return;
-            }
-            stopEffect();
-            const effect = effectSelect.value;
-            const intervalTime = parseInt(speedControl.value) || 100;
-            const fadeStep = Math.min(0.05, 10 / intervalTime);
-            const baseBgColor = blackMode.checked ? blackModeColor.value : '#fff';
-            const baseTextColor = blackMode.checked ? '#fff' : '#333';
-
-            if (effect === 'fade') {
-                let opacity = 1;
-                interval = setInterval(() => {
-                    if (opacity > 0) {
-                        opacity -= fadeStep;
-                        textContent.style.opacity = opacity;
-                        progress.value = (1 - opacity) * 100;
-                        updateProgressPercent(progress.value);
-                    } else {
-                        clearInterval(interval);
-                        if (autoPageTurn.checked && currentPage < pages.length - 1) nextPage.click();
-                    }
-                }, intervalTime);
-            } else if (effect === 'char') {
-                const spans = textContent.querySelectorAll('.char-span:not(.char-space)');
-                let charIndex = 0;
-                const totalChars = spans.length;
-                interval = setInterval(() => {
-                    if (charIndex < spans.length) {
-                        if (charIndex > 0) spans[charIndex - 1].classList.remove('current');
-                        spans[charIndex].classList.add('current');
-                        spans[charIndex].style.opacity = 0;
-                        charIndex++;
-                        const completedChars = Array.from(spans).filter(span => span.style.opacity === '0').length;
-                        progress.value = (completedChars / totalChars) * 100;
-                        updateProgressPercent(progress.value);
-                        progress.style.backgroundColor = `hsl(${progress.value * 1.2}, 70%, 50%)`;
-                    } else {
-                        if (charIndex > 0) spans[charIndex - 1].classList.remove('current');
-                        const lines = textContent.querySelectorAll('.line');
-                        lines.forEach(line => {
-                            line.classList.add('hidden');
-                            setTimeout(() => line.style.display = 'none', 200);
-                        });
-                        clearInterval(interval);
-                        if (autoPageTurn.checked && currentPage < pages.length - 1) nextPage.click();
-                    }
-                }, intervalTime / 2);
-            } else if (effect === 'eink') {
-                const spans = textContent.querySelectorAll('.char-span:not(.char-space)');
-                let charIndex = 0;
-                const totalChars = spans.length;
-                interval = setInterval(() => {
-                    if (charIndex < spans.length) {
-                        if (charIndex > 0) spans[charIndex - 1].classList.remove('current');
-                        spans[charIndex].classList.add('current');
-                        spans[charIndex].classList.add('eink-black');
-                        setTimeout(() => {
-                            spans[charIndex].classList.remove('eink-black');
-                            spans[charIndex].style.backgroundColor = baseBgColor;
-                            spans[charIndex].style.color = baseTextColor;
-                        }, 100);
-                        charIndex++;
-                        progress.value = (charIndex / totalChars) * 100;
-                        updateProgressPercent(progress.value);
-                        progress.style.backgroundColor = `hsl(${progress.value * 1.2}, 70%, 50%)`;
-                        if (charIndex === totalChars) {
-                            textContent.classList.add('eink-mode');
-                            setTimeout(() => {
-                                textContent.classList.remove('eink-mode');
-                                textContent.style.backgroundColor = baseBgColor;
-                                textContent.style.color = baseTextColor;
-                                if (autoPageTurn.checked && currentPage < pages.length - 1) nextPage.click();
-                            }, 200);
-                        }
-                    } else {
-                        if (charIndex > 0) spans[charIndex - 1].classList.remove('current');
-                        clearInterval(interval);
-                    }
-                }, intervalTime / 2);
-            }
-        }
-
-        function adjustSpeed() {
-            if (interval) {
-                stopEffect();
-                startEffect();
-            }
-        }
-
-        function previewEffect() {
-            if (interval) return;
-            const spans = textContent.querySelectorAll('.char-span:not(.char-space)');
-            let index = 0;
-            const preview = setInterval(() => {
-                if (index < spans.length) {
-                    if (effectSelect.value === 'char') spans[index].style.opacity = 0;
-                    else if (effectSelect.value === 'fade') spans[index].style.opacity = 0.5;
-                    else if (effectSelect.value === 'eink') {
-                        spans[index].classList.add('eink-black');
-                        setTimeout(() => {
-                            spans[index].classList.remove('eink-black');
-                            spans[index].style.color = blackMode.checked ? '#fff' : '#333';
-                            spans[index].style.backgroundColor = '';
-                        }, 100);
-                    }
-                    index++;
-                } else {
-                    clearInterval(preview);
-                    spans.forEach(span => {
-                        span.style.opacity = 1;
-                        span.style.color = blackMode.checked ? '#fff' : '#333';
-                        span.style.backgroundColor = '';
-                        span.classList.remove('eink-black');
-                    });
-                }
-            }, speedControl.value);
-        }
-
-        function updateProgressPercent(value) {
-            progressPercent.innerText = `${Math.round(value)}%`;
+        function toggleBlackMode() {
+            document.body.classList.toggle('black-mode', blackMode.checked);
+            textContent.style.backgroundColor = blackMode.checked ? blackModeColor.value : '#fff';
+            textContent.style.color = blackMode.checked ? '#fff' : '#333';
         }
     </script>
 </body>
