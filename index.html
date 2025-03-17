@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>사라지는 텍스트 훈련</title>
     <style>
-        /* 🌟 기본 바디 스타일링 */
         body {
             font-family: Arial, sans-serif;
             margin: 0;
@@ -17,8 +16,6 @@
             touch-action: pan-y;
             overflow-x: hidden;
         }
-
-        /* 📝 텍스트 콘텐츠 영역 스타일 */
         #textContent {
             font-size: 18px;
             line-height: 1.6;
@@ -40,14 +37,10 @@
             color: #333;
             user-select: none;
         }
-
-        /* ⚡ 전자잉크 모드 스타일 */
         #textContent.eink-mode {
             background-color: #000 !important;
             color: #000 !important;
         }
-
-        /* 🎮 컨트롤 버튼 영역 */
         #controls {
             margin: 10px 0;
             display: flex;
@@ -55,8 +48,6 @@
             gap: 5px;
             justify-content: center;
         }
-
-        /* 🚨 메시지 스타일 */
         #message {
             color: red;
             position: fixed;
@@ -69,88 +60,27 @@
             z-index: 10;
             display: none;
         }
-
-        /* 📖 페이지 정보 버튼 (일반 화면) */
         #pageInfo {
             position: fixed;
             bottom: 10px;
             right: 10px;
             font-size: 14px;
-            background: rgba(255, 255, 255, 0);
-            padding: 5px 10px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 3px 8px;
             border-radius: 5px;
-            z-index: 1000;
-            cursor: pointer;
-            border: none;
-            color: #333;
+            z-index: 10;
         }
-
-        /* 🖥️ 전체화면에서 페이지 정보 버튼 스타일 */
-        .fullscreen #pageInfo {
-            position: fixed;
-            bottom: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            right: auto;
-            background: rgba(255, 255, 255, 0);
-            padding: 5px 10px;
-            border-radius: 5px;
-            z-index: 1000;
-            cursor: pointer;
-            border: none;
-            color: #333;
-        }
-
-        /* 🌐 전체화면 전용 버튼 (왼쪽/오른쪽) */
-        #leftPageButton, #rightPageButton {
-            display: none; /* 기본적으로 숨김 */
-            position: fixed;
-            top: 0;
-            height: 100vh; /* 기본 높이 */
-            width: 30vw; /* 기본 넓이 */
-            background: rgba(0, 0, 0, 0); /* 투명 배경 */
-            border: none;
-            z-index: 999;
-            cursor: pointer;
-	    /* UI 반응 제거 */
-            transition: none; /* 애니메이션 제거 */
-        }
-
-
-#leftPageButton:hover, #rightPageButton:hover,
-#leftPageButton:focus, #rightPageButton:focus,
-#leftPageButton:active, #rightPageButton:active {
-    background: rgba(0, 0, 0, 0); /* 호버/포커스/액티브 시 배경 변화 없음 */
-    transform: none; /* 스케일 변화 없음 */
-    outline: none; /* 포커스 아웃라인 제거 */
-}
-
-        #leftPageButton {
-            left: 0;
-        }
-        #rightPageButton {
-            right: 0;
-        }
-        .fullscreen #leftPageButton, .fullscreen #rightPageButton {
-            display: block; /* 전체화면에서만 보임 */
-        }
-
-        /* 📊 진행률 컨테이너 */
         #progressContainer {
             position: relative;
             width: 100%;
             margin: 5px 0;
         }
-
-        /* 📈 진행률 바 */
         #progress {
             width: 100%;
             height: 4px;
             opacity: 0.7;
             transition: background-color 0.3s;
         }
-
-        /* 💯 진행률 퍼센트 표시 */
         #progressPercent {
             position: absolute;
             top: -20px;
@@ -158,10 +88,7 @@
             transform: translateX(-50%);
             font-size: 12px;
             color: #333;
-            display: none; /* 퍼센트 숨김 */
         }
-
-        /* ⏳ 로딩 스피너 */
         #loadingSpinner {
             display: none;
             position: fixed;
@@ -176,8 +103,6 @@
             animation: spin 1s linear infinite;
             z-index: 5;
         }
-
-        /* 🛠️ 버튼 기본 스타일 */
         button {
             padding: 8px 12px;
             font-size: 14px;
@@ -189,116 +114,56 @@
             transition: background-color 0.3s, transform 0.1s;
             max-width: 100px;
         }
-
-        /* ✨ 버튼 호버 효과 */
         button:hover {
             background-color: #2980b9;
             transform: scale(1.05);
         }
-
-        /* 🔍 버튼 포커스 효과 */
         button:focus {
             outline: 2px solid #2980b9;
             outline-offset: 2px;
         }
-
-        /* 🚫 비활성화 버튼 */
         button:disabled {
             opacity: 0.5;
             cursor: not-allowed;
         }
-
-        /* 📜 디테일 요소 (고급 설정) */
         details {
             margin: 10px 0;
             width: 100%;
             z-index: 30;
-            background: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
-
-        /* 📋 서머리 스타일 */
         summary {
             padding: 10px;
             background-color: #ecf0f1;
             border-radius: 5px;
             cursor: pointer;
-            font-weight: bold;
         }
-
-        /* ⚙️ 고급 설정 UI 개선 */
-        #advancedControls {
-            padding: 15px;
-            display: grid;
-            grid-template-columns: 1fr 1fr; /* 두 열로 나눔 */
-            gap: 10px;
-            align-items: center;
-        }
-        #advancedControls label {
-            font-size: 14px;
-            color: #333;
-        }
-        #advancedControls input[type="text"],
-        #advancedControls input[type="range"],
-        #advancedControls select,
-        #advancedControls input[type="color"] {
-            width: 100%;
-            padding: 5px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            box-sizing: border-box;
-        }
-        #advancedControls input[type="checkbox"] {
-            margin-left: 5px;
-        }
-        #advancedControls button {
-            max-width: none;
-            width: 100%;
-        }
-
-        /* ✏️ 문자 단위 스타일 */
         .char-span {
             transition: opacity 0.3s, color 0.3s, background-color 0.1s;
             color: inherit;
         }
-
-        /* 🌈 현재 문자 강조 */
         .char-span.current {
-            background-color: transparent; /* 노란색 제거 */
+            background-color: rgba(255, 255, 0, 0.3);
         }
-
-        /* ⚫ 전자잉크 블랙 효과 */
         .char-span.eink-black {
             background-color: #000 !important;
             color: #000 !important;
         }
-
-        /* 📏 줄 스타일 */
         .line {
             display: block;
             transition: opacity 0.2s;
         }
-
-        /* 🙈 숨겨진 줄 */
         .line.hidden {
             opacity: 0;
         }
-
-        /* 🖥️ 전체화면에서 숨길 요소 */
         .fullscreen #controls, .fullscreen #progressContainer, .fullscreen #message, .fullscreen details, .fullscreen #fileUpload {
             display: none;
         }
-
-        /* 📺 전체화면 텍스트 콘텐츠 */
         .fullscreen #textContent {
             width: 100vw;
-            height: 100vh;
+            height: 100vh; /* Modified to cover full viewport height */
             margin: 0;
             padding: 20px;
         }
-
-        /* 📂 파일 업로드 영역 */
         #fileUpload {
             display: block;
             width: 100%;
@@ -312,13 +177,9 @@
             cursor: pointer;
             transition: background-color 0.3s;
         }
-
-        /* 🌈 파일 업로드 호버/드래그 효과 */
         #fileUpload:hover, #fileUpload.dragover {
             background-color: #e6f0fa;
         }
-
-        /* 📑 목차 및 라이브러리 오버레이 */
         #tocOverlay, #libraryOverlay {
             display: none;
             position: fixed;
@@ -332,14 +193,10 @@
             padding: 20px;
             overflow-y: auto;
         }
-
-        /* 📋 오버레이 리스트 스타일 */
         #tocOverlay ul, #libraryOverlay ul {
             list-style: none;
             padding: 0;
         }
-
-        /* 🔍 오버레이 항목 호버 효과 */
         #tocOverlay li, #libraryOverlay li {
             padding: 10px;
             cursor: pointer;
@@ -347,8 +204,6 @@
         #tocOverlay li:hover, #libraryOverlay li:hover {
             background: rgba(255, 255, 255, 0.1);
         }
-
-        /* 📚 라이브러리 아이템 스타일 */
         #libraryOverlay .library-item {
             display: flex;
             align-items: center;
@@ -371,14 +226,10 @@
             font-size: 12px;
             color: #fff;
         }
-
-        /* ⏲️ 스핀 애니메이션 */
         @keyframes spin {
             0% { transform: translate(-50%, -50%) rotate(0deg); }
             100% { transform: translate(-50%, -50%) rotate(360deg); }
         }
-
-        /* 📱 모바일 반응형 스타일 */
         @media (max-width: 600px) {
             body { padding: 5px; }
             #textContent {
@@ -396,8 +247,19 @@
                 max-width: 100%;
             }
             #advancedControls {
-                grid-template-columns: 1fr; /* 모바일에선 한 열 */
+                display: flex;
+                flex-direction: column;
                 gap: 8px;
+                padding: 8px;
+            }
+            input, select {
+                width: 100%;
+                padding: 8px;
+                font-size: 14px;
+                box-sizing: border-box;
+            }
+            #progress {
+                height: 3px;
             }
             #pageInfo {
                 font-size: 12px;
@@ -409,21 +271,18 @@
                 font-size: 14px;
             }
         }
-
-        /* 🌙 블랙 모드 스타일 */
         .black-mode body { background-color: #1a1a1a; }
         .black-mode #textContent { background-color: #2d2d2d; color: #fff; border-color: #444; }
         .black-mode summary { background-color: #3a3a3a; }
         .black-mode #fileUpload { background-color: #333; border-color: #555; }
         .black-mode #fileUpload:hover { background-color: #444; }
-        .black-mode #pageInfo { color: #fff; }
 
-        /* 📍 토글 버튼 위치 */
+        /* New Toggle Button Style and Position */
         #toggleButton {
             position: fixed;
             bottom: 20px;
             left: 20px;
-            z-index: 15;
+            z-index: 15; /* Ensure it's above other elements if needed */
         }
         .fullscreen #toggleButton {
             bottom: 10px;
@@ -438,7 +297,7 @@
 <body>
     <input type="file" id="fileUpload" accept=".txt,.epub" aria-label="파일 업로드" multiple>
     <div id="controls" role="toolbar">
-        <button id="toggleButton" aria-label="훈련 시작/중지">시작</button>
+        <button id="toggleButton" aria-label="훈련 시작/중지">시작</button> <!-- Toggle Button -->
         <button id="prevPage" aria-label="이전 페이지"><span class="icon">◀</span> 이전</button>
         <button id="nextPage" aria-label="다음 페이지"><span class="icon">▶</span> 다음</button>
         <button id="tocButton" aria-label="목차">목차</button>
@@ -448,9 +307,9 @@
     <details>
         <summary>고급 설정</summary>
         <div id="advancedControls">
-            <label for="speedControl">속도 (50ms ~ 2000ms):</label>
-            <div><input type="range" id="speedControl" min="50" max="2000" step="1" value="100">
-                 <input type="text" id="speedInput" value="100" style="width: 80px;"></div>
+            <label for="speedControl">속도 (빠름: 50ms ~ 느림: 2000ms):</label>
+            <input type="range" id="speedControl" min="50" max="2000" step="1" value="100">
+            <input type="number" id="speedInput" min="50" max="2000" step="1" value="100" style="width: 80px; margin-left: 10px;">
             <label for="speedPreset">속도 프리셋:</label>
             <select id="speedPreset">
                 <option value="50">빠르게</option>
@@ -466,7 +325,7 @@
                 <option value="eink">전자잉크 모드</option>
             </select>
             <label for="fontSize">글꼴 크기:</label>
-            <div><input type="text" id="fontSize" value="18">px</div>
+            <input type="number" id="fontSize" min="12" max="36" value="18">px
             <label for="fontFamily">글꼴 스타일:</label>
             <select id="fontFamily">
                 <option value="Arial, sans-serif">Arial</option>
@@ -474,15 +333,11 @@
                 <option value="'Noto Sans KR', sans-serif">Noto Sans KR</option>
             </select>
             <label for="lineHeight">줄 간격:</label>
-            <div><input type="text" id="lineHeight" value="1.6"></div>
+            <input type="number" id="lineHeight" min="1" max="3" step="0.1" value="1.6">
             <label for="letterSpacing">글자 간격:</label>
-            <div><input type="text" id="letterSpacing" value="0">px</div>
+            <input type="number" id="letterSpacing" min="0" max="5" step="0.1" value="0">px
             <label for="preloadRange">프리로드 범위 (±페이지):</label>
-            <div><input type="text" id="preloadRange" value="2"></div>
-            <label for="textHeight">텍스트 영역 높이 (%):</label>
-            <div><input type="text" id="textHeight" value="70"></div>
-            <label for="pageInfoSize">페이지 표시 크기:</label>
-            <div><input type="text" id="pageInfoSize" value="14">px</div>
+            <input type="number" id="preloadRange" min="1" max="10" value="2">
             <label for="autoRestart">페이지 전환 시 재시작:</label>
             <input type="checkbox" id="autoRestart">
             <label for="pageAnimation">페이지 전환 애니메이션:</label>
@@ -496,21 +351,13 @@
             <label for="blackModeColor">블랙 모드 색상:</label>
             <input type="color" id="blackModeColor" value="#2d2d2d">
             <label for="marginTop">위쪽 여백 (%):</label>
-            <div><input type="text" id="marginTop" value="0"></div>
+            <input type="number" id="marginTop" min="0" max="50" value="0" step="1">
             <label for="marginRight">오른쪽 여백 (%):</label>
-            <div><input type="text" id="marginRight" value="0"></div>
+            <input type="number" id="marginRight" min="0" max="50" value="0" step="1">
             <label for="marginBottom">아래쪽 여백 (%):</label>
-            <div><input type="text" id="marginBottom" value="0"></div>
+            <input type="number" id="marginBottom" min="0" max="50" value="0" step="1">
             <label for="marginLeft">왼쪽 여백 (%):</label>
-            <div><input type="text" id="marginLeft" value="0"></div>
-            <label for="enableFullScreenButtons">전체화면 버튼 활성화:</label>
-            <input type="checkbox" id="enableFullScreenButtons" checked>
-            <label for="fullScreenButtonWidth">전체화면 버튼 너비 (%):</label>
-            <div><input type="text" id="fullScreenButtonWidth" value="30"></div>
-            <label for="fullScreenButtonHeight">전체화면 버튼 높이 (%):</label>
-            <div><input type="text" id="fullScreenButtonHeight" value="100"></div>
-            <label for="autoPageTurn">글자 사라짐 후 자동 페이지 넘김:</label>
-            <input type="checkbox" id="autoPageTurn" checked>
+            <input type="number" id="marginLeft" min="0" max="50" value="0" step="1">
             <button id="resetSettings" aria-label="설정 초기화">설정 초기화</button>
             <button id="clearCacheButton" aria-label="캐시 비우기">캐시 비우기</button>
         </div>
@@ -519,10 +366,9 @@
         <progress id="progress" value="0" max="100"></progress>
         <span id="progressPercent">0%</span>
     </div>
-    <div id="textContent" role="region" aria-label="텍스트 표시 영역"></div>
-    <button id="pageInfo" aria-live="polite"></button>
-    <button id="leftPageButton" aria-label="이전 페이지로 이동"></button>
-    <button id="rightPageButton" aria-label="다음 페이지로 이동"></button>
+    <div id="textContent" role="region" aria-label="텍스트 표시 영역">
+        <div id="pageInfo" aria-live="polite"></div>
+    </div>
     <div id="loadingSpinner"></div>
     <div id="message" aria-live="assertive"></div>
     <div id="tocOverlay">
@@ -554,8 +400,6 @@
         const lineHeight = document.getElementById('lineHeight');
         const letterSpacing = document.getElementById('letterSpacing');
         const preloadRange = document.getElementById('preloadRange');
-        const textHeight = document.getElementById('textHeight');
-        const pageInfoSize = document.getElementById('pageInfoSize');
         const autoRestart = document.getElementById('autoRestart');
         const pageAnimation = document.getElementById('pageAnimation');
         const showPageInfo = document.getElementById('showPageInfo');
@@ -566,19 +410,13 @@
         const marginRight = document.getElementById('marginRight');
         const marginBottom = document.getElementById('marginBottom');
         const marginLeft = document.getElementById('marginLeft');
-        const enableFullScreenButtons = document.getElementById('enableFullScreenButtons');
-        const fullScreenButtonWidth = document.getElementById('fullScreenButtonWidth');
-        const fullScreenButtonHeight = document.getElementById('fullScreenButtonHeight');
-        const autoPageTurn = document.getElementById('autoPageTurn');
-        const toggleButton = document.getElementById('toggleButton');
+        const toggleButton = document.getElementById('toggleButton'); // Changed from startButton and stopButton
         const prevPage = document.getElementById('prevPage');
         const nextPage = document.getElementById('nextPage');
         const tocButton = document.getElementById('tocButton');
         const libraryButton = document.getElementById('libraryButton');
         const jumpToPage = document.getElementById('jumpToPage');
         const pageInfo = document.getElementById('pageInfo');
-        const leftPageButton = document.getElementById('leftPageButton');
-        const rightPageButton = document.getElementById('rightPageButton');
         const message = document.getElementById('message');
         const progress = document.getElementById('progress');
         const progressPercent = document.getElementById('progressPercent');
@@ -595,14 +433,16 @@
         let renderedPages = [];
         let isFullscreen = false;
         let libraryFiles = JSON.parse(localStorage.getItem('libraryFiles')) || [];
-        let isTrainingActive = false;
+        let isTrainingActive = false; // Track training state
         let messageTimer;
 
+        // IndexedDB setup
         const DB_NAME = 'vanishingTextDB';
         const DB_VERSION = 1;
         const CACHE_STORE_NAME = 'fileCacheStore';
         let db;
 
+        // Initialize IndexedDB
         const dbPromise = new Promise((resolve, reject) => {
             const request = indexedDB.open(DB_NAME, DB_VERSION);
 
@@ -624,6 +464,7 @@
             };
         });
 
+        // Function to get data from IndexedDB
         async function getCachedData(fileName) {
             await dbPromise;
             return new Promise((resolve, reject) => {
@@ -642,6 +483,7 @@
             });
         }
 
+        // Function to store data in IndexedDB
         async function setCachedData(fileName, data) {
             await dbPromise;
             return new Promise((resolve, reject) => {
@@ -660,6 +502,7 @@
             });
         }
 
+        // Function to delete data from IndexedDB
         async function deleteCachedData(fileName) {
             await dbPromise;
             return new Promise((resolve, reject) => {
@@ -678,6 +521,7 @@
             });
         }
 
+        // Function to clear IndexedDB cache
         async function clearIndexedDBCache() {
             await dbPromise;
             return new Promise((resolve, reject) => {
@@ -696,9 +540,11 @@
             });
         }
 
+
+        // Function to prune IndexedDB cache (remove oldest entries)
         async function pruneFileCache() {
             await dbPromise;
-            const MAX_CACHE_ENTRIES = 5;
+            const MAX_CACHE_ENTRIES = 5; // Adjust as needed
             const cachedFiles = [];
 
             return new Promise((resolve, reject) => {
@@ -711,10 +557,10 @@
                     if (cursor) {
                         const fileName = cursor.key;
                         const cacheEntry = cursor.value;
-                        cachedFiles.push({ name: fileName, timestamp: cacheEntry.timestamp || Date.now() });
+                        cachedFiles.push({ name: fileName, timestamp: cacheEntry.timestamp || Date.now() }); // Assuming timestamp is stored in cache entry
                         cursor.continue();
                     } else {
-                        cachedFiles.sort((a, b) => a.timestamp - b.timestamp);
+                        cachedFiles.sort((a, b) => a.timestamp - b.timestamp); // Oldest first
                         while (cachedFiles.length > MAX_CACHE_ENTRIES) {
                             const fileToRemove = cachedFiles.shift();
                             await deleteCachedData(fileToRemove.name);
@@ -730,8 +576,9 @@
             });
         }
 
+
         speedControl.value = localStorage.getItem('speed') || 100;
-        speedInput.value = localStorage.getItem('speed') || 100;
+        speedInput.value = speedControl.value;
         speedPreset.value = localStorage.getItem('speedPreset') || 100;
         mobileSpeedControl.checked = localStorage.getItem('mobileSpeedControl') === 'true';
         effectSelect.value = localStorage.getItem('effect') || 'char';
@@ -740,8 +587,6 @@
         lineHeight.value = localStorage.getItem('lineHeight') || 1.6;
         letterSpacing.value = localStorage.getItem('letterSpacing') || 0;
         preloadRange.value = localStorage.getItem('preloadRange') || 2;
-        textHeight.value = localStorage.getItem('textHeight') || 70;
-        pageInfoSize.value = localStorage.getItem('pageInfoSize') || 14;
         autoRestart.checked = localStorage.getItem('autoRestart') === 'true';
         pageAnimation.checked = localStorage.getItem('pageAnimation') !== 'false';
         showPageInfo.checked = localStorage.getItem('showPageInfo') !== 'false';
@@ -752,13 +597,8 @@
         marginRight.value = localStorage.getItem('marginRight') || 0;
         marginBottom.value = localStorage.getItem('marginBottom') || 0;
         marginLeft.value = localStorage.getItem('marginLeft') || 0;
-        enableFullScreenButtons.checked = localStorage.getItem('enableFullScreenButtons') !== 'false';
-        fullScreenButtonWidth.value = localStorage.getItem('fullScreenButtonWidth') || 30;
-        fullScreenButtonHeight.value = localStorage.getItem('fullScreenButtonHeight') || 100;
-        autoPageTurn.checked = localStorage.getItem('autoPageTurn') !== 'false';
         updateTextContentStyles();
         toggleBlackMode();
-        updateFullScreenButtons();
 
         if (window.Worker) {
             const workerCode = `
@@ -783,15 +623,16 @@
             worker = new Worker(URL.createObjectURL(new Blob([workerCode], { type: 'application/javascript' })));
         }
 
+
         function addToLibrary(fileName, fileData, coverUrl) {
             const existingIndex = libraryFiles.findIndex(item => item.name === fileName);
             if (existingIndex !== -1) {
                 libraryFiles.splice(existingIndex, 1);
             }
             libraryFiles.unshift({ name: fileName, data: fileData, cover: coverUrl, timestamp: Date.now() });
-            libraryFiles = libraryFiles.slice(0, 10);
+            libraryFiles = libraryFiles.slice(0, 10); // 최대 10개 유지
             localStorage.setItem('libraryFiles', JSON.stringify(libraryFiles));
-            pruneFileCache();
+            pruneFileCache(); // Check and prune cache after adding new file
         }
 
         fileInput.addEventListener('change', function(event) {
@@ -822,8 +663,9 @@
             }, duration);
         }
 
+
         async function handleFileUpload(file) {
-            await pruneFileCache();
+            await pruneFileCache(); // Prune cache at the start of file loading
             if (!file) {
                 showMessage('파일을 선택해주세요.');
                 loadingSpinner.style.display = 'none';
@@ -852,14 +694,14 @@
                     progress.value = 0;
                     toggleButtons(false);
                     loadingSpinner.style.display = 'none';
-                    return;
+                    return; // Use cached data and exit
                 }
 
                 if (file.name.endsWith('.txt')) {
                     if (worker) {
                         worker.onmessage = async function(e) {
                             pages = e.data.pages;
-                            await setCachedData(lastFileName, { pages: pages, timestamp: Date.now() });
+                            await setCachedData(lastFileName, { pages: pages, timestamp: Date.now() }); // Cache pages with timestamp
                             loadLastPage();
                             preloadPages();
                             displayPage();
@@ -877,7 +719,7 @@
                         worker.postMessage({ text: fileData, maxHeight: textContent.getBoundingClientRect().height });
                     } else {
                         pages = splitTextToFit(fileData, textContent.getBoundingClientRect().height);
-                        await setCachedData(lastFileName, { pages: pages, timestamp: Date.now() });
+                        await setCachedData(lastFileName, { pages: pages, timestamp: Date.now() }); // Cache pages with timestamp
                         loadLastPage();
                         preloadPages();
                         displayPage();
@@ -896,7 +738,7 @@
                     }
                     book = window.ePub(fileData);
                     try {
-                        await book.ready;
+                        await book.ready; // Wait for book to be ready
                         showMessage('EPUB 파싱 중...');
                         const coverUrl = await book.coverUrl();
                         const pagesData = await loadEpubPages();
@@ -904,7 +746,7 @@
                         const nav = await book.loaded.navigation;
                         toc = nav.toc;
 
-                        await setCachedData(lastFileName, { pages: pages, toc: toc, timestamp: Date.now() });
+                        await setCachedData(lastFileName, { pages: pages, toc: toc, timestamp: Date.now() }); // Cache pages and toc with timestamp
 
                         loadLastPage();
                         preloadPages();
@@ -939,8 +781,9 @@
             let fullText = '';
             let loadedCount = 0;
             const sections = book.spine.items;
+            // 기존 rendition destroy 코드를 여기에 둡니다.
             book.rendition = book.renderTo('textContent', {
-                ignoreContainerRead: true,
+                ignoreContainerRead: true, // 이미지 로드 비활성화 옵션 추가
                 flow: 'paginated',
                 width: '100%',
                 height: '100%'
@@ -952,12 +795,12 @@
                 progress.value = (loadedCount / sections.length) * 50;
                 const div = document.createElement('div');
                 div.appendChild(content.cloneNode(true));
-                div.querySelectorAll('a').forEach(link => link.parentNode.removeChild(link));
                 const text = div.innerText.trim();
                 if (text) fullText += text + '\n\n';
             }
             return splitTextToFit(fullText, textContent.getBoundingClientRect().height);
         }
+
 
         function splitTextToFit(text, containerHeight) {
             const lines = text.split('\n').filter(line => line.trim().length > 0);
@@ -982,7 +825,7 @@
 
         function preloadPages() {
             renderedPages = [];
-            const range = parseInt(preloadRange.value) || 2;
+            const range = parseInt(preloadRange.value);
             const start = Math.max(0, currentPage - range);
             const end = Math.min(pages.length, currentPage + range + 1);
             for (let i = start; i < end; i++) {
@@ -1006,8 +849,7 @@
             setTimeout(() => {
                 textContent.innerHTML = renderedPages[currentPage] || '';
                 updateTextContentStyles();
-                pageInfo.innerText = showPageInfo.checked || isFullscreen ? `${currentPage + 1}/${pages.length}` : '';
-                pageInfo.style.fontSize = `${pageInfoSize.value}px`;
+                pageInfo.innerText = showPageInfo.checked ? `${currentPage + 1} / ${pages.length}` : '';
                 progress.value = 0;
                 updateProgressPercent(0);
                 const loadTime = performance.now() - startTime;
@@ -1032,7 +874,7 @@
             localStorage.setItem(`lastPage_${lastFileName}`, currentPage);
         }
 
-        toggleButton.addEventListener('click', () => {
+        toggleButton.addEventListener('click', () => { // Toggle Button Listener
             if (!isTrainingActive) {
                 if (fullscreenMode.checked) {
                     const requestFullscreen = document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen;
@@ -1044,21 +886,21 @@
                                 document.body.style.opacity = 1;
                                 if (noSleep) noSleep.enable();
                                 isFullscreen = true;
-                                updateFullScreenButtons();
                             }, 300);
                         });
                     }
                 }
                 startEffect();
-                toggleButton.innerText = '정지';
+                toggleButton.innerText = '정지'; // Change button text to "Stop"
                 isTrainingActive = true;
             } else {
                 stopEffect();
                 exitFullscreen();
-                toggleButton.innerText = '시작';
+                toggleButton.innerText = '시작'; // Change button text back to "Start"
                 isTrainingActive = false;
             }
         });
+
 
         function stopEffect() {
             if (interval) clearInterval(interval);
@@ -1081,11 +923,12 @@
                 updateProgressPercent(0);
                 progress.style.backgroundColor = '';
             }
-            if (isTrainingActive) {
+            if (isTrainingActive) { // Ensure state is updated when stopped programmatically
                 toggleButton.innerText = '시작';
                 isTrainingActive = false;
             }
         }
+
 
         function exitFullscreen() {
             const exitFullscreen = document.exitFullscreen || document.webkitExitFullscreen;
@@ -1097,34 +940,10 @@
                         document.body.style.opacity = 1;
                         if (noSleep) noSleep.disable();
                         isFullscreen = false;
-                        updateFullScreenButtons();
                     });
                 }, 300);
             }
         }
-
-        pageInfo.addEventListener('click', () => {
-            if (isFullscreen) {
-                stopEffect();
-                exitFullscreen();
-            }
-        });
-
-        leftPageButton.addEventListener('click', () => {
-            if (currentPage > 0) {
-                currentPage--;
-                stopEffect();
-                displayPage(-1);
-            }
-        });
-
-        rightPageButton.addEventListener('click', () => {
-            if (currentPage < pages.length - 1) {
-                currentPage++;
-                stopEffect();
-                displayPage(1);
-            }
-        });
 
         tocButton.addEventListener('click', showToc);
 
@@ -1136,7 +955,7 @@
             libraryOverlay.style.display = 'block';
 
             libraryContent.querySelectorAll('li').forEach(li => {
-                li.addEventListener('click', async (e) => {
+                li.addEventListener('click', async (e) => { // Make listener async
                     e.stopPropagation();
                     const index = parseInt(li.dataset.index);
                     const file = libraryFiles[index];
@@ -1146,7 +965,7 @@
                     toggleButtons(true);
                     loadingSpinner.style.display = 'block';
 
-                    await pruneFileCache();
+                    await pruneFileCache(); // Prune cache before loading from library
 
                     let cachedData = await getCachedData(lastFileName);
                     if (cachedData) {
@@ -1158,12 +977,13 @@
                         showMessage('');
                         toggleButtons(false);
                         loadingSpinner.style.display = 'none';
-                        return;
+                        return; // Use cached data and exit
                     }
+
 
                     if (file.name.endsWith('.txt')) {
                         pages = splitTextToFit(file.data, textContent.getBoundingClientRect().height);
-                        await setCachedData(lastFileName, { pages: pages, timestamp: Date.now() });
+                        await setCachedData(lastFileName, { pages: pages, timestamp: Date.now() }); // Cache pages with timestamp
                         loadLastPage();
                         preloadPages();
                         displayPage();
@@ -1175,7 +995,7 @@
                             pages = pagesData;
                             const nav = await book.loaded.navigation;
                             toc = nav.toc;
-                            await setCachedData(lastFileName, { pages: pages, toc: toc, timestamp: Date.now() });
+                            await setCachedData(lastFileName, { pages: pages, toc: toc, timestamp: Date.now() }); // Cache pages and toc with timestamp
                             loadLastPage();
                             preloadPages();
                             displayPage();
@@ -1197,6 +1017,7 @@
             });
         });
 
+
         speedControl.addEventListener('input', () => {
             speedInput.value = speedControl.value;
             speedPreset.value = speedControl.value;
@@ -1206,11 +1027,13 @@
         });
 
         speedInput.addEventListener('input', () => {
-            speedControl.value = speedInput.value;
-            speedPreset.value = speedInput.value;
+            let value = Math.min(2000, Math.max(50, parseInt(speedInput.value) || 50));
+            speedInput.value = value;
+            speedControl.value = value;
+            speedPreset.value = value;
             adjustSpeed();
             if (!interval) previewEffect();
-            localStorage.setItem('speed', speedInput.value);
+            localStorage.setItem('speed', value);
         });
 
         speedPreset.addEventListener('change', () => {
@@ -1235,11 +1058,13 @@
         });
 
         fontSize.addEventListener('input', () => {
-            textContent.style.fontSize = `${fontSize.value}px`;
+            let value = Math.min(36, Math.max(12, fontSize.value));
+            fontSize.value = value;
+            textContent.style.fontSize = `${value}px`;
             pages = splitTextToFit(pages.join('\n\n'), textContent.getBoundingClientRect().height);
             preloadPages();
             displayPage();
-            localStorage.setItem('fontSize', fontSize.value);
+            localStorage.setItem('fontSize', value);
         });
 
         fontFamily.addEventListener('change', () => {
@@ -1250,7 +1075,7 @@
             localStorage.setItem('fontFamily', fontFamily.value);
         });
 
-        lineHeight.addEventListener('input', () => {
+        lineHeight.addEventListener('change', () => {
             textContent.style.lineHeight = lineHeight.value;
             pages = splitTextToFit(pages.join('\n\n'), textContent.getBoundingClientRect().height);
             preloadPages();
@@ -1258,7 +1083,7 @@
             localStorage.setItem('lineHeight', lineHeight.value);
         });
 
-        letterSpacing.addEventListener('input', () => {
+        letterSpacing.addEventListener('change', () => {
             textContent.style.letterSpacing = `${letterSpacing.value}px`;
             pages = splitTextToFit(pages.join('\n\n'), textContent.getBoundingClientRect().height);
             preloadPages();
@@ -1267,23 +1092,11 @@
         });
 
         preloadRange.addEventListener('input', () => {
+            let value = Math.min(10, Math.max(1, preloadRange.value));
+            preloadRange.value = value;
             preloadPages();
             displayPage();
-            localStorage.setItem('preloadRange', preloadRange.value);
-        });
-
-        textHeight.addEventListener('input', () => {
-            updateTextContentMargins();
-            pages = splitTextToFit(pages.join('\n\n'), textContent.getBoundingClientRect().height);
-            preloadPages();
-            displayPage();
-            localStorage.setItem('textHeight', textHeight.value);
-        });
-
-        pageInfoSize.addEventListener('input', () => {
-            pageInfo.style.fontSize = `${pageInfoSize.value}px`;
-            localStorage.setItem('pageInfoSize', pageInfoSize.value);
-            displayPage();
+            localStorage.setItem('preloadRange', value);
         });
 
         autoRestart.addEventListener('change', () => localStorage.setItem('autoRestart', autoRestart.checked));
@@ -1325,27 +1138,13 @@
             displayPage();
             localStorage.setItem('marginBottom', marginBottom.value);
         });
+
         marginLeft.addEventListener('input', () => {
             updateTextContentMargins();
             pages = splitTextToFit(pages.join('\n\n'), textContent.getBoundingClientRect().height);
             preloadPages();
             displayPage();
             localStorage.setItem('marginLeft', marginLeft.value);
-        });
-        enableFullScreenButtons.addEventListener('change', () => {
-            localStorage.setItem('enableFullScreenButtons', enableFullScreenButtons.checked);
-            updateFullScreenButtons();
-        });
-        fullScreenButtonWidth.addEventListener('input', () => {
-            localStorage.setItem('fullScreenButtonWidth', fullScreenButtonWidth.value);
-            updateFullScreenButtons();
-        });
-        fullScreenButtonHeight.addEventListener('input', () => {
-            localStorage.setItem('fullScreenButtonHeight', fullScreenButtonHeight.value);
-            updateFullScreenButtons();
-        });
-        autoPageTurn.addEventListener('change', () => {
-            localStorage.setItem('autoPageTurn', autoPageTurn.checked);
         });
 
         prevPage.addEventListener('click', () => {
@@ -1385,7 +1184,7 @@
                 displayPage(1);
             } else if (e.key === ' ' || e.key === 'Spacebar') {
                 e.preventDefault();
-                toggleButton.click();
+                toggleButton.click(); // Simulate click on toggle button
             } else if (e.key === 'Enter') {
                 if (currentPage < pages.length - 1) {
                     currentPage++;
@@ -1393,14 +1192,14 @@
                     displayPage(1);
                 }
             } else if (e.key === '+') {
-                let newSpeed = parseInt(speedControl.value) - 5;
+                let newSpeed = Math.max(50, parseInt(speedControl.value) - 5);
                 speedControl.value = newSpeed;
                 speedInput.value = newSpeed;
                 speedPreset.value = newSpeed;
                 adjustSpeed();
                 localStorage.setItem('speed', newSpeed);
             } else if (e.key === '-') {
-                let newSpeed = parseInt(speedControl.value) + 5;
+                let newSpeed = Math.min(2000, parseInt(speedControl.value) + 5);
                 speedControl.value = newSpeed;
                 speedInput.value = newSpeed;
                 speedPreset.value = newSpeed;
@@ -1432,16 +1231,16 @@
             const windowHeight = window.innerHeight;
 
             if (mobileSpeedControl.checked && touchEndY > windowHeight * 0.8) {
-                if (touchEndX > window.innerWidth * 0.75) {
-                    let newSpeed = parseInt(speedControl.value) - 5;
+                if (touchEndX > window.innerWidth * 0.75) { // 우측 하단
+                    let newSpeed = Math.max(50, parseInt(speedControl.value) - 5);
                     speedControl.value = newSpeed;
                     speedInput.value = newSpeed;
                     speedPreset.value = newSpeed;
                     adjustSpeed();
                     localStorage.setItem('speed', newSpeed);
                     showMessage(`속도: ${newSpeed}ms`, 1000);
-                } else if (touchEndX < window.innerWidth * 0.25) {
-                    let newSpeed = parseInt(speedControl.value) + 5;
+                } else if (touchEndX < window.innerWidth * 0.25) { // 좌측 하단
+                    let newSpeed = Math.min(2000, parseInt(speedControl.value) + 5);
                     speedControl.value = newSpeed;
                     speedInput.value = newSpeed;
                     speedPreset.value = newSpeed;
@@ -1510,8 +1309,6 @@
             lineHeight.value = 1.6;
             letterSpacing.value = 0;
             preloadRange.value = 2;
-            textHeight.value = 70;
-            pageInfoSize.value = 14;
             autoRestart.checked = false;
             pageAnimation.checked = true;
             showPageInfo.checked = true;
@@ -1522,28 +1319,24 @@
             marginRight.value = 0;
             marginBottom.value = 0;
             marginLeft.value = 0;
-            enableFullScreenButtons.checked = true;
-            fullScreenButtonWidth.value = 30;
-            fullScreenButtonHeight.value = 100;
-            autoPageTurn.checked = true;
             libraryFiles = [];
             localStorage.setItem('libraryFiles', JSON.stringify(libraryFiles));
             showMessage('설정이 초기화되었습니다.', 2000);
-            toggleButton.innerText = '시작';
-            isTrainingActive = false;
-            pages = [];
-            renderedPages = [];
-            textContent.innerHTML = '';
-            pageInfo.innerText = '';
-            progress.value = 0;
-            updateProgressPercent(0);
-            updateFullScreenButtons();
+            toggleButton.innerText = '시작'; // Reset toggle button text
+            isTrainingActive = false; // Reset training state
+            pages = []; // Clear pages
+            renderedPages = []; // Clear renderedPages
+            textContent.innerHTML = ''; // Clear text content
+            pageInfo.innerText = ''; // Clear page info
+            progress.value = 0; // Reset progress bar
+            updateProgressPercent(0); // Reset progress percent
         });
 
         clearCacheButton.addEventListener('click', async () => {
             await clearIndexedDBCache();
             showMessage('캐시가 비워졌습니다.', 2000);
         });
+
 
         function updateTextContentStyles() {
             textContent.style.fontSize = `${fontSize.value}px`;
@@ -1559,7 +1352,7 @@
             textContent.style.marginRight = `${marginRight.value}vw`;
             textContent.style.marginBottom = `${marginBottom.value}vh`;
             textContent.style.width = `calc(100% - ${marginLeft.value}vw - ${marginRight.value}vw)`;
-            textContent.style.height = `calc(${textHeight.value}vh - ${marginTop.value}vh - ${marginBottom.value}vh - 80px)`;
+            textContent.style.height = `calc(70vh - ${marginTop.value}vh - ${marginBottom.value}vh - 80px)`;
             document.documentElement.style.setProperty('--margin-bottom', `${marginBottom.value}vh`);
         }
 
@@ -1573,20 +1366,6 @@
                 textContent.style.backgroundColor = '#fff';
                 textContent.style.color = '#333';
             }
-        }
-
-        function updateFullScreenButtons() {
-            if (enableFullScreenButtons.checked && isFullscreen) {
-                leftPageButton.style.display = 'block';
-                rightPageButton.style.display = 'block';
-            } else {
-                leftPageButton.style.display = 'none';
-                rightPageButton.style.display = 'none';
-            }
-            leftPageButton.style.width = `${fullScreenButtonWidth.value}vw`;
-            rightPageButton.style.width = `${fullScreenButtonWidth.value}vw`;
-            leftPageButton.style.height = `${fullScreenButtonHeight.value}vh`;
-            rightPageButton.style.height = `${fullScreenButtonHeight.value}vh`;
         }
 
         function toggleButtons(disable) {
@@ -1604,7 +1383,7 @@
             }
             stopEffect();
             const effect = effectSelect.value;
-            const intervalTime = parseInt(speedControl.value) || 100;
+            const intervalTime = parseInt(speedControl.value);
             const fadeStep = Math.min(0.05, 10 / intervalTime);
             const baseBgColor = blackMode.checked ? blackModeColor.value : '#fff';
             const baseTextColor = blackMode.checked ? '#fff' : '#333';
@@ -1619,7 +1398,7 @@
                         updateProgressPercent(progress.value);
                     } else {
                         clearInterval(interval);
-                        if (autoPageTurn.checked && currentPage < pages.length - 1) nextPage.click();
+                        if (currentPage < pages.length - 1) nextPage.click(); // Auto next page for fade effect
                     }
                 }, intervalTime);
             } else if (effect === 'char') {
@@ -1644,7 +1423,7 @@
                             setTimeout(() => line.style.display = 'none', 200);
                         });
                         clearInterval(interval);
-                        if (autoPageTurn.checked && currentPage < pages.length - 1) nextPage.click();
+                        if (currentPage < pages.length - 1) nextPage.click(); // Auto next page for char effect
                     }
                 }, intervalTime / 2);
             } else if (effect === 'eink') {
@@ -1671,7 +1450,7 @@
                                 textContent.classList.remove('eink-mode');
                                 textContent.style.backgroundColor = baseBgColor;
                                 textContent.style.color = baseTextColor;
-                                if (autoPageTurn.checked && currentPage < pages.length - 1) nextPage.click();
+                                if (currentPage < pages.length - 1) nextPage.click(); // Auto next page for eink effect
                             }, 200);
                         }
                     } else {
@@ -1681,6 +1460,7 @@
                 }, intervalTime / 2);
             }
         }
+
 
         function adjustSpeed() {
             if (interval) {
