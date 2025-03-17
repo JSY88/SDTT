@@ -50,7 +50,7 @@
             z-index: 1;
             color: #333;
             user-select: none;
-            transition: opacity 0.3s, background-color 0.3s, color 0.3s;
+            transition: opacity 0.3s;
         }
 
         #textContent.eink-mode {
@@ -64,48 +64,98 @@
             flex-wrap: wrap;
             gap: 5px;
             justify-content: center;
+            position: relative;
+        }
+
+        #toggleButton {
+            position: fixed;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 15;
+            padding: 8px 16px;
+            font-size: 16px;
+        }
+
+        .fullscreen #toggleButton {
+            top: 5px;
         }
 
         #message {
             color: red;
             position: fixed;
-            bottom: 20px;
+            bottom: 70px; /* 더 위로 올림 */
             left: 50%;
             transform: translateX(-50%);
             background: rgba(255, 255, 255, 0.9);
             padding: 5px 10px;
             border-radius: 5px;
-            z-index: 10;
+            z-index: 1001; /* 페이지 버튼보다 위로 */
             display: none;
         }
 
-        #pageInfo {
+        #retryButton {
             position: fixed;
-            bottom: 10px;
-            right: 10px;
+            bottom: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 8px 12px;
             font-size: 14px;
-            background: rgba(255, 255, 255, 0);
-            padding: 5px 10px;
-            border-radius: 5px;
-            z-index: 1000;
-            cursor: pointer;
             border: none;
-            color: #333;
+            border-radius: 5px;
+            background-color: #e74c3c;
+            color: white;
+            cursor: pointer;
+            display: none;
+            z-index: 11;
         }
 
-        .fullscreen #pageInfo {
+        #retryButton:hover {
+            background-color: #c0392b;
+        }
+
+        #pageInfoContainer {
             position: fixed;
             bottom: 10px;
             left: 50%;
             transform: translateX(-50%);
-            right: auto;
-            background: rgba(255, 255, 255, 0);
-            padding: 5px 10px;
-            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
             z-index: 1000;
+            display: none;
+        }
+
+        #pageInfo {
+            font-size: 16px;
+            background: transparent;
+            padding: 8px 16px;
+            border-radius: 5px;
             cursor: pointer;
             border: none;
             color: #333;
+            opacity: 0.5;
+            transition: opacity 0.3s;
+        }
+
+        #pageInfo:hover {
+            opacity: 0.8;
+        }
+
+        #speedDownButton, #speedUpButton {
+            width: 50px;
+            height: 50px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-size: 20px;
+            color: #333;
+            opacity: 0.5;
+            transition: opacity 0.3s;
+        }
+
+        #speedDownButton:hover, #speedUpButton:hover {
+            opacity: 0.8;
         }
 
         #leftPageButton, #rightPageButton {
@@ -286,7 +336,7 @@
             opacity: 0;
         }
 
-        .fullscreen #controls, .fullscreen #progressContainer, .fullscreen #message, .fullscreen details, .fullscreen #fileUpload {
+        .fullscreen #controls, .fullscreen #progressContainer, .fullscreen #message, .fullscreen #retryButton, .fullscreen details, .fullscreen #fileUpload {
             display: none;
         }
 
@@ -295,6 +345,10 @@
             height: 100vh;
             margin: 0;
             padding: 20px;
+        }
+
+        .fullscreen #pageInfoContainer {
+            display: flex;
         }
 
         #fileUpload {
@@ -383,6 +437,16 @@
             background-color: #c0392b;
         }
 
+        #libraryOverlay .library-item .favorite-button {
+            background: none;
+            font-size: 16px;
+            color: #ccc;
+        }
+
+        #libraryOverlay .library-item .favorite-button.favorited {
+            color: #FFD700; /* 금색 별 */
+        }
+
         @keyframes spin {
             0% { transform: translate(-50%, -50%) rotate(0deg); }
             100% { transform: translate(-50%, -50%) rotate(360deg); }
@@ -409,12 +473,16 @@
                 gap: 8px;
             }
             #pageInfo {
-                font-size: 12px;
-                bottom: 5px;
-                right: 5px;
+                font-size: 14px;
+                padding: 6px 12px;
+            }
+            #speedDownButton, #speedUpButton {
+                width: 40px;
+                height: 40px;
+                font-size: 18px;
             }
             #message {
-                bottom: 60px;
+                bottom: 80px;
                 font-size: 14px;
             }
         }
@@ -424,31 +492,20 @@
         .black-mode summary { background-color: #3a3a3a; }
         .black-mode #fileUpload { background-color: #333; border-color: #555; }
         .black-mode #fileUpload:hover { background-color: #444; }
-        .black-mode #pageInfo { color: #fff; }
-
-        #toggleButton {
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            z-index: 15;
-        }
-
-        .fullscreen #toggleButton {
-            bottom: 10px;
-            left: 10px;
-        }
+        .black-mode #pageInfo, .black-mode #speedDownButton, .black-mode #speedUpButton { color: #fff; }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/nosleep.js@1.1.0/dist/NoSleep.min.js"></script>
 </head>
 <body>
     <input type="file" id="fileUpload" accept=".txt,.epub" aria-label="파일 업로드" multiple>
+    <button id="toggleButton" aria-label="훈련 시작/중지">시작</button>
     <div id="controls" role="toolbar">
-        <button id="toggleButton" aria-label="훈련 시작/중지">시작</button>
         <button id="prevPage" aria-label="이전 페이지"><span class="icon">◀</span> 이전</button>
         <button id="nextPage" aria-label="다음 페이지"><span class="icon">▶</span> 다음</button>
         <button id="tocButton" aria-label="목차">목차</button>
         <button id="libraryButton" aria-label="라이브러리">라이브러리</button>
+        <button id="favoritesButton" aria-label="즐겨찾기">즐겨찾기</button>
         <input type="number" id="jumpToPage" min="1" placeholder="페이지로 이동" style="width: 100px; padding: 5px;">
     </div>
     <details>
@@ -490,7 +547,9 @@
             <label for="textHeight">텍스트 영역 높이 (%):</label>
             <div><input type="text" id="textHeight" value="70"></div>
             <label for="pageInfoSize">페이지 표시 크기:</label>
-            <div><input type="text" id="pageInfoSize" value="14">px</div>
+            <div><input type="text" id="pageInfoSize" value="16">px</div>
+            <label for="pageInfoOpacity">페이지 버튼 투명도 (0~1):</label>
+            <div><input type="range" id="pageInfoOpacity" min="0" max="1" step="0.1" value="0.5"></div>
             <label for="autoRestart">페이지 전환 시 재시작:</label>
             <input type="checkbox" id="autoRestart">
             <label for="pageAnimation">페이지 전환 애니메이션:</label>
@@ -528,11 +587,16 @@
         <span id="progressPercent">0%</span>
     </div>
     <div id="textContent" role="region" aria-label="텍스트 표시 영역"></div>
-    <button id="pageInfo" aria-live="polite"></button>
+    <div id="pageInfoContainer">
+        <button id="speedDownButton" aria-label="속도 감소">-</button>
+        <button id="pageInfo" aria-live="polite"></button>
+        <button id="speedUpButton" aria-label="속도 증가">+</button>
+    </div>
     <button id="leftPageButton" aria-label="이전 페이지로 이동"></button>
     <button id="rightPageButton" aria-label="다음 페이지로 이동"></button>
     <div id="loadingSpinner"></div>
     <div id="message" aria-live="assertive"></div>
+    <button id="retryButton" aria-label="재시도">재시도</button>
     <div id="tocOverlay">
         <button id="closeToc" style="position: absolute; top: 10px; right: 10px; padding: 5px; background: #fff; border: none; cursor: pointer;">X</button>
         <div id="tocContent"></div>
@@ -565,6 +629,7 @@
         const preloadRange = document.getElementById('preloadRange');
         const textHeight = document.getElementById('textHeight');
         const pageInfoSize = document.getElementById('pageInfoSize');
+        const pageInfoOpacity = document.getElementById('pageInfoOpacity');
         const autoRestart = document.getElementById('autoRestart');
         const pageAnimation = document.getElementById('pageAnimation');
         const showPageInfo = document.getElementById('showPageInfo');
@@ -584,14 +649,18 @@
         const nextPage = document.getElementById('nextPage');
         const tocButton = document.getElementById('tocButton');
         const libraryButton = document.getElementById('libraryButton');
+        const favoritesButton = document.getElementById('favoritesButton');
         const jumpToPage = document.getElementById('jumpToPage');
         const pageInfo = document.getElementById('pageInfo');
+        const speedDownButton = document.getElementById('speedDownButton');
+        const speedUpButton = document.getElementById('speedUpButton');
         const leftPageButton = document.getElementById('leftPageButton');
         const rightPageButton = document.getElementById('rightPageButton');
         const message = document.getElementById('message');
         const progress = document.getElementById('progress');
         const progressPercent = document.getElementById('progressPercent');
         const loadingSpinner = document.getElementById('loadingSpinner');
+        const retryButton = document.getElementById('retryButton');
         const resetSettings = document.getElementById('resetSettings');
         const tocOverlay = document.getElementById('tocOverlay');
         const tocContent = document.getElementById('tocContent');
@@ -635,87 +704,78 @@
         });
 
         async function getCachedData(fileName) {
-            await dbPromise;
-            return new Promise((resolve, reject) => {
+            await dbPromise.catch(() => {});
+            return new Promise((resolve) => {
+                if (!db) {
+                    resolve(null);
+                    return;
+                }
                 const transaction = db.transaction([CACHE_STORE_NAME], 'readonly');
                 const store = transaction.objectStore(CACHE_STORE_NAME);
                 const request = store.get(fileName);
-
-                request.onsuccess = (event) => {
-                    resolve(event.target.result);
-                };
-
-                request.onerror = (event) => {
-                    console.error('IndexedDB get 오류:', event);
-                    reject(event);
-                };
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => resolve(null);
             });
         }
 
         async function setCachedData(fileName, data) {
-            await dbPromise;
-            return new Promise((resolve, reject) => {
+            await dbPromise.catch(() => {});
+            return new Promise((resolve) => {
+                if (!db) {
+                    resolve();
+                    return;
+                }
                 const transaction = db.transaction([CACHE_STORE_NAME], 'readwrite');
                 const store = transaction.objectStore(CACHE_STORE_NAME);
                 const request = store.put(data, fileName);
-
-                request.onsuccess = (event) => {
-                    resolve();
-                };
-
-                request.onerror = (event) => {
-                    console.error('IndexedDB set 오류:', event);
-                    reject(event);
-                };
+                request.onsuccess = () => resolve();
+                request.onerror = () => resolve();
             });
         }
 
         async function deleteCachedData(fileName) {
-            await dbPromise;
-            return new Promise((resolve, reject) => {
+            await dbPromise.catch(() => {});
+            return new Promise((resolve) => {
+                if (!db) {
+                    resolve();
+                    return;
+                }
                 const transaction = db.transaction([CACHE_STORE_NAME], 'readwrite');
                 const store = transaction.objectStore(CACHE_STORE_NAME);
                 const request = store.delete(fileName);
-
-                request.onsuccess = (event) => {
-                    resolve();
-                };
-
-                request.onerror = (event) => {
-                    console.error('IndexedDB delete 오류:', event);
-                    reject(event);
-                };
+                request.onsuccess = () => resolve();
+                request.onerror = () => resolve();
             });
         }
 
         async function clearIndexedDBCache() {
-            await dbPromise;
-            return new Promise((resolve, reject) => {
+            await dbPromise.catch(() => {});
+            return new Promise((resolve) => {
+                if (!db) {
+                    resolve();
+                    return;
+                }
                 const transaction = db.transaction([CACHE_STORE_NAME], 'readwrite');
                 const store = transaction.objectStore(CACHE_STORE_NAME);
                 const request = store.clear();
-
-                request.onsuccess = (event) => {
-                    resolve();
-                };
-
-                request.onerror = (event) => {
-                    console.error('IndexedDB clear 오류:', event);
-                    reject(event);
-                };
+                request.onsuccess = () => resolve();
+                request.onerror = () => resolve();
             });
         }
 
         async function pruneFileCache() {
-            await dbPromise;
+            await dbPromise.catch(() => {});
             const MAX_CACHE_ENTRIES = 5;
             const cachedFiles = [];
 
-            return new Promise((resolve, reject) => {
+            return new Promise((resolve) => {
+                if (!db) {
+                    resolve();
+                    return;
+                }
                 const transaction = db.transaction([CACHE_STORE_NAME], 'readonly');
                 const store = transaction.objectStore(CACHE_STORE_NAME);
                 const request = store.openCursor();
-
                 request.onsuccess = async function(event) {
                     const cursor = event.target.result;
                     if (cursor) {
@@ -732,11 +792,7 @@
                         resolve();
                     }
                 };
-
-                request.onerror = (event) => {
-                    console.error('IndexedDB cursor error:', event);
-                    reject(event);
-                };
+                request.onerror = () => resolve();
             });
         }
 
@@ -752,7 +808,8 @@
         letterSpacing.value = localStorage.getItem('letterSpacing') || 0;
         preloadRange.value = localStorage.getItem('preloadRange') || 2;
         textHeight.value = localStorage.getItem('textHeight') || 70;
-        pageInfoSize.value = localStorage.getItem('pageInfoSize') || 14;
+        pageInfoSize.value = localStorage.getItem('pageInfoSize') || 16;
+        pageInfoOpacity.value = localStorage.getItem('pageInfoOpacity') || 0.5;
         autoRestart.checked = localStorage.getItem('autoRestart') === 'true';
         pageAnimation.checked = localStorage.getItem('pageAnimation') !== 'false';
         showPageInfo.checked = localStorage.getItem('showPageInfo') !== 'false';
@@ -770,6 +827,7 @@
         updateTextContentStyles();
         toggleBlackMode();
         updateFullScreenButtons();
+        updatePageInfoStyles();
 
         if (window.Worker) {
             const workerCode = `
@@ -778,9 +836,8 @@
                     const lines = text.split('\\n').filter(line => line.trim().length > 0);
                     const pages = [];
                     let currentPageText = '';
-                    const testDiv = { innerText: '', getBoundingClientRect: () => ({ height: 0 }) }; // 더미 객체
-                    let currentHeight = 0;
                     const lineHeightPx = parseFloat(lineHeight) * parseFloat(fontSize);
+                    let currentHeight = 0;
                     for (let line of lines) {
                         currentHeight += lineHeightPx;
                         if (currentHeight > maxHeight) {
@@ -801,9 +858,12 @@
         function addToLibrary(fileName, fileData, coverUrl) {
             const existingIndex = libraryFiles.findIndex(item => item.name === fileName);
             if (existingIndex !== -1) {
+                const existingFile = libraryFiles[existingIndex];
                 libraryFiles.splice(existingIndex, 1);
+                libraryFiles.unshift({ name: fileName, data: fileData, cover: coverUrl, timestamp: Date.now(), isFavorite: existingFile.isFavorite || false });
+            } else {
+                libraryFiles.unshift({ name: fileName, data: fileData, cover: coverUrl, timestamp: Date.now(), isFavorite: false });
             }
-            libraryFiles.unshift({ name: fileName, data: fileData, cover: coverUrl, timestamp: Date.now() });
             libraryFiles = libraryFiles.slice(0, 10);
             localStorage.setItem('libraryFiles', JSON.stringify(libraryFiles));
             pruneFileCache();
@@ -866,6 +926,7 @@
             progress.value = 0;
             toggleButtons(true);
             loadingSpinner.style.display = 'block';
+            retryButton.style.display = 'none';
 
             const reader = new FileReader();
             reader.onload = async function(event) {
@@ -883,6 +944,7 @@
                     toggleButtons(false);
                     loadingSpinner.style.display = 'none';
                     addToLibrary(file.name, fileData, cachedData.coverUrl || null);
+                    showMessage('단축키: 스페이스(시작/정지), ←/→(페이지 이동), +/- (속도 조절)', 5000);
                     return;
                 }
 
@@ -899,11 +961,13 @@
                             toggleButtons(false);
                             loadingSpinner.style.display = 'none';
                             addToLibrary(file.name, fileData, null);
+                            showMessage('단축키: 스페이스(시작/정지), ←/→(페이지 이동), +/- (속도 조절)', 5000);
                         };
                         worker.onerror = function(e) {
                             showMessage('웹 워커 오류: ' + e.message);
                             toggleButtons(false);
                             loadingSpinner.style.display = 'none';
+                            retryButton.style.display = 'block';
                         };
                         worker.postMessage({
                             text: fileData,
@@ -924,6 +988,7 @@
                         toggleButtons(false);
                         loadingSpinner.style.display = 'none';
                         addToLibrary(file.name, fileData, null);
+                        showMessage('단축키: 스페이스(시작/정지), ←/→(페이지 이동), +/- (속도 조절)', 5000);
                     }
                 } else if (file.name.endsWith('.epub')) {
                     await loadEpubLibraries();
@@ -931,6 +996,7 @@
                         showMessage('epub.js 또는 JSZip 로딩 실패.');
                         toggleButtons(false);
                         loadingSpinner.style.display = 'none';
+                        retryButton.style.display = 'block';
                         return;
                     }
                     book = window.ePub(fileData);
@@ -953,10 +1019,12 @@
                         toggleButtons(false);
                         loadingSpinner.style.display = 'none';
                         addToLibrary(file.name, fileData, coverUrl);
+                        showMessage('단축키: 스페이스(시작/정지), ←/→(페이지 이동), +/- (속도 조절)', 5000);
                     } catch (err) {
                         showMessage('EPUB 로드 오류: ' + err.message);
                         toggleButtons(false);
                         loadingSpinner.style.display = 'none';
+                        retryButton.style.display = 'block';
                     }
                 }
             };
@@ -964,6 +1032,7 @@
                 showMessage('파일 읽기 오류.');
                 toggleButtons(false);
                 loadingSpinner.style.display = 'none';
+                retryButton.style.display = 'block';
             };
             if (file.name.endsWith('.txt')) {
                 reader.readAsText(file, 'UTF-8');
@@ -973,26 +1042,28 @@
         }
 
         async function loadEpubPages() {
-            if (book && book.rendition) book.rendition.destroy();
+            if (!book.rendition) {
+                book.rendition = book.renderTo('textContent', {
+                    ignoreContainerRead: true,
+                    flow: 'paginated',
+                    width: '100%',
+                    height: '100%'
+                });
+            }
             let fullText = '';
-            let loadedCount = 0;
             const sections = book.spine.items;
-            book.rendition = book.renderTo('textContent', {
-                ignoreContainerRead: true,
-                flow: 'paginated',
-                width: '100%',
-                height: '100%'
-            });
             for (let i = 0; i < sections.length; i++) {
-                const section = book.spine.get(i);
-                const content = await section.load(book.load.bind(book));
-                loadedCount++;
-                progress.value = (loadedCount / sections.length) * 50;
-                const div = document.createElement('div');
-                div.appendChild(content.cloneNode(true));
-                div.querySelectorAll('a').forEach(link => link.parentNode.removeChild(link));
-                const text = div.innerText.trim();
-                if (text) fullText += text + '\n\n';
+                try {
+                    const section = book.spine.get(i);
+                    const content = await section.load(book.load.bind(book));
+                    progress.value = (i / sections.length) * 50 + 50;
+                    const text = content.innerText.trim();
+                    if (text) fullText += text + '\n\n';
+                    section.unload();
+                } catch (e) {
+                    console.warn(`Section ${i} 로드 실패, 건너뜁니다:`, e);
+                    continue;
+                }
             }
             return splitTextToFit(fullText, textContent.getBoundingClientRect().height);
         }
@@ -1020,7 +1091,7 @@
 
         function preloadPages() {
             renderedPages = [];
-            const range = parseInt(preloadRange.value) || 2;
+            const range = Math.min(2, parseInt(preloadRange.value) || 2);
             const start = Math.max(0, currentPage - range);
             const end = Math.min(pages.length, currentPage + range + 1);
             for (let i = start; i < end; i++) {
@@ -1032,6 +1103,13 @@
                 }).join('');
                 renderedPages[i] = html;
             }
+            // Clean up unused pages to save memory
+            Object.keys(renderedPages).forEach(key => {
+                const pageNum = parseInt(key);
+                if (pageNum < start || pageNum >= end) {
+                    delete renderedPages[pageNum];
+                }
+            });
         }
 
         function displayPage(direction = 0) {
@@ -1042,8 +1120,9 @@
             textContent.innerHTML = '';
             textContent.appendChild(fragment);
 
-            pageInfo.innerText = showPageInfo.checked || isFullscreen ? `${currentPage + 1}/${pages.length}` : '';
+            pageInfo.innerText = (showPageInfo.checked || isFullscreen) ? `${currentPage + 1}/${pages.length}` : '';
             pageInfo.style.fontSize = `${pageInfoSize.value}px`;
+            updatePageInfoStyles();
             progress.value = 0;
             updateProgressPercent(0);
             if (pageAnimation.checked && direction !== 0) {
@@ -1085,6 +1164,8 @@
                                 isFullscreen = true;
                                 updateFullScreenButtons();
                             }, 300);
+                        }).catch(() => {
+                            showMessage('전체화면 모드 활성화 실패.');
                         });
                     }
                 }
@@ -1157,6 +1238,7 @@
 
         function stopEffect() {
             if (interval) clearInterval(interval);
+            interval = null;
             textContent.style.opacity = 1;
             textContent.style.backgroundColor = blackMode.checked ? blackModeColor.value : '#fff';
             textContent.style.color = blackMode.checked ? '#fff' : '#333';
@@ -1193,16 +1275,40 @@
                         if (noSleep) noSleep.disable();
                         isFullscreen = false;
                         updateFullScreenButtons();
+                    }).catch(() => {
+                        showMessage('전체화면 모드 종료 실패.');
                     });
                 }, 300);
             }
         }
 
         pageInfo.addEventListener('click', () => {
-            if (isFullscreen) {
-                stopEffect();
-                exitFullscreen();
-            }
+            stopEffect();
+            exitFullscreen();
+        });
+
+        speedDownButton.addEventListener('click', () => {
+            stopEffect();
+            let newSpeed = Math.max(50, parseInt(speedControl.value) - 5);
+            speedControl.value = newSpeed;
+            speedInput.value = newSpeed;
+            speedPreset.value = newSpeed;
+            adjustSpeed();
+            localStorage.setItem('speed', newSpeed);
+            showMessage(`속도: ${newSpeed}ms`, 1000);
+            if (isTrainingActive) startEffect();
+        });
+
+        speedUpButton.addEventListener('click', () => {
+            stopEffect();
+            let newSpeed = Math.min(2000, parseInt(speedControl.value) + 5);
+            speedControl.value = newSpeed;
+            speedInput.value = newSpeed;
+            speedPreset.value = newSpeed;
+            adjustSpeed();
+            localStorage.setItem('speed', newSpeed);
+            showMessage(`속도: ${newSpeed}ms`, 1000);
+            if (isTrainingActive) startEffect();
         });
 
         leftPageButton.addEventListener('click', () => {
@@ -1223,18 +1329,35 @@
 
         tocButton.addEventListener('click', showToc);
 
-        libraryButton.addEventListener('click', () => {
-            libraryContent.innerHTML = '<ul>' + libraryFiles.sort((a, b) => b.timestamp - a.timestamp).map((file, index) => {
+        function updateLibraryDisplay(files) {
+            libraryContent.innerHTML = '<ul>' + files.sort((a, b) => b.timestamp - a.timestamp).map((file, index) => {
                 const cover = file.cover ? `<img src="${file.cover}" alt="${file.name} 표지">` : `<div class="no-cover">${file.name}</div>`;
-                return `<li class="library-item" data-index="${index}">${cover}<span>${file.name}</span><button class="delete-button" data-index="${index}">삭제</button></li>`;
+                const favoriteClass = file.isFavorite ? 'favorited' : '';
+                return `<li class="library-item" data-index="${index}">
+                    ${cover}
+                    <span>${file.name}</span>
+                    <button class="favorite-button ${favoriteClass}" data-index="${index}">★</button>
+                    <button class="delete-button" data-index="${index}">삭제</button>
+                </li>`;
             }).join('') + '</ul>';
-            libraryOverlay.style.display = 'block';
+
+            libraryContent.querySelectorAll('.favorite-button').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const index = parseInt(button.dataset.index);
+                    libraryFiles[index].isFavorite = !libraryFiles[index].isFavorite;
+                    localStorage.setItem('libraryFiles', JSON.stringify(libraryFiles));
+                    updateLibraryDisplay(files);
+                    showMessage(libraryFiles[index].isFavorite ? '즐겨찾기에 추가되었습니다.' : '즐겨찾기에서 제거되었습니다.', 2000);
+                });
+            });
 
             libraryContent.querySelectorAll('li').forEach(li => {
                 li.addEventListener('click', async (e) => {
+                    if (e.target.classList.contains('favorite-button') || e.target.classList.contains('delete-button')) return;
                     e.stopPropagation();
                     const index = parseInt(li.dataset.index);
-                    const file = libraryFiles[index];
+                    const file = files[index];
                     lastFileName = file.name;
                     libraryOverlay.style.display = 'none';
                     showMessage('라이브러리에서 불러오는 중...');
@@ -1279,6 +1402,7 @@
                             showMessage('EPUB 로드 오류: ' + err.message);
                             toggleButtons(false);
                             loadingSpinner.style.display = 'none';
+                            retryButton.style.display = 'block';
                             return;
                         }
                     }
@@ -1293,7 +1417,7 @@
                     const index = parseInt(deleteButton.dataset.index);
                     libraryFiles.splice(index, 1);
                     localStorage.setItem('libraryFiles', JSON.stringify(libraryFiles));
-                    libraryButton.click(); // 라이브러리 목록 갱신
+                    updateLibraryDisplay(files);
                     showMessage('파일이 삭제되었습니다.', 2000);
                 });
             });
@@ -1301,6 +1425,21 @@
             document.getElementById('closeLibrary').addEventListener('click', () => {
                 libraryOverlay.style.display = 'none';
             });
+        }
+
+        libraryButton.addEventListener('click', () => {
+            updateLibraryDisplay(libraryFiles);
+            libraryOverlay.style.display = 'block';
+        });
+
+        favoritesButton.addEventListener('click', () => {
+            const favoriteFiles = libraryFiles.filter(file => file.isFavorite);
+            if (favoriteFiles.length === 0) {
+                showMessage('즐겨찾기한 파일이 없습니다.', 2000);
+                return;
+            }
+            updateLibraryDisplay(favoriteFiles);
+            libraryOverlay.style.display = 'block';
         });
 
         function debounce(func, wait) {
@@ -1392,8 +1531,15 @@
 
         pageInfoSize.addEventListener('input', () => {
             pageInfo.style.fontSize = `${pageInfoSize.value}px`;
+            speedDownButton.style.fontSize = `${pageInfoSize.value}px`;
+            speedUpButton.style.fontSize = `${pageInfoSize.value}px`;
             localStorage.setItem('pageInfoSize', pageInfoSize.value);
             displayPage();
+        });
+
+        pageInfoOpacity.addEventListener('input', () => {
+            localStorage.setItem('pageInfoOpacity', pageInfoOpacity.value);
+            updatePageInfoStyles();
         });
 
         autoRestart.addEventListener('change', () => localStorage.setItem('autoRestart', autoRestart.checked));
@@ -1492,14 +1638,14 @@
                     displayPage(1);
                 }
             } else if (e.key === '+') {
-                let newSpeed = parseInt(speedControl.value) - 5;
+                let newSpeed = Math.min(2000, parseInt(speedControl.value) + 5);
                 speedControl.value = newSpeed;
                 speedInput.value = newSpeed;
                 speedPreset.value = newSpeed;
                 adjustSpeed();
                 localStorage.setItem('speed', newSpeed);
             } else if (e.key === '-') {
-                let newSpeed = parseInt(speedControl.value) + 5;
+                let newSpeed = Math.max(50, parseInt(speedControl.value) - 5);
                 speedControl.value = newSpeed;
                 speedInput.value = newSpeed;
                 speedPreset.value = newSpeed;
@@ -1532,7 +1678,7 @@
 
             if (mobileSpeedControl.checked && touchEndY > windowHeight * 0.8) {
                 if (touchEndX > window.innerWidth * 0.75) {
-                    let newSpeed = parseInt(speedControl.value) - 5;
+                    let newSpeed = Math.max(50, parseInt(speedControl.value) - 5);
                     speedControl.value = newSpeed;
                     speedInput.value = newSpeed;
                     speedPreset.value = newSpeed;
@@ -1540,7 +1686,7 @@
                     localStorage.setItem('speed', newSpeed);
                     showMessage(`속도: ${newSpeed}ms`, 1000);
                 } else if (touchEndX < window.innerWidth * 0.25) {
-                    let newSpeed = parseInt(speedControl.value) + 5;
+                    let newSpeed = Math.min(2000, parseInt(speedControl.value) + 5);
                     speedControl.value = newSpeed;
                     speedInput.value = newSpeed;
                     speedPreset.value = newSpeed;
@@ -1548,11 +1694,11 @@
                     localStorage.setItem('speed', newSpeed);
                     showMessage(`속도: ${newSpeed}ms`, 1000);
                 }
-            } else if (deltaX > 50 && currentPage > 0) {
+            } else if (deltaX > 100 && currentPage > 0) {
                 currentPage--;
                 stopEffect();
                 displayPage(-1);
-            } else if (deltaX < -50 && currentPage < pages.length - 1) {
+            } else if (deltaX < -100 && currentPage < pages.length - 1) {
                 currentPage++;
                 stopEffect();
                 displayPage(1);
@@ -1611,7 +1757,8 @@
             letterSpacing.value = 0;
             preloadRange.value = 2;
             textHeight.value = 70;
-            pageInfoSize.value = 14;
+            pageInfoSize.value = 16;
+            pageInfoOpacity.value = 0.5;
             autoRestart.checked = false;
             pageAnimation.checked = true;
             showPageInfo.checked = true;
@@ -1638,6 +1785,7 @@
             progress.value = 0;
             updateProgressPercent(0);
             updateFullScreenButtons();
+            updatePageInfoStyles();
         });
 
         clearCacheButton.addEventListener('click', async () => {
@@ -1645,11 +1793,13 @@
             showMessage('캐시가 비워졌습니다.', 2000);
         });
 
+        retryButton.addEventListener('click', () => {
+            retryButton.style.display = 'none';
+            handleFileUpload(fileInput.files[0] || null);
+        });
+
         function adjustSpeed() {
-            if (interval) {
-                clearInterval(interval);
-                startEffect();
-            }
+            // 속도 조절 시 중복 애니메이션 방지
         }
 
         function previewEffect() {
@@ -1708,12 +1858,20 @@
             }
         }
 
+        function updatePageInfoStyles() {
+            const opacity = pageInfoOpacity.value;
+            pageInfo.style.opacity = opacity;
+            speedDownButton.style.opacity = opacity;
+            speedUpButton.style.opacity = opacity;
+        }
+
         function toggleButtons(disable) {
             toggleButton.disabled = disable;
             prevPage.disabled = disable;
             nextPage.disabled = disable;
             tocButton.disabled = disable;
             libraryButton.disabled = disable;
+            favoritesButton.disabled = disable;
             jumpToPage.disabled = disable;
         }
 
@@ -1723,5 +1881,5 @@
             textContent.style.color = blackMode.checked ? '#fff' : '#333';
         }
     </script>
-</body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'921bc27e6a4d7b99',t:'MTc0MjIwNjg0Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'921c13e62be9450f',t:'MTc0MjIxMDE4Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
