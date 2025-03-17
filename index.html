@@ -94,33 +94,48 @@
             display: none;
         }
 
-        #pageInfo {
-            position: fixed;
-            bottom: 10px;
-            right: 10px;
-            font-size: 14px;
-            background: rgba(255, 255, 255, 0);
-            padding: 5px 10px;
-            border-radius: 5px;
-            z-index: 1000;
-            cursor: pointer;
-            border: none;
-            color: #333;
-        }
-
-        .fullscreen #pageInfo {
+        #pageInfoContainer {
             position: fixed;
             bottom: 10px;
             left: 50%;
             transform: translateX(-50%);
-            right: auto;
+            display: flex;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        #speedDownButton, #speedUpButton {
+            width: 40px;
+            height: 40px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            opacity: 0; /* 보이지 않게 */
+            transition: none; /* 반투명 효과 제거 */
+        }
+
+        #speedDownButton:hover, #speedUpButton:hover,
+        #speedDownButton:focus, #speedUpButton:focus,
+        #speedDownButton:active, #speedUpButton:active {
+            background: transparent; /* 반투명 효과 제거 */
+            outline: none;
+        }
+
+        #pageInfo {
+            font-size: 14px;
             background: rgba(255, 255, 255, 0);
             padding: 5px 10px;
             border-radius: 5px;
-            z-index: 1000;
             cursor: pointer;
             border: none;
             color: #333;
+            margin: 0; /* 버튼과 딱 붙도록 */
+        }
+
+        .fullscreen #pageInfoContainer {
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
         }
 
         #leftPageButton, #rightPageButton {
@@ -308,7 +323,7 @@
 
         .fullscreen #textContent {
             width: 100vw;
-            height: calc(100vh - 40px); /* Adjusted to stay above page info button */
+            height: calc(100vh - 40px);
             margin: 0;
             padding: 20px;
         }
@@ -337,12 +352,12 @@
             top: 0;
             left: 0;
             width: 100%;
-            height: 100vh; /* Full viewport height */
+            height: 100vh;
             background: rgba(0, 0, 0, 0.8);
             z-index: 20;
             color: white;
             padding: 20px;
-            overflow-y: auto; /* Ensure scrolling */
+            overflow-y: auto;
             box-sizing: border-box;
         }
 
@@ -372,6 +387,7 @@
             width: 50px;
             height: 70px;
             object-fit: cover;
+            display: block;
         }
 
         #libraryOverlay .library-item .no-cover {
@@ -384,6 +400,9 @@
             text-align: center;
             font-size: 12px;
             color: #fff;
+            padding: 5px;
+            word-break: break-word;
+            overflow: hidden;
         }
 
         #libraryOverlay .library-item button {
@@ -428,23 +447,21 @@
             }
             #pageInfo {
                 font-size: 12px;
-                bottom: 5px;
-                right: 5px;
             }
             #message {
                 bottom: 60px;
                 font-size: 14px;
             }
             #libraryOverlay {
-                padding: 10px; /* Reduced padding for mobile */
-                height: 100vh; /* Ensure full height */
+                padding: 10px;
+                height: 100vh;
             }
             #libraryOverlay .library-item img, #libraryOverlay .library-item .no-cover {
-                width: 40px; /* Smaller image size for mobile */
+                width: 40px;
                 height: 56px;
             }
             #libraryOverlay .library-item span {
-                font-size: 14px; /* Adjust font size for mobile */
+                font-size: 14px;
             }
         }
 
@@ -454,14 +471,6 @@
         .black-mode #fileUpload { background-color: #333; border-color: #555; }
         .black-mode #fileUpload:hover { background-color: #444; }
         .black-mode #pageInfo { color: #fff; }
-
-        #toggleButton {
-            position: static; /* Moved to controls */
-        }
-
-        .fullscreen #toggleButton {
-            display: none; /* Hidden in fullscreen */
-        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/nosleep.js@1.1.0/dist/NoSleep.min.js"></script>
@@ -562,7 +571,11 @@
         <span id="progressPercent">0%</span>
     </div>
     <div id="textContent" role="region" aria-label="텍스트 표시 영역"></div>
-    <button id="pageInfo" aria-live="polite"></button>
+    <div id="pageInfoContainer">
+        <button id="speedDownButton" aria-label="속도 감소"></button>
+        <button id="pageInfo" aria-live="polite"></button>
+        <button id="speedUpButton" aria-label="속도 증가"></button>
+    </div>
     <button id="leftPageButton" aria-label="이전 페이지로 이동"></button>
     <button id="rightPageButton" aria-label="다음 페이지로 이동"></button>
     <div id="loadingSpinner"></div>
@@ -623,6 +636,8 @@
         const favoritesButton = document.getElementById('favoritesButton');
         const jumpToPage = document.getElementById('jumpToPage');
         const pageInfo = document.getElementById('pageInfo');
+        const speedDownButton = document.getElementById('speedDownButton');
+        const speedUpButton = document.getElementById('speedUpButton');
         const leftPageButton = document.getElementById('leftPageButton');
         const rightPageButton = document.getElementById('rightPageButton');
         const message = document.getElementById('message');
@@ -817,7 +832,7 @@
                     const lines = text.split('\\n').filter(line => line.trim().length > 0);
                     const pages = [];
                     let currentPageText = '';
-                    const testDiv = { innerText: '', getBoundingClientRect: () => ({ height: 0 }) }; // 더미 객체
+                    const testDiv = { innerText: '', getBoundingClientRect: () => ({ height: 0 }) };
                     let currentHeight = 0;
                     const lineHeightPx = parseFloat(lineHeight) * parseFloat(fontSize);
                     for (let line of lines) {
@@ -848,7 +863,7 @@
                 cover: coverUrl, 
                 timestamp: Date.now(), 
                 favorite: isFavorite,
-                metadata: metadata // Store EPUB metadata
+                metadata: metadata 
             });
             libraryFiles = libraryFiles.slice(0, 10);
             localStorage.setItem('libraryFiles', JSON.stringify(libraryFiles));
@@ -986,7 +1001,12 @@
                         await book.ready;
                         showMessage('EPUB 파싱 중...');
                         const coverUrl = await book.coverUrl();
-                        const metadata = await book.loaded.metadata; // Fetch EPUB metadata
+                        const metadata = await book.loaded.metadata;
+                        let coverBlobUrl = null;
+                        if (coverUrl) {
+                            const coverBlob = await fetch(coverUrl).then(res => res.blob());
+                            coverBlobUrl = URL.createObjectURL(coverBlob);
+                        }
                         const pagesData = await loadEpubPages();
                         pages = pagesData.pages;
                         toc = pagesData.toc;
@@ -994,7 +1014,7 @@
                         await setCachedData(lastFileName, { 
                             pages: pages, 
                             toc: toc, 
-                            cover: coverUrl, 
+                            cover: coverBlobUrl, 
                             timestamp: Date.now(),
                             metadata: {
                                 title: metadata.title || 'Unknown Title',
@@ -1010,7 +1030,7 @@
                         progress.value = 0;
                         toggleButtons(false);
                         loadingSpinner.style.display = 'none';
-                        addToLibrary(file.name, fileData, coverUrl, false, {
+                        addToLibrary(file.name, fileData, coverBlobUrl, false, {
                             title: metadata.title || 'Unknown Title',
                             author: metadata.creator || 'Unknown Author',
                             publisher: metadata.publisher || 'Unknown Publisher'
@@ -1056,7 +1076,6 @@
                 const div = document.createElement('div');
                 div.appendChild(content.cloneNode(true));
 
-                // Remove hyperlinks, footnotes, and titles
                 div.querySelectorAll('a, sup, h1, h2, h3, h4, h5, h6').forEach(el => el.parentNode.removeChild(el));
                 const text = div.innerText.trim();
                 if (text) {
@@ -1275,6 +1294,30 @@
             }
         });
 
+speedDownButton.addEventListener('click', () => {
+    let newSpeed = parseInt(speedControl.value) -5; // 속도 감소
+    if (newSpeed <= 2000) { // 최대값 제한
+        speedControl.value = newSpeed;
+        speedInput.value = newSpeed;
+        speedPreset.value = newSpeed;
+        adjustSpeed();
+        localStorage.setItem('speed', newSpeed);
+        showMessage(`속도: ${newSpeed}ms`, 1000);
+    }
+});
+
+speedUpButton.addEventListener('click', () => {
+    let newSpeed = parseInt(speedControl.value) +5; // 속도 증가
+    if (newSpeed >= 50) { // 최소값 제한
+        speedControl.value = newSpeed;
+        speedInput.value = newSpeed;
+        speedPreset.value = newSpeed;
+        adjustSpeed();
+        localStorage.setItem('speed', newSpeed);
+        showMessage(`속도: ${newSpeed}ms`, 1000);
+    }
+});
+
         leftPageButton.addEventListener('click', () => {
             if (currentPage > 0) {
                 currentPage--;
@@ -1295,7 +1338,9 @@
 
         libraryButton.addEventListener('click', () => {
             libraryContent.innerHTML = '<ul>' + libraryFiles.sort((a, b) => b.timestamp - a.timestamp).map((file, index) => {
-                const cover = file.cover ? `<img src="${file.cover}" alt="${file.metadata?.title || file.name} 표지">` : `<div class="no-cover">${file.metadata?.title || file.name}</div>`;
+                const cover = file.cover ? 
+                    `<img src="${file.cover}" alt="${file.metadata?.title || file.name} 표지" onerror="this.style.display='none';this.nextSibling.style.display='flex';">` : 
+                    `<div class="no-cover">${file.metadata?.title || file.name}</div>`;
                 const favoriteClass = file.favorite ? 'style="color: yellow;"' : '';
                 const displayName = file.metadata?.title ? `${file.metadata.title} - ${file.metadata.author} (${file.metadata.publisher})` : file.name;
                 return `<li class="library-item" data-index="${index}">${cover}<span ${favoriteClass}>${displayName}</span><button class="favorite-button" data-index="${index}">${file.favorite ? '★' : '☆'}</button><button class="delete-button" data-index="${index}">삭제</button></li>`;
@@ -1343,10 +1388,16 @@
                             pages = pagesData.pages;
                             toc = pagesData.toc;
                             const metadata = await book.loaded.metadata;
+                            const coverUrl = await book.coverUrl();
+                            let coverBlobUrl = null;
+                            if (coverUrl) {
+                                const coverBlob = await fetch(coverUrl).then(res => res.blob());
+                                coverBlobUrl = URL.createObjectURL(coverBlob);
+                            }
                             await setCachedData(lastFileName, { 
                                 pages: pages, 
                                 toc: toc, 
-                                cover: file.cover, 
+                                cover: coverBlobUrl, 
                                 timestamp: Date.now(),
                                 metadata: {
                                     title: metadata.title || 'Unknown Title',
@@ -1375,7 +1426,7 @@
                     const index = parseInt(favoriteButton.dataset.index);
                     libraryFiles[index].favorite = !libraryFiles[index].favorite;
                     localStorage.setItem('libraryFiles', JSON.stringify(libraryFiles));
-                    libraryButton.click(); // Refresh library
+                    libraryButton.click();
                     showMessage(libraryFiles[index].favorite ? '즐겨찾기에 추가되었습니다.' : '즐겨찾기에서 제거되었습니다.', 2000);
                 });
 
@@ -1385,7 +1436,7 @@
                     const index = parseInt(deleteButton.dataset.index);
                     libraryFiles.splice(index, 1);
                     localStorage.setItem('libraryFiles', JSON.stringify(libraryFiles));
-                    libraryButton.click(); // Refresh library
+                    libraryButton.click();
                     showMessage('파일이 삭제되었습니다.', 2000);
                 });
             });
@@ -1402,7 +1453,9 @@
                 return;
             }
             libraryContent.innerHTML = '<ul>' + favoriteFiles.map((file, index) => {
-                const cover = file.cover ? `<img src="${file.cover}" alt="${file.metadata?.title || file.name} 표지">` : `<div class="no-cover">${file.metadata?.title || file.name}</div>`;
+                const cover = file.cover ? 
+                    `<img src="${file.cover}" alt="${file.metadata?.title || file.name} 표지" onerror="this.style.display='none';this.nextSibling.style.display='flex';">` : 
+                    `<div class="no-cover">${file.metadata?.title || file.name}</div>`;
                 const displayName = file.metadata?.title ? `${file.metadata.title} - ${file.metadata.author} (${file.metadata.publisher})` : file.name;
                 return `<li class="library-item" data-index="${libraryFiles.indexOf(file)}">${cover}<span style="color: yellow;">${displayName}</span><button class="favorite-button" data-index="${libraryFiles.indexOf(file)}">★</button><button class="delete-button" data-index="${libraryFiles.indexOf(file)}">삭제</button></li>`;
             }).join('') + '</ul>';
@@ -1449,10 +1502,16 @@
                             pages = pagesData.pages;
                             toc = pagesData.toc;
                             const metadata = await book.loaded.metadata;
+                            const coverUrl = await book.coverUrl();
+                            let coverBlobUrl = null;
+                            if (coverUrl) {
+                                const coverBlob = await fetch(coverUrl).then(res => res.blob());
+                                coverBlobUrl = URL.createObjectURL(coverBlob);
+                            }
                             await setCachedData(lastFileName, { 
                                 pages: pages, 
                                 toc: toc, 
-                                cover: file.cover, 
+                                cover: coverBlobUrl, 
                                 timestamp: Date.now(),
                                 metadata: {
                                     title: metadata.title || 'Unknown Title',
@@ -1481,7 +1540,7 @@
                     const index = parseInt(favoriteButton.dataset.index);
                     libraryFiles[index].favorite = false;
                     localStorage.setItem('libraryFiles', JSON.stringify(libraryFiles));
-                    favoritesButton.click(); // Refresh favorites
+                    favoritesButton.click();
                     showMessage('즐겨찾기에서 제거되었습니다.', 2000);
                 });
 
@@ -1491,7 +1550,7 @@
                     const index = parseInt(deleteButton.dataset.index);
                     libraryFiles.splice(index, 1);
                     localStorage.setItem('libraryFiles', JSON.stringify(libraryFiles));
-                    favoritesButton.click(); // Refresh favorites
+                    favoritesButton.click();
                     showMessage('파일이 삭제되었습니다.', 2000);
                 });
             });
@@ -1870,42 +1929,25 @@
 
         function updateProgressPercent(value) {
             progressPercent.innerText = `${Math.round(value)}%`;
-            progressPercent.style.display = value > 0 ? 'block' : 'none';
+            if (value > 0) {
+                progressPercent.style.display = 'block';
+            } else {
+                progressPercent.style.display = 'none';
+            }
         }
 
         function updateTextContentStyles() {
-            const currentSettings = {
-                fontSize: fontSize.value,
-                fontFamily: fontFamily.value,
-                fontWeight: fontWeight.value,
-                lineHeight: lineHeight.value,
-                letterSpacing: letterSpacing.value,
-                paragraphSpacing: paragraphSpacing.value
-            };
-            if (JSON.stringify(currentSettings) === JSON.stringify(lastSettings)) return;
-            lastSettings = { ...currentSettings };
             document.documentElement.style.setProperty('--font-size', `${fontSize.value}px`);
             document.documentElement.style.setProperty('--line-height', lineHeight.value);
             document.documentElement.style.setProperty('--letter-spacing', `${letterSpacing.value}px`);
             document.documentElement.style.setProperty('--font-weight', fontWeight.value);
-            document.documentElement.style.setProperty('--paragraph-spacing', `${paragraphSpacing.value}em`);
             document.documentElement.style.setProperty('--text-height', `${textHeight.value}vh`);
             document.documentElement.style.setProperty('--margin-top', `${marginTop.value}vh`);
             document.documentElement.style.setProperty('--margin-right', `${marginRight.value}vw`);
             document.documentElement.style.setProperty('--margin-bottom', `${marginBottom.value}vh`);
             document.documentElement.style.setProperty('--margin-left', `${marginLeft.value}vw`);
-            updateTextContentMargins();
-            toggleBlackMode();
-            pages = splitTextToFit(pages.join('\n\n'), textContent.getBoundingClientRect().height);
-            preloadPages();
-            displayPage();
-        }
-
-        function updateTextContentMargins() {
-            textContent.style.marginTop = `${marginTop.value}vh`;
-            textContent.style.marginRight = `${marginRight.value}vw`;
-            textContent.style.marginBottom = `${marginBottom.value}vh`;
-            textContent.style.marginLeft = `${marginLeft.value}vw`;
+            document.documentElement.style.setProperty('--paragraph-spacing', `${paragraphSpacing.value}em`);
+            textContent.style.fontFamily = fontFamily.value;
         }
 
         function updateFullScreenButtons() {
@@ -1914,7 +1956,7 @@
                 rightPageButton.style.display = 'block';
                 leftPageButton.style.width = `${fullScreenButtonWidth.value}vw`;
                 rightPageButton.style.width = `${fullScreenButtonWidth.value}vw`;
-                     leftPageButton.style.height = `${fullScreenButtonHeight.value}vh`;
+                leftPageButton.style.height = `${fullScreenButtonHeight.value}vh`;
                 rightPageButton.style.height = `${fullScreenButtonHeight.value}vh`;
             } else {
                 leftPageButton.style.display = 'none';
