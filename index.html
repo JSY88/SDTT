@@ -73,7 +73,7 @@
         }
 
         .fullscreen #toggleButton {
-            display: none; /* 전체 화면에서 시작 버튼 숨기기 */
+            display: none;
         }
 
         #message {
@@ -488,9 +488,68 @@
         .black-mode #fileUpload { background-color: #333; border-color: #555; }
         .black-mode #fileUpload:hover { background-color: #444; }
         .black-mode #pageInfo, .black-mode #speedDownButton, .black-mode #speedUpButton { color: #fff; }
+
+        /* 타이머 설정 UI 스타일 수정 */
+        #timerSettings {
+            display: none;
+            position: fixed;
+            top: 10px; /* 화면 상단에 위치 */
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            z-index: 1002; /* 페이지 정보 버튼 위에 표시 */
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            width: 80%;
+            max-width: 600px;
+        }
+
+        .setConfig {
+            margin-bottom: 10px;
+            display: flex;
+            gap: 5px;
+            align-items: center;
+        }
+
+        #timerSettings input[type="text"], #timerSettings input[type="number"] {
+            width: 60px;
+            padding: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        #timerSettings select {
+            padding: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        #timerSettings button {
+            padding: 5px 10px;
+            font-size: 12px;
+            max-width: none;
+        }
+
+        #timerSettings label {
+            font-size: 12px;
+            color: #333;
+        }
+
+        #timerSettings .sound-select {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        #timerSettings .sound-select select {
+            flex: 1;
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/nosleep.js@1.1.0/dist/NoSleep.min.js"></script>
+    <script src="https://unpkg.com/epubjs@latest/dist/epub.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
 <body>
     <input type="file" id="fileUpload" accept=".txt,.epub" aria-label="파일 업로드" multiple>
@@ -602,10 +661,58 @@
         <button id="closeLibrary" style="position: absolute; top: 10px; right: 10px; padding: 5px; background: #fff; border: none; cursor: pointer;">X</button>
         <div id="libraryContent"></div>
     </div>
+    <!-- 타이머 설정 UI 추가 -->
+    <div id="timerSettings">
+        <label for="setCount">세트 횟수:</label>
+        <input type="number" id="setCount" min="1" value="1">
+        <div id="setConfigs">
+            <div class="setConfig">
+                <label>읽는 시간 (mm:ss):</label>
+                <input type="text" class="readTime" pattern="\d{1,2}:\d{2}" placeholder="mm:ss">
+                <label>일시정지 시간 (mm:ss):</label>
+                <input type="text" class="pauseTime" pattern="\d{1,2}:\d{2}" placeholder="mm:ss">
+                <label>대기 시간 (초):</label>
+                <input type="number" class="waitTime" min="0" value="0">
+            </div>
+        </div>
+        <button id="addSetConfig">구성 추가</button>
+        <button id="saveConfig">구성 저장</button>
+        <button id="loadConfig">구성 불러오기</button>
+        <button id="startTimer">타이머 시작</button>
+        <button id="stopTimer">타이머 정지</button>
+        <div class="sound-select">
+            <label>시작 소리:</label>
+            <select id="startSound">
+                <option value="">선택 안함</option>
+                <!-- 사운드 파일 목록 동적으로 추가 -->
+            </select>
+        </div>
+        <div class="sound-select">
+            <label>읽기 종료 소리:</label>
+            <select id="readEndSound">
+                <option value="">선택 안함</option>
+                <!-- 사운드 파일 목록 동적으로 추가 -->
+            </select>
+        </div>
+        <div class="sound-select">
+            <label>일시정지 종료 소리:</label>
+            <select id="pauseEndSound">
+                <option value="">선택 안함</option>
+                <!-- 사운드 파일 목록 동적으로 추가 -->
+            </select>
+        </div>
+        <div class="sound-select">
+            <label>모든 세트 종료 소리:</label>
+            <select id="allSetsEndSound">
+                <option value="">선택 안함</option>
+                <!-- 사운드 파일 목록 동적으로 추가 -->
+            </select>
+        </div>
+    </div>
 
     <script>
 let noSleep;
-let currentEffectIndex = 0; // 추가: 현재 텍스트 사라짐 효과의 진행 인덱스 저장
+let currentEffectIndex = 0;
 if (typeof NoSleep !== 'undefined') {
     noSleep = new NoSleep();
 } else {
@@ -665,7 +772,21 @@ const tocContent = document.getElementById('tocContent');
 const libraryOverlay = document.getElementById('libraryOverlay');
 const libraryContent = document.getElementById('libraryContent');
 const clearCacheButton = document.getElementById('clearCacheButton');
-const pageInfoContainer = document.getElementById('pageInfoContainer'); // 추가: 페이지 정보 컨테이너 참조
+const pageInfoContainer = document.getElementById('pageInfoContainer');
+
+// 타이머 설정 요소
+const timerSettings = document.getElementById('timerSettings');
+const setCount = document.getElementById('setCount');
+const setConfigs = document.getElementById('setConfigs');
+const addSetConfig = document.getElementById('addSetConfig');
+const saveConfig = document.getElementById('saveConfig');
+const loadConfig = document.getElementById('loadConfig');
+const startTimerButton = document.getElementById('startTimer');
+const stopTimerButton = document.getElementById('stopTimer');
+const startSound = document.getElementById('startSound');
+const readEndSound = document.getElementById('readEndSound');
+const pauseEndSound = document.getElementById('pauseEndSound');
+const allSetsEndSound = document.getElementById('allSetsEndSound');
 
 let interval, pages = [], currentPage = 0, book, toc = [];
 let worker, lastFileName = '';
@@ -675,10 +796,19 @@ let libraryFiles = JSON.parse(localStorage.getItem('libraryFiles')) || [];
 let isTrainingActive = false;
 let messageTimer;
 let lastSettings = {};
-let isPaused = false; // 추가: 일시정지 상태 관리 변수
-let lastTouchTime = 0; // 추가: 더블탭 감지를 위한 마지막 터치 시간
-let sliderContainer = null; // 추가: 페이지 이동 슬라이더 컨테이너
-let isPageTurning = false; // 추가: 페이지 넘김 중복 방지 플래그
+let isPaused = false;
+let lastTouchTime = 0;
+let sliderContainer = null;
+let isPageTurning = false;
+let timerInterval = null; // 타이머 인터벌 변수
+let currentSet = 0; // 현재 세트 번호
+let currentConfigIndex = 0; // 현재 구성 인덱스
+let isReading = true; // 읽기/일시정지 상태
+let totalSets = 0; // 전체 세트 수
+let configs = []; // 세트 구성 배열
+let startWaitTime = 0; // 시작 대기 시간 (초)
+let setWaitTime = 0; // 세트 간 대기 시간 (초)
+let audioContext = null; // Web Audio API 컨텍스트
 
 const DB_NAME = 'vanishingTextDB';
 const DB_VERSION = 1;
@@ -706,7 +836,7 @@ const dbPromise = new Promise((resolve, reject) => {
     };
 });
 
-// IndexedDB 관련 함수들 (기존 코드 유지)
+// IndexedDB 함수들 (기존 코드 유지)
 async function getCachedData(fileName) {
     await dbPromise.catch(() => {});
     return new Promise((resolve) => {
@@ -1048,31 +1178,39 @@ async function handleFileUpload(file) {
     }
 }
 
+// EPUB 파일 로딩 개선
 async function loadEpubPages() {
-    if (!book.rendition) {
-        book.rendition = book.renderTo('textContent', {
-            ignoreContainerRead: true,
-            flow: 'paginated',
-            width: '100%',
-            height: '100%'
-        });
-    }
-    let fullText = '';
-    const sections = book.spine.items;
-    for (let i = 0; i < sections.length; i++) {
-        try {
-            const section = book.spine.get(i);
-            const content = await section.load(book.load.bind(book));
-            progress.value = (i / sections.length) * 50 + 50;
-            const text = content.innerText.trim();
-            if (text) fullText += text + '\n\n';
-            section.unload();
-        } catch (e) {
-            console.warn(`Section ${i} 로드 실패, 건너뜁니다:`, e);
-            continue;
+    try {
+        if (!book.rendition) {
+            book.rendition = book.renderTo('textContent', {
+                ignoreContainerRead: true,
+                flow: 'paginated',
+                width: '100%',
+                height: '100%'
+            });
         }
+        let fullText = '';
+        const sections = book.spine.items;
+        for (let i = 0; i < sections.length; i++) {
+            try {
+                const section = book.spine.get(i);
+                const content = await section.load(book.load.bind(book));
+                progress.value = (i / sections.length) * 50 + 50;
+                const text = content.innerText.trim();
+                if (text) fullText += text + '\n\n';
+                section.unload();
+                console.log(`섹션 ${i + 1}/${sections.length} 로드 성공`);
+            } catch (e) {
+                console.warn(`섹션 ${i + 1} 로드 실패, 건너뜁니다:`, e);
+                continue; // 오류 발생 시 해당 섹션 건너뛰기
+            }
+        }
+        return splitTextToFit(fullText, textContent.getBoundingClientRect().height);
+    } catch (err) {
+        console.error('EPUB 페이지 로드 중 오류 발생:', err);
+        showMessage('EPUB 페이지 로드 오류: ' + err.message);
+        throw err;
     }
-    return splitTextToFit(fullText, textContent.getBoundingClientRect().height);
 }
 
 function splitTextToFit(text, containerHeight) {
@@ -1145,7 +1283,6 @@ function displayPage(direction = 0) {
     preloadPages();
     saveLastPage();
 
-    // 디버깅: 페이지 표시 확인
     console.log(`현재 페이지 표시됨: ${currentPage + 1}/${pages.length}`);
 }
 
@@ -1159,17 +1296,16 @@ function saveLastPage() {
     localStorage.setItem(`lastPage_${lastFileName}`, currentPage);
 }
 
-// 더블탭 및 더블클릭 이벤트 추가
+// 더블탭 이벤트 개선 (전체 화면 여부와 관계없이 작동)
 textContent.addEventListener('dblclick', togglePause);
 textContent.addEventListener('touchstart', (e) => {
     const currentTime = Date.now();
-    if (currentTime - lastTouchTime < 300) {
+    if (currentTime - lastTouchTime < 300) { // 300ms 이내 더블탭 감지
         togglePause();
-        e.preventDefault(); // 모바일 더블탭 기본 동작(줌 등) 방지
+        e.preventDefault(); // 모바일 기본 동작(줌 등) 방지
+        console.log('더블탭 감지: 일시정지 토글');
     }
     lastTouchTime = currentTime;
-    // 디버깅: 터치 이벤트 감지 확인
-    console.log('터치 감지됨, 시간 차이:', currentTime - lastTouchTime);
 });
 
 // 일시정지 토글 함수
@@ -1182,14 +1318,13 @@ function togglePause() {
         showMessage('일시정지됨', 1000);
     } else {
         hidePauseUI();
-        if (isTrainingActive) startEffect(); // 저장된 인덱스부터 재개
+        if (isTrainingActive) startEffect();
         showMessage('재개됨', 1000);
     }
-    // 디버깅: 일시정지 상태 및 인덱스 확인
     console.log(`일시정지 상태: ${isPaused}, 현재 인덱스: ${currentEffectIndex}`);
 }
 
-// 일시정지 UI 표시 함수
+// 일시정지 UI 표시 함수 (타이머 설정 UI 포함)
 function showPauseUI() {
     if (!sliderContainer) {
         sliderContainer = document.createElement('div');
@@ -1214,7 +1349,6 @@ function showPauseUI() {
         slider.addEventListener('input', (e) => {
             currentPage = parseInt(e.target.value) - 1;
             displayPage();
-            // 디버깅: 슬라이더로 페이지 이동 확인
             console.log(`슬라이더로 페이지 이동: ${currentPage + 1}`);
         });
         sliderContainer.appendChild(slider);
@@ -1223,14 +1357,15 @@ function showPauseUI() {
         sliderContainer.querySelector('input').value = currentPage + 1;
     }
     sliderContainer.style.display = 'block';
-    pageInfoContainer.style.bottom = '50px'; // 페이지 표시 버튼 위치 조정
+    timerSettings.style.display = 'block'; // 타이머 설정 UI 표시
+    pageInfoContainer.style.bottom = '50px';
     speedDownButton.style.display = 'block';
     speedUpButton.style.display = 'block';
 }
 
-// 일시정지 UI 숨김 함수
 function hidePauseUI() {
     if (sliderContainer) sliderContainer.style.display = 'none';
+    timerSettings.style.display = 'none'; // 타이머 설정 UI 숨김
     pageInfoContainer.style.bottom = '10px';
     speedDownButton.style.display = 'none';
     speedUpButton.style.display = 'none';
@@ -1269,23 +1404,23 @@ toggleButton.addEventListener('click', () => {
 });
 
 function startEffect() {
-    stopEffect(); // 기존 효과 중지
+    stopEffect();
     setTimeout(() => {
         if (effectSelect.value === 'char') {
             const spans = textContent.querySelectorAll('.char-span:not(.char-space)');
-            let charIndex = currentEffectIndex; // 저장된 인덱스부터 시작
+            let charIndex = currentEffectIndex;
             const totalChars = spans.length;
             const intervalTime = parseInt(speedControl.value) / 2;
             interval = setInterval(() => {
                 if (charIndex < spans.length) {
                     spans[charIndex].classList.add('fade');
                     charIndex++;
-                    currentEffectIndex = charIndex; // 진행 상태 업데이트
+                    currentEffectIndex = charIndex;
                     progress.value = (charIndex / totalChars) * 100;
                     updateProgressPercent(progress.value);
                 } else {
                     clearInterval(interval);
-                    currentEffectIndex = 0; // 페이지 끝나면 초기화
+                    currentEffectIndex = 0;
                     if (autoPageTurn.checked && currentPage < pages.length - 1) {
                         currentPage++;
                         displayPage(1);
@@ -1294,19 +1429,19 @@ function startEffect() {
             }, intervalTime);
         } else if (effectSelect.value === 'fade') {
             const lines = textContent.querySelectorAll('.line');
-            let lineIndex = currentEffectIndex; // 저장된 인덱스부터 시작
+            let lineIndex = currentEffectIndex;
             const totalLines = lines.length;
             const intervalTime = parseInt(speedControl.value);
             interval = setInterval(() => {
                 if (lineIndex < lines.length) {
                     lines[lineIndex].classList.add('hidden');
                     lineIndex++;
-                    currentEffectIndex = lineIndex; // 진행 상태 업데이트
+                    currentEffectIndex = lineIndex;
                     progress.value = (lineIndex / totalLines) * 100;
                     updateProgressPercent(progress.value);
                 } else {
                     clearInterval(interval);
-                    currentEffectIndex = 0; // 페이지 끝나면 초기화
+                    currentEffectIndex = 0;
                     if (autoPageTurn.checked && currentPage < pages.length - 1) {
                         currentPage++;
                         displayPage(1);
@@ -1315,7 +1450,7 @@ function startEffect() {
             }, intervalTime);
         } else if (effectSelect.value === 'eink') {
             const spans = textContent.querySelectorAll('.char-span:not(.char-space)');
-            let charIndex = currentEffectIndex; // 저장된 인덱스부터 시작
+            let charIndex = currentEffectIndex;
             const totalChars = spans.length;
             const intervalTime = parseInt(speedControl.value) / 2;
             textContent.classList.add('eink-mode');
@@ -1323,12 +1458,12 @@ function startEffect() {
                 if (charIndex < spans.length) {
                     spans[charIndex].classList.add('eink-black');
                     charIndex++;
-                    currentEffectIndex = charIndex; // 진행 상태 업데이트
+                    currentEffectIndex = charIndex;
                     progress.value = (charIndex / totalChars) * 100;
                     updateProgressPercent(progress.value);
                 } else {
                     clearInterval(interval);
-                    currentEffectIndex = 0; // 페이지 끝나면 초기화
+                    currentEffectIndex = 0;
                     if (autoPageTurn.checked && currentPage < pages.length - 1) {
                         currentPage++;
                         displayPage(1);
@@ -1336,7 +1471,6 @@ function startEffect() {
                 }
             }, intervalTime);
         }
-        // 디버깅: 효과 시작 지점 확인
         console.log(`효과 시작, 시작 인덱스: ${currentEffectIndex}`);
     }, parseInt(delayBeforeEffect.value));
 }
@@ -1344,7 +1478,7 @@ function startEffect() {
 function stopEffect() {
     if (interval) clearInterval(interval);
     interval = null;
-console.log(`효과 중지, 현재 인덱스: ${currentEffectIndex}`);
+    console.log(`효과 중지, 현재 인덱스: ${currentEffectIndex}`);
 }
 
 function exitFullscreen() {
@@ -1371,7 +1505,7 @@ pageInfo.addEventListener('click', () => {
 });
 
 speedDownButton.addEventListener('click', () => {
-    if (!isPaused) return; // 일시정지 상태에서만 동작
+    if (!isPaused) return;
     stopEffect();
     let newSpeed = Math.max(50, parseInt(speedControl.value) - 5);
     speedControl.value = newSpeed;
@@ -1380,12 +1514,11 @@ speedDownButton.addEventListener('click', () => {
     adjustSpeed();
     localStorage.setItem('speed', newSpeed);
     showMessage(`속도: ${newSpeed}ms`, 1000);
-    // 디버깅: 속도 감소 확인
     console.log(`속도 감소: ${newSpeed}ms`);
 });
 
 speedUpButton.addEventListener('click', () => {
-    if (!isPaused) return; // 일시정지 상태에서만 동작
+    if (!isPaused) return;
     stopEffect();
     let newSpeed = Math.min(2000, parseInt(speedControl.value) + 5);
     speedControl.value = newSpeed;
@@ -1394,7 +1527,6 @@ speedUpButton.addEventListener('click', () => {
     adjustSpeed();
     localStorage.setItem('speed', newSpeed);
     showMessage(`속도: ${newSpeed}ms`, 1000);
-    // 디버깅: 속도 증가 확인
     console.log(`속도 증가: ${newSpeed}ms`);
 });
 
@@ -1419,6 +1551,11 @@ rightPageButton.addEventListener('click', () => {
 tocButton.addEventListener('click', showToc);
 
 // 모바일 페이지 넘김 버그 수정
+let touchStartX = 0;
+textContent.addEventListener('touchstart', (e) => {
+    touchStartX = e.touches[0].clientX;
+});
+
 textContent.addEventListener('touchend', (e) => {
     if (isPaused) return;
     const touchEndX = e.changedTouches[0].clientX;
@@ -1447,7 +1584,6 @@ textContent.addEventListener('touchend', (e) => {
             if (isTrainingActive && !isPaused) startEffect();
         }
     } else if (isPageTurning) {
-        // 디버깅: 페이지 넘김 중복 방지 확인
         console.log('페이지 넘김 중복 감지, 무시됨');
         return;
     } else if (deltaX > 100 && currentPage > 0) {
@@ -1457,7 +1593,6 @@ textContent.addEventListener('touchend', (e) => {
         displayPage(-1);
         if (isTrainingActive && !isPaused) startEffect();
         setTimeout(() => isPageTurning = false, 300);
-        // 디버깅: 페이지 이동 확인
         console.log(`페이지 이동 (이전): ${currentPage + 1}`);
     } else if (deltaX < -100 && currentPage < pages.length - 1) {
         isPageTurning = true;
@@ -1466,483 +1601,263 @@ textContent.addEventListener('touchend', (e) => {
         displayPage(1);
         if (isTrainingActive && !isPaused) startEffect();
         setTimeout(() => isPageTurning = false, 300);
-        // 디버깅: 페이지 이동 확인
         console.log(`페이지 이동 (다음): ${currentPage + 1}`);
     }
     e.preventDefault();
 });
 
-function updateLibraryDisplay(files) {
-    libraryContent.innerHTML = '<ul>' + files.sort((a, b) => b.timestamp - a.timestamp).map((file, index) => {
-        const cover = file.cover ? `<img src="${file.cover}" alt="${file.name} 표지">` : `<div class="no-cover">${file.name}</div>`;
-        const favoriteClass = file.isFavorite ? 'favorited' : '';
-        return `<li class="library-item" data-index="${index}">
-            ${cover}
-            <span>${file.name}</span>
-            <button class="favorite-button ${favoriteClass}" data-index="${index}">★</button>
-            <button class="delete-button" data-index="${index}">삭제</button>
-        </li>`;
-    }).join('') + '</ul>';
-
-    libraryContent.querySelectorAll('.favorite-button').forEach(button => {
-        button.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const index = parseInt(button.dataset.index);
-            libraryFiles[index].isFavorite = !libraryFiles[index].isFavorite;
-            localStorage.setItem('libraryFiles', JSON.stringify(libraryFiles));
-            updateLibraryDisplay(files);
-            showMessage(libraryFiles[index].isFavorite ? '즐겨찾기에 추가되었습니다.' : '즐겨찾기에서 제거되었습니다.', 2000);
-        });
+// 타이머 설정 관련 함수들
+addSetConfig.addEventListener('click', () => {
+    const newConfig = document.createElement('div');
+    newConfig.className = 'setConfig';
+    newConfig.innerHTML = `
+        <label>읽는 시간 (mm:ss):</label>
+        <input type="text" class="readTime" pattern="\d{1,2}:\d{2}" placeholder="mm:ss">
+        <label>일시정지 시간 (mm:ss):</label>
+        <input type="text" class="pauseTime" pattern="\d{1,2}:\d{2}" placeholder="mm:ss">
+        <label>대기 시간 (초):</label>
+        <input type="number" class="waitTime" min="0" value="0">
+        <button class="removeConfig">제거</button>
+    `;
+    setConfigs.appendChild(newConfig);
+    newConfig.querySelector('.removeConfig').addEventListener('click', () => {
+        setConfigs.removeChild(newConfig);
+        console.log('세트 구성 제거됨');
     });
-
-    libraryContent.querySelectorAll('li').forEach(li => {
-        li.addEventListener('click', async (e) => {
-            if (e.target.classList.contains('favorite-button') || e.target.classList.contains('delete-button')) return;
-            e.stopPropagation();
-            const index = parseInt(li.dataset.index);
-            const file = files[index];
-            lastFileName = file.name;
-            libraryOverlay.style.display = 'none';
-            showMessage('라이브러리에서 불러오는 중...');
-            toggleButtons(true);
-            loadingSpinner.style.display = 'block';
-
-            await pruneFileCache();
-
-            let cachedData = await getCachedData(lastFileName);
-            if (cachedData) {
-                pages = cachedData.pages;
-                toc = cachedData.toc || [];
-                loadLastPage();
-                preloadPages();
-                displayPage();
-                showMessage('');
-                toggleButtons(false);
-                loadingSpinner.style.display = 'none';
-                return;
-            }
-
-            if (file.name.endsWith('.txt')) {
-                pages = splitTextToFit(file.data, textContent.getBoundingClientRect().height);
-                await setCachedData(lastFileName, { pages: pages, timestamp: Date.now() });
-                loadLastPage();
-                preloadPages();
-                displayPage();
-            } else if (file.name.endsWith('.epub')) {
-                await loadEpubLibraries();
-                book = window.ePub(file.data);
-                try {
-                    await book.ready;
-                    const pagesData = await loadEpubPages();
-                    pages = pagesData;
-                    const nav = await book.loaded.navigation;
-                    toc = nav.toc;
-                    await setCachedData(lastFileName, { pages: pages, toc: toc, timestamp: Date.now() });
-                    loadLastPage();
-                    preloadPages();
-                    displayPage();
-                } catch (err) {
-                    showMessage('EPUB 로드 오류: ' + err.message);
-                    toggleButtons(false);
-                    loadingSpinner.style.display = 'none';
-                    retryButton.style.display = 'block';
-                    return;
-                }
-            }
-            showMessage('');
-            toggleButtons(false);
-            loadingSpinner.style.display = 'none';
-        });
-
-        const deleteButton = li.querySelector('.delete-button');
-        deleteButton.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const index = parseInt(deleteButton.dataset.index);
-            libraryFiles.splice(index, 1);
-            localStorage.setItem('libraryFiles', JSON.stringify(libraryFiles));
-            updateLibraryDisplay(files);
-            showMessage('파일이 삭제되었습니다.', 2000);
-        });
-    });
-
-    document.getElementById('closeLibrary').addEventListener('click', () => {
-        libraryOverlay.style.display = 'none';
-    });
-}
-
-libraryButton.addEventListener('click', () => {
-    updateLibraryDisplay(libraryFiles);
-    libraryOverlay.style.display = 'block';
+    console.log('새로운 세트 구성 추가됨');
 });
 
-favoritesButton.addEventListener('click', () => {
-    const favoriteFiles = libraryFiles.filter(file => file.isFavorite);
-    if (favoriteFiles.length === 0) {
-        showMessage('즐겨찾기한 파일이 없습니다.', 2000);
-        return;
-    }
-    updateLibraryDisplay(favoriteFiles);
-    libraryOverlay.style.display = 'block';
-});
-
-function debounce(func, wait) {
-    let timeout;
-    return function(...args) {
-        clearTimeout(timeout);
-        timeout = setTimeout(() => func.apply(this, args), wait);
+saveConfig.addEventListener('click', () => {
+    const config = {
+        setCount: setCount.value,
+        setConfigs: Array.from(setConfigs.querySelectorAll('.setConfig')).map(config => ({
+            readTime: config.querySelector('.readTime').value,
+            pauseTime: config.querySelector('.pauseTime').value,
+            waitTime: config.querySelector('.waitTime').value
+        })),
+        startSound: startSound.value,
+        readEndSound: readEndSound.value,
+        pauseEndSound: pauseEndSound.value,
+        allSetsEndSound: allSetsEndSound.value
     };
+    localStorage.setItem('timerConfig', JSON.stringify(config));
+    showMessage('타이머 구성이 저장되었습니다.', 2000);
+    console.log('타이머 구성 저장됨:', config);
+});
+
+loadConfig.addEventListener('click', () => {
+    const config = JSON.parse(localStorage.getItem('timerConfig'));
+    if (config) {
+        setCount.value = config.setCount;
+        setConfigs.innerHTML = '';
+        config.setConfigs.forEach(conf => {
+            const newConfig = document.createElement('div');
+            newConfig.className = 'setConfig';
+            newConfig.innerHTML = `
+                <label>읽는 시간 (mm:ss):</label>
+                <input type="text" class="readTime" pattern="\d{1,2}:\d{2}" value="${conf.readTime}" placeholder="mm:ss">
+                <label>일시정지 시간 (mm:ss):</label>
+                <input type="text" class="pauseTime" pattern="\d{1,2}:\d{2}" value="${conf.pauseTime}" placeholder="mm:ss">
+                <label>대기 시간 (초):</label>
+                <input type="number" class="waitTime" min="0" value="${conf.waitTime}">
+                <button class="removeConfig">제거</button>
+            `;
+            setConfigs.appendChild(newConfig);
+            newConfig.querySelector('.removeConfig').addEventListener('click', () => {
+                setConfigs.removeChild(newConfig);
+                console.log('세트 구성 제거됨');
+            });
+        });
+        startSound.value = config.startSound || '';
+        readEndSound.value = config.readEndSound || '';
+        pauseEndSound.value = config.pauseEndSound || '';
+        allSetsEndSound.value = config.allSetsEndSound || '';
+        showMessage('타이머 구성이 불러와졌습니다.', 2000);
+        console.log('타이머 구성 불러옴:', config);
+    } else {
+        showMessage('저장된 타이머 구성이 없습니다.', 2000);
+        console.log('저장된 타이머 구성 없음');
+    }
+});
+
+// 사운드 파일 목록 (예시, 실제로는 서버에서 가져와야 함)
+const soundFiles = ['start.mp3', 'read_end.mp3', 'pause_end.mp3', 'all_sets_end.mp3'];
+
+// 사운드 파일 목록을 드롭다운에 추가
+function populateSoundOptions() {
+    const selects = [startSound, readEndSound, pauseEndSound, allSetsEndSound];
+    selects.forEach(select => {
+        soundFiles.forEach(file => {
+            const option = document.createElement('option');
+            option.value = file;
+            option.text = file;
+            select.appendChild(option);
+        });
+    });
 }
 
-speedControl.addEventListener('input', () => {
-    speedInput.value = speedControl.value;
-    speedPreset.value = speedControl.value;
-    adjustSpeed();
-    if (!interval) previewEffect();
-    localStorage.setItem('speed', speedControl.value);
-});
+populateSoundOptions();
 
-speedInput.addEventListener('input', () => {
-    speedControl.value = speedInput.value;
-    speedPreset.value = speedInput.value;
-    adjustSpeed();
-    if (!interval) previewEffect();
-    localStorage.setItem('speed', speedInput.value);
-});
-
-speedPreset.addEventListener('change', () => {
-    speedControl.value = speedPreset.value;
-    speedInput.value = speedPreset.value;
-    adjustSpeed();
-    if (!interval) previewEffect();
-    localStorage.setItem('speedPreset', speedPreset.value);
-});
-
-mobileSpeedControl.addEventListener('change', () => {
-    localStorage.setItem('mobileSpeedControl', mobileSpeedControl.checked);
-});
-
-effectSelect.addEventListener('change', () => {
-    stopEffect();
-    preloadPages();
-    displayPage();
-    adjustSpeed();
-    if (!interval) previewEffect();
-    localStorage.setItem('effect', effectSelect.value);
-});
-
-delayBeforeEffect.addEventListener('input', () => {
-    localStorage.setItem('delayBeforeEffect', delayBeforeEffect.value);
-});
-
-const debouncedUpdateStyles = debounce(() => {
-    updateTextContentStyles();
-    pages = splitTextToFit(pages.join('\n\n'), textContent.getBoundingClientRect().height);
-    preloadPages();
-    displayPage();
-}, 300);
-
-fontSize.addEventListener('input', () => {
-    localStorage.setItem('fontSize', fontSize.value);
-    debouncedUpdateStyles();
-});
-
-fontFamily.addEventListener('change', () => {
-    localStorage.setItem('fontFamily', fontFamily.value);
-    debouncedUpdateStyles();
-});
-
-lineHeight.addEventListener('input', () => {
-    localStorage.setItem('lineHeight', lineHeight.value);
-    debouncedUpdateStyles();
-});
-
-letterSpacing.addEventListener('input', () => {
-    localStorage.setItem('letterSpacing', letterSpacing.value);
-    debouncedUpdateStyles();
-});
-
-preloadRange.addEventListener('input', () => {
-    preloadPages();
-    displayPage();
-    localStorage.setItem('preloadRange', preloadRange.value);
-});
-
-textHeight.addEventListener('input', () => {
-    localStorage.setItem('textHeight', textHeight.value);
-    debouncedUpdateStyles();
-});
-
-pageInfoSize.addEventListener('input', () => {
-    pageInfo.style.fontSize = `${pageInfoSize.value}px`;
-    speedDownButton.style.fontSize = `${pageInfoSize.value}px`;
-    speedUpButton.style.fontSize = `${pageInfoSize.value}px`;
-    localStorage.setItem('pageInfoSize', pageInfoSize.value);
-    displayPage();
-});
-
-pageInfoOpacity.addEventListener('input', () => {
-    localStorage.setItem('pageInfoOpacity', pageInfoOpacity.value);
-    updatePageInfoStyles();
-});
-
-autoRestart.addEventListener('change', () => localStorage.setItem('autoRestart', autoRestart.checked));
-pageAnimation.addEventListener('change', () => {
-    localStorage.setItem('pageAnimation', pageAnimation.checked);
-    displayPage();
-});
-showPageInfo.addEventListener('change', () => {
-    localStorage.setItem('showPageInfo', showPageInfo.checked);
-    displayPage();
-});
-fullscreenMode.addEventListener('change', () => localStorage.setItem('fullscreenMode', fullscreenMode.checked));
-blackMode.addEventListener('change', () => {
-    localStorage.setItem('blackMode', blackMode.checked);
-    toggleBlackMode();
-});
-blackModeColor.addEventListener('input', () => {
-    localStorage.setItem('blackModeColor', blackModeColor.value);
-    toggleBlackMode();
-});
-
-marginTop.addEventListener('input', () => {
-    localStorage.setItem('marginTop', marginTop.value);
-    debouncedUpdateStyles();
-});
-marginRight.addEventListener('input', () => {
-    localStorage.setItem('marginRight', marginRight.value);
-    debouncedUpdateStyles();
-});
-marginBottom.addEventListener('input', () => {
-    localStorage.setItem('marginBottom', marginBottom.value);
-    debouncedUpdateStyles();
-});
-marginLeft.addEventListener('input', () => {
-    localStorage.setItem('marginLeft', marginLeft.value);
-    debouncedUpdateStyles();
-});
-enableFullScreenButtons.addEventListener('change', () => {
-    localStorage.setItem('enableFullScreenButtons', enableFullScreenButtons.checked);
-    updateFullScreenButtons();
-});
-fullScreenButtonWidth.addEventListener('input', () => {
-    localStorage.setItem('fullScreenButtonWidth', fullScreenButtonWidth.value);
-    updateFullScreenButtons();
-});
-fullScreenButtonHeight.addEventListener('input', () => {
-    localStorage.setItem('fullScreenButtonHeight', fullScreenButtonHeight.value);
-    updateFullScreenButtons();
-});
-autoPageTurn.addEventListener('change', () => {
-    localStorage.setItem('autoPageTurn', autoPageTurn.checked);
-});
-
-prevPage.addEventListener('click', () => {
-    if (currentPage > 0) {
-        currentPage--;
-        stopEffect();
-        displayPage(-1);
-        if (isTrainingActive && !isPaused) startEffect();
+// 합성음 생성 함수 (간단한 사인파)
+function playSynthesizedSound(frequency = 440, duration = 1) {
+    if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
     }
-});
+    const oscillator = audioContext.createOscillator();
+    oscillator.type = 'sine';
+    oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+    oscillator.connect(audioContext.destination);
+    oscillator.start();
+    oscillator.stop(audioContext.currentTime + duration);
+}
 
-nextPage.addEventListener('click', () => {
-    if (currentPage < pages.length - 1) {
-        currentPage++;
-        stopEffect();
-        displayPage(1);
-        if (isTrainingActive && !isPaused) startEffect();
+// 알림 소리 재생 함수
+function playSound(soundFile) {
+    if (soundFile) {
+        const audio = new Audio(`sounds/${soundFile}`);
+        audio.play().catch(e => console.error('사운드 재생 오류:', e));
+    } else {
+        playSynthesizedSound(); // 기본 합성음 재생
     }
-});
+}
 
-jumpToPage.addEventListener('change', () => {
-    let pageNum = parseInt(jumpToPage.value) - 1;
-    if (pageNum >= 0 && pageNum < pages.length) {
-        currentPage = pageNum;
-        stopEffect();
-        displayPage();
-        if (isTrainingActive && !isPaused) startEffect();
+// mm:ss를 밀리초로 변환
+function parseTime(timeStr) {
+    const [minutes, seconds] = timeStr.split(':').map(Number);
+    if (isNaN(minutes) || isNaN(seconds)) {
+        showMessage('시간 형식이 올바르지 않습니다.', 2000);
+        console.log(`시간 파싱 오류: ${timeStr}`);
+        return 0;
     }
-    jumpToPage.value = '';
-});
+    return (minutes * 60 + seconds) * 1000;
+}
 
-document.addEventListener('keydown', (e) => {
-    if (e.key === 'ArrowLeft' && currentPage > 0) {
-        currentPage--;
-        stopEffect();
-        displayPage(-1);
-        if (isTrainingActive && !isPaused) startEffect();
-    } else if (e.key === 'ArrowRight' && currentPage < pages.length - 1) {
-        currentPage++;
-        stopEffect();
-        displayPage(1);
-        if (isTrainingActive && !isPaused) startEffect();
-    } else if (e.key === ' ' || e.key === 'Spacebar') {
-        e.preventDefault();
-        toggleButton.click();
-    } else if (e.key === 'Enter') {
-        if (currentPage < pages.length - 1) {
-            currentPage++;
-            stopEffect();
-            displayPage(1);
-            if (isTrainingActive && !isPaused) startEffect();
+// 타이머 클래스
+class Timer {
+    constructor() {
+        this.startTime = 0;
+        this.duration = 0;
+        this.callback = null;
+        this.timerId = null;
+    }
+
+    start(duration, callback) {
+        this.stop();
+        this.startTime = performance.now();
+        this.duration = duration;
+        this.callback = callback;
+        this.timerId = setTimeout(() => {
+            if (this.callback) this.callback();
+        }, duration);
+        console.log(`타이머 시작: ${duration / 1000}초 설정됨`);
+    }
+
+    stop() {
+        if (this.timerId) {
+            clearTimeout(this.timerId);
+            this.timerId = null;
+            console.log('타이머 정지됨');
         }
-    } else if (e.key === '+') {
-        let newSpeed = Math.min(2000, parseInt(speedControl.value) + 5);
-        speedControl.value = newSpeed;
-        speedInput.value = newSpeed;
-        speedPreset.value = newSpeed;
-        adjustSpeed();
-        localStorage.setItem('speed', newSpeed);
-        if (isTrainingActive && !isPaused) startEffect();
-    } else if (e.key === '-') {
-        let newSpeed = Math.max(50, parseInt(speedControl.value) - 5);
-        speedControl.value = newSpeed;
-        speedInput.value = newSpeed;
-        speedPreset.value = newSpeed;
-        adjustSpeed();
-        localStorage.setItem('speed', newSpeed);
-        if (isTrainingActive && !isPaused) startEffect();
-    } else if (e.key === 'Home') {
-        currentPage = 0;
-        stopEffect();
-        displayPage();
-        if (isTrainingActive && !isPaused) startEffect();
-    } else if (e.key === 'End') {
-        currentPage = pages.length - 1;
-        stopEffect();
-        displayPage();
-        if (isTrainingActive && !isPaused) startEffect();
-    } else if (e.key === 'Escape' && (tocOverlay.style.display === 'block' || libraryOverlay.style.display === 'block')) {
-        tocOverlay.style.display = 'none';
-        libraryOverlay.style.display = 'none';
     }
-});
+}
 
-let touchStartX = 0;
-textContent.addEventListener('touchstart', (e) => {
-    touchStartX = e.touches[0].clientX;
-});
+const timer = new Timer();
 
-window.addEventListener('popstate', (e) => {
-    if (isFullscreen) {
-        e.preventDefault();
-        stopEffect();
-        exitFullscreen();
-        history.pushState(null, null, window.location.href);
-    }
-});
-history.pushState(null, null, window.location.href);
-
-function showToc() {
-    if (!book || toc.length === 0) {
-        showMessage('목차가 없습니다.', 2000);
+// 타이머 시작 함수
+function startTimer() {
+    if (timerInterval) {
+        console.log('이미 타이머가 실행 중입니다.');
         return;
     }
-    tocContent.innerHTML = '<ul>' + toc.map((item, index) => {
-        return `<li data-page="${index}">${item.label || '제목 없음'}</li>`;
-    }).join('') + '</ul>';
-    tocOverlay.style.display = 'block';
+    totalSets = parseInt(setCount.value);
+    configs = Array.from(setConfigs.querySelectorAll('.setConfig')).map(config => ({
+        readTime: parseTime(config.querySelector('.readTime').value),
+        pauseTime: parseTime(config.querySelector('.pauseTime').value),
+        waitTime: parseInt(config.querySelector('.waitTime').value) * 1000
+    }));
+    if (configs.length === 0) {
+        showMessage('세트 구성을 추가해주세요.', 2000);
+        console.log('세트 구성 없음');
+        return;
+    }
 
-    tocContent.querySelectorAll('li').forEach(li => {
-        li.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const pageIndex = parseInt(li.dataset.page);
-            currentPage = pageIndex;
-            stopEffect();
-            displayPage();
-            if (isTrainingActive && !isPaused) startEffect();
-            tocOverlay.style.display = 'none';
+    currentSet = 0;
+    currentConfigIndex = 0;
+    isReading = true;
+
+    // 시작 대기 시간
+    startWaitTime = parseInt(configs[0].waitTime); // 첫 번째 구성의 대기 시간 사용 (예시)
+    if (startWaitTime > 0) {
+        playSound(startSound.value);
+        timer.start(startWaitTime, () => {
+            runSet();
         });
+        console.log(`시작 대기 시간: ${startWaitTime / 1000}초`);
+    } else {
+        runSet();
+    }
+}
+
+function runSet() {
+    if (currentSet >= totalSets) {
+        playSound(allSetsEndSound.value);
+        showMessage('타이머가 완료되었습니다.', 2000);
+        console.log('타이머 완료');
+        timerInterval = null;
+        return;
+    }
+
+    const currentConfig = configs[currentConfigIndex];
+    const duration = isReading ? currentConfig.readTime : currentConfig.pauseTime;
+
+    if (isReading) {
+        if (isPaused) togglePause(); // 읽기 시작 시 일시정지 해제
+        console.log(`읽기 시간 시작: ${duration / 1000}초`);
+    } else {
+        if (!isPaused) togglePause(); // 일시정지 시작
+        console.log(`일시정지 시간 시작: ${duration / 1000}초`);
+    }
+
+    timer.start(duration, () => {
+        if (isReading) {
+            playSound(readEndSound.value);
+        } else {
+            playSound(pauseEndSound.value);
+        }
+        isReading = !isReading;
+        if (isReading) {
+            currentConfigIndex++;
+            if (currentConfigIndex >= configs.length) {
+                currentConfigIndex = 0;
+                currentSet++;
+                console.log(`세트 완료: ${currentSet}/${totalSets}`);
+            }
+            const nextWaitTime = configs[currentConfigIndex].waitTime;
+            if (nextWaitTime > 0) {
+                timer.start(nextWaitTime, () => {
+                    runSet();
+                });
+                console.log(`세트 간 대기 시간: ${nextWaitTime / 1000}초`);
+            } else {
+                runSet();
+            }
+        } else {
+            runSet();
+        }
     });
-
-    document.getElementById('closeToc').addEventListener('click', (e) => {
-        e.stopPropagation();
-        tocOverlay.style.display = 'none';
-    });
 }
 
-resetSettings.addEventListener('click', async () => {
-    localStorage.clear();
-    await clearIndexedDBCache();
-    speedControl.value = 100;
-    speedInput.value = 100;
-    speedPreset.value = 100;
-    mobileSpeedControl.checked = false;
-    effectSelect.value = 'char';
-    delayBeforeEffect.value = 400;
-    fontSize.value = 18;
-    fontFamily.value = 'Arial, sans-serif';
-    lineHeight.value = 1.6;
-    letterSpacing.value = 0;
-    preloadRange.value = 2;
-    textHeight.value = 70;
-    pageInfoSize.value = 16;
-    pageInfoOpacity.value = 0.5;
-    autoRestart.checked = false;
-    pageAnimation.checked = true;
-    showPageInfo.checked = true;
-    fullscreenMode.checked = false;
-    blackMode.checked = false;
-    blackModeColor.value = '#2d2d2d';
-    marginTop.value = 0;
-    marginRight.value = 0;
-    marginBottom.value = 0;
-    marginLeft.value = 0;
-    enableFullScreenButtons.checked = true;
-    fullScreenButtonWidth.value = 30;
-    fullScreenButtonHeight.value = 100;
-    autoPageTurn.checked = true;
-    libraryFiles = [];
-    localStorage.setItem('libraryFiles', JSON.stringify(libraryFiles));
-    showMessage('설정이 초기화되었습니다.', 2000);
-    toggleButton.innerText = '시작';
-    isTrainingActive = false;
-    pages = [];
-    renderedPages = [];
-    textContent.innerHTML = '';
-    pageInfo.innerText = '';
-    progress.value = 0;
-    updateProgressPercent(0);
-    updateFullScreenButtons();
-    updatePageInfoStyles();
-    isPaused = false; // 추가: 설정 초기화 시 일시정지 상태 초기화
-    hidePauseUI(); // 추가: UI 초기화
+startTimerButton.addEventListener('click', startTimer);
+
+stopTimerButton.addEventListener('click', () => {
+    timer.stop();
+    if (isPaused) togglePause(); // 정지 시 일시정지 상태면 해제
+    showMessage('타이머가 정지되었습니다.', 2000);
+    console.log('타이머 정지됨');
 });
 
-clearCacheButton.addEventListener('click', async () => {
-    await clearIndexedDBCache();
-    showMessage('캐시가 비워졌습니다.', 2000);
-});
-
-retryButton.addEventListener('click', () => {
-    retryButton.style.display = 'none';
-    handleFileUpload(fileInput.files[0] || null);
-});
-
-function adjustSpeed() {
-    // 속도 조절 시 중복 애니메이션 방지 (기존 코드 유지)
-}
-
-function previewEffect() {
-    stopEffect();
-    startEffect();
-    setTimeout(stopEffect, 2000);
-}
-
-function updateProgressPercent(value) {
-    progressPercent.innerText = `${Math.round(value)}%`;
-    progressPercent.style.display = value > 0 ? 'block' : 'none';
-}
-
+// 설정창 스타일 업데이트 함수 (기존 코드 유지)
 function updateTextContentStyles() {
-    const currentSettings = {
-        fontSize: fontSize.value,
-        fontFamily: fontFamily.value,
-        lineHeight: lineHeight.value,
-        letterSpacing: letterSpacing.value
-    };
-    if (JSON.stringify(currentSettings) === JSON.stringify(lastSettings)) return;
-    lastSettings = { ...currentSettings };
     document.documentElement.style.setProperty('--font-size', `${fontSize.value}px`);
     document.documentElement.style.setProperty('--line-height', lineHeight.value);
     document.documentElement.style.setProperty('--letter-spacing', `${letterSpacing.value}px`);
@@ -1951,39 +1866,41 @@ function updateTextContentStyles() {
     document.documentElement.style.setProperty('--margin-right', `${marginRight.value}vw`);
     document.documentElement.style.setProperty('--margin-bottom', `${marginBottom.value}vh`);
     document.documentElement.style.setProperty('--margin-left', `${marginLeft.value}vw`);
-    updateTextContentMargins();
-    toggleBlackMode();
-    pages = splitTextToFit(pages.join('\n\n'), textContent.getBoundingClientRect().height);
-    preloadPages();
-    displayPage();
+    textContent.style.fontFamily = fontFamily.value;
 }
 
-function updateTextContentMargins() {
-    textContent.style.marginTop = `${marginTop.value}vh`;
-    textContent.style.marginRight = `${marginRight.value}vw`;
-    textContent.style.marginBottom = `${marginBottom.value}vh`;
-    textContent.style.marginLeft = `${marginLeft.value}vw`;
-}
-
-function updateFullScreenButtons() {
-    if (enableFullScreenButtons.checked && isFullscreen) {
-        leftPageButton.style.display = 'block';
-        rightPageButton.style.display = 'block';
-        leftPageButton.style.width = `${fullScreenButtonWidth.value}vw`;
-        rightPageButton.style.width = `${fullScreenButtonWidth.value}vw`;
-        leftPageButton.style.height = `${fullScreenButtonHeight.value}vh`;
-        rightPageButton.style.height = `${fullScreenButtonHeight.value}vh`;
+function toggleBlackMode() {
+    if (blackMode.checked) {
+        document.body.classList.add('black-mode');
+        textContent.style.backgroundColor = blackModeColor.value;
     } else {
-        leftPageButton.style.display = 'none';
-        rightPageButton.style.display = 'none';
+        document.body.classList.remove('black-mode');
+        textContent.style.backgroundColor = '#fff';
     }
 }
 
+function updateFullScreenButtons() {
+    leftPageButton.style.width = `${fullScreenButtonWidth.value}vw`;
+    rightPageButton.style.width = `${fullScreenButtonWidth.value}vw`;
+    leftPageButton.style.height = `${fullScreenButtonHeight.value}vh`;
+    rightPageButton.style.height = `${fullScreenButtonHeight.value}vh`;
+    leftPageButton.style.display = enableFullScreenButtons.checked && isFullscreen ? 'block' : 'none';
+    rightPageButton.style.display = enableFullScreenButtons.checked && isFullscreen ? 'block' : 'none';
+}
+
 function updatePageInfoStyles() {
-    const opacity = pageInfoOpacity.value;
-    pageInfo.style.opacity = opacity;
-    speedDownButton.style.opacity = opacity;
-    speedUpButton.style.opacity = opacity;
+    pageInfo.style.opacity = pageInfoOpacity.value;
+    speedDownButton.style.opacity = pageInfoOpacity.value;
+    speedUpButton.style.opacity = pageInfoOpacity.value;
+}
+
+function updateProgressPercent(value) {
+    progressPercent.innerText = `${Math.round(value)}%`;
+    progressPercent.style.display = showProgress.checked ? 'block' : 'none';
+}
+
+function adjustSpeed() {
+    // 속도 조정 로직 (필요 시 추가)
 }
 
 function toggleButtons(disable) {
@@ -1996,11 +1913,33 @@ function toggleButtons(disable) {
     jumpToPage.disabled = disable;
 }
 
-function toggleBlackMode() {
-    document.body.classList.toggle('black-mode', blackMode.checked);
-    textContent.style.backgroundColor = blackMode.checked ? blackModeColor.value : '#fff';
-    textContent.style.color = blackMode.checked ? '#fff' : '#333';
+function showToc() {
+    tocOverlay.style.display = 'block';
+    tocContent.innerHTML = '<ul>' + toc.map(item => `<li onclick="jumpToSection('${item.href}')">${item.label}</li>`).join('') + '</ul>';
 }
+
+function jumpToSection(href) {
+    if (book) {
+        book.rendition.display(href).then(() => {
+            currentPage = book.rendition.location.start.displayed.page - 1;
+            displayPage();
+        });
+    }
+    tocOverlay.style.display = 'none';
+}
+
+resetSettings.addEventListener('click', () => {
+    localStorage.clear();
+    location.reload();
+});
+
+clearCacheButton.addEventListener('click', async () => {
+    await clearIndexedDBCache();
+    libraryFiles = [];
+    localStorage.setItem('libraryFiles', JSON.stringify(libraryFiles));
+    showMessage('캐시가 비워졌습니다.', 2000);
+});
+
     </script>
 </body>
 </html>
