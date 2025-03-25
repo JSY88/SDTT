@@ -67,17 +67,19 @@
         }
 
         #message {
-            color: red;
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(255, 255, 255, 0.9);
-            padding: 5px 10px;
-            border-radius: 5px;
-            z-index: 10;
-            display: none;
-        }
+    color: red;
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(255, 255, 255, 0.95); /* 배경 투명도 약간 높임 */
+    padding: 8px 15px; /* 패딩 약간 증가 */
+    border-radius: 5px;
+    z-index: 10;
+    display: none;
+    font-size: 16px; /* 글자 크기 증가 */
+    font-weight: bold; /* 강조 */
+}
 
         #retryButton {
             position: fixed;
@@ -445,11 +447,12 @@
 
         /* 타이머 설정 UI 스타일 */
 #timerSettings {
-    display: none;
+    display: none !important;/*타이머 안 보이게*/
+    /*display: block; /* 타이머 UI 항상 보이도록 수정 */
     position: fixed;
     bottom: 60px;
-    width: 90%; /* 전체 너비에서 약간 축소 */
-    max-width: 400px; /* 최대 너비 제한 */
+    width: 90%;
+    max-width: 400px;
     left: 50%;
     transform: translateX(-50%);
     background: #fff;
@@ -457,7 +460,12 @@
     box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
     z-index: 1002;
     text-align: center;
+    /* 추가 디버깅 로그를 위해 테두리 색상 추가 */
+    border: 2px dashed #3498db;
 }
+
+
+
 
         #timerSettings input[type="number"] {
             width: 50px;
@@ -676,9 +684,9 @@
         <button id="loadConfig">구성 불러오기</button>
     </div>
     <!-- 알림음 오디오 요소 -->
-<audio id="piano1" src="https://www.soundjay.com/buttons/beep-01a.mp3" preload="auto"></audio>
-<audio id="piano2" src="https://www.soundjay.com/buttons/beep-02.mp3" preload="auto"></audio>
-<audio id="piano3" src="https://www.soundjay.com/buttons/beep-03.mp3" preload="auto"></audio>
+<audio id="piano1" src="sounds/a.mp3" preload="auto"></audio>
+<audio id="piano2" src="sounds/b.wav" preload="auto"></audio>
+<audio id="piano3" src="sounds/c.wav" preload="auto"></audio>
 
     <script>
         let noSleep;
@@ -695,7 +703,11 @@ let lastSettings = {};
 let isPaused = false;
 let timerInterval, currentSet = 0, totalSets = 1;
 let isPageTurning = false;
-let isTimerRunning = false; // 타이머 실행 중 플래그 추가
+let isTimerRunning = false;
+let effectState = { type: null, index: 0, total: 0 };
+let isInitialLoad = true; // 첫 로드 여부 플래그 추가
+
+
         if (typeof NoSleep !== 'undefined') {
             noSleep = new NoSleep();
         } else {
@@ -1242,34 +1254,42 @@ function playAlert(soundId) {
         }
 
         function displayPage(direction = 0) {
-            console.log(`[페이지 표시] 현재 페이지: ${currentPage + 1}/${pages.length}`);
-            const fragment = document.createDocumentFragment();
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = renderedPages[currentPage] || '';
-            while (tempDiv.firstChild) fragment.appendChild(tempDiv.firstChild);
-            textContent.innerHTML = '';
-            textContent.appendChild(fragment);
+    console.log(`[페이지 표시] 현재 페이지: ${currentPage + 1}/${pages.length}`);
+    const fragment = document.createDocumentFragment();
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = renderedPages[currentPage] || '';
+    while (tempDiv.firstChild) fragment.appendChild(tempDiv.firstChild);
+    textContent.innerHTML = '';
+    textContent.appendChild(fragment);
 
-            pageInfo.innerText = (showPageInfo.checked || isFullscreen) ? `${currentPage + 1}/${pages.length}` : '';
-            pageInfo.style.fontSize = `${pageInfoSize.value}px`;
-            updatePageInfoStyles();
-            progress.value = 0;
-            updateProgressPercent(0);
-            if (pageAnimation.checked && direction !== 0) {
-                textContent.style.transform = direction > 0 ? 'translateX(-100%)' : 'translateX(100%)';
-                textContent.style.opacity = 0;
-                setTimeout(() => {
-                    textContent.style.transform = 'translateX(0)';
-                    textContent.style.opacity = 1;
-                    if (autoRestart.checked && interval && !isPaused) startEffect();
-                }, 300);
-            } else if (autoRestart.checked && interval && !isPaused) {
+    pageInfo.innerText = (showPageInfo.checked || isFullscreen) ? `${currentPage + 1}/${pages.length}` : '';
+    pageInfo.style.fontSize = `${pageInfoSize.value}px`;
+    updatePageInfoStyles();
+    progress.value = 0;
+    updateProgressPercent(0);
+    effectState = { type: null, index: 0, total: 0 }; // 페이지 전환 시 효과 상태 초기화
+    console.log('[페이지 전환] 효과 상태 초기화');
+    if (pageAnimation.checked && direction !== 0) {
+        textContent.style.transform = direction > 0 ? 'translateX(-100%)' : 'translateX(100%)';
+        textContent.style.opacity = 0;
+        setTimeout(() => {
+            textContent.style.transform = 'translateX(0)';
+            textContent.style.opacity = 1;
+            if (autoRestart.checked && isTrainingActive && !isPaused && !isInitialLoad) {
+                console.log('[페이지 전환] autoRestart 활성화 - 효과 시작');
                 startEffect();
             }
-            preloadPages();
-            saveLastPage();
-            updatePageSlider();
-        }
+            isInitialLoad = false; // 첫 로드 후 플래그 해제
+        }, 300);
+    } else if (autoRestart.checked && isTrainingActive && !isPaused && !isInitialLoad) {
+        console.log('[페이지 전환] autoRestart 활성화 - 효과 즉시 시작');
+        startEffect();
+    }
+    isInitialLoad = false; // 첫 로드 후 플래그 해제
+    preloadPages();
+    saveLastPage();
+    updatePageSlider();
+}
 
         function loadLastPage() {
             const lastPage = localStorage.getItem(`lastPage_${lastFileName}`);
@@ -1313,26 +1333,38 @@ function playAlert(soundId) {
         });
 
 function startEffect() {
+    // 기존 interval이 있으면 정리
     if (interval) {
         clearInterval(interval);
         console.log('[효과 시작] 기존 interval 정리 완료');
     }
-    console.log(`[효과 시작] 효과: ${effectSelect.value}, 속도: ${speedControl.value}ms`);
+    console.log(`[효과 시작] 효과 종류: ${effectSelect.value}, 속도: ${speedControl.value}ms`);
+    
+    // 효과 시작 전 딜레이 적용
     setTimeout(() => {
+        // 효과 상태 초기화: 만약 처음 시작이면 index를 0으로, 재개 시 보존된 값을 그대로 사용
+        if (effectState.index === undefined || effectState.index < 0) {
+            effectState.index = 0;
+        }
+        let intervalTime;
+        // 글자 단위 효과
         if (effectSelect.value === 'char') {
             const spans = textContent.querySelectorAll('.char-span:not(.char-space)');
-            let charIndex = 0;
-            const totalChars = spans.length;
-            const intervalTime = parseInt(speedControl.value) / 2;
+            effectState.total = spans.length;
+            // 속도 조절에 따라 interval 시간 설정 (기존 코드의 절반 시간 유지)
+            intervalTime = parseInt(speedControl.value) / 2;
             interval = setInterval(() => {
-                if (charIndex < spans.length) {
-                    spans[charIndex].classList.add('fade');
-                    charIndex++;
-                    progress.value = (charIndex / totalChars) * 100;
+                if (effectState.index < spans.length) {
+                    spans[effectState.index].classList.add('fade');
+                    console.log(`[효과 진행] 글자 인덱스 ${effectState.index} 사라짐 처리`);
+                    effectState.index++;
+                    progress.value = (effectState.index / effectState.total) * 100;
                     updateProgressPercent(progress.value);
                 } else {
                     clearInterval(interval);
+                    interval = null;
                     console.log('[효과 종료] 모든 글자 사라짐 완료');
+                    // 자동 페이지 넘김 처리
                     if (autoPageTurn.checked && currentPage < pages.length - 1 && !isPageTurning) {
                         isPageTurning = true;
                         console.log('[자동 페이지 넘김] 시작 - 플래그 설정');
@@ -1344,19 +1376,22 @@ function startEffect() {
                     }
                 }
             }, intervalTime);
-        } else if (effectSelect.value === 'fade') {
+        }
+        // 라인 단위 페이드 효과
+        else if (effectSelect.value === 'fade') {
             const lines = textContent.querySelectorAll('.line');
-            let lineIndex = 0;
-            const totalLines = lines.length;
-            const intervalTime = parseInt(speedControl.value);
+            effectState.total = lines.length;
+            intervalTime = parseInt(speedControl.value);
             interval = setInterval(() => {
-                if (lineIndex < lines.length) {
-                    lines[lineIndex].classList.add('hidden');
-                    lineIndex++;
-                    progress.value = (lineIndex / totalLines) * 100;
+                if (effectState.index < lines.length) {
+                    lines[effectState.index].classList.add('hidden');
+                    console.log(`[효과 진행] 라인 인덱스 ${effectState.index} 페이드 처리`);
+                    effectState.index++;
+                    progress.value = (effectState.index / effectState.total) * 100;
                     updateProgressPercent(progress.value);
                 } else {
                     clearInterval(interval);
+                    interval = null;
                     console.log('[효과 종료] 모든 라인 페이드 완료');
                     if (autoPageTurn.checked && currentPage < pages.length - 1 && !isPageTurning) {
                         isPageTurning = true;
@@ -1369,20 +1404,23 @@ function startEffect() {
                     }
                 }
             }, intervalTime);
-        } else if (effectSelect.value === 'eink') {
+        }
+        // 전자잉크 효과
+        else if (effectSelect.value === 'eink') {
             const spans = textContent.querySelectorAll('.char-span:not(.char-space)');
-            let charIndex = 0;
-            const totalChars = spans.length;
-            const intervalTime = parseInt(speedControl.value) / 2;
+            effectState.total = spans.length;
+            intervalTime = parseInt(speedControl.value) / 2;
             textContent.classList.add('eink-mode');
             interval = setInterval(() => {
-                if (charIndex < spans.length) {
-                    spans[charIndex].classList.add('eink-black');
-                    charIndex++;
-                    progress.value = (charIndex / totalChars) * 100;
+                if (effectState.index < spans.length) {
+                    spans[effectState.index].classList.add('eink-black');
+                    console.log(`[효과 진행] 전자잉크 효과 인덱스 ${effectState.index} 처리`);
+                    effectState.index++;
+                    progress.value = (effectState.index / effectState.total) * 100;
                     updateProgressPercent(progress.value);
                 } else {
                     clearInterval(interval);
+                    interval = null;
                     console.log('[효과 종료] 전자잉크 효과 완료');
                     if (autoPageTurn.checked && currentPage < pages.length - 1 && !isPageTurning) {
                         isPageTurning = true;
@@ -1398,6 +1436,15 @@ function startEffect() {
         }
     }, parseInt(delayBeforeEffect.value));
 }
+
+
+
+
+
+
+
+
+
 function stopEffect() {
     if (interval) {
         clearInterval(interval);
@@ -1459,26 +1506,28 @@ function stopEffect() {
         });
 
         function pauseEffect() {
-            if (interval) {
-                clearInterval(interval);
-                interval = null;
-            }
-            isPaused = true;
-            document.body.classList.add('paused');
-            pageSliderContainer.style.display = 'block';
-            timerSettings.style.display = 'block';
-            updatePageSlider();
-            showMessage('일시정지됨');
-            console.log('[일시정지] 효과 정지 및 UI 표시');
-        }
+    if (interval) {
+        clearInterval(interval);
+        interval = null;
+        console.log('[일시정지] interval 정리 완료');
+    }
+    // 현재 진행 중이던 효과의 상태(effectState.index)는 그대로 유지하여 재개 시 이어서 진행 가능하도록 함
+    isPaused = true;
+    document.body.classList.add('paused');
+    pageSliderContainer.style.display = 'block';
+    timerSettings.style.display = 'block';
+    updatePageSlider();
+    showMessage('일시정지됨');
+    console.log('[일시정지] 효과 중지 및 UI 표시, 현재 인덱스:', effectState.index);
+}
 
         function resumeEffect() {
+    // 재개 시, interval이 없고 훈련이 활성 상태이면, 저장된 효과 진행 위치(effectState.index)부터 다시 시작
     if (!interval && isTrainingActive) {
-        console.log('[재개] 2초 대기 후 효과 재시작 준비');
-        setTimeout(() => { // 2초 딜레이 추가
-            startEffect(); // 효과 시작
-            console.log('[재개] 2초 후 효과 재시작 완료');
-        }, 0); // 요구된 2초 딜레이
+        console.log('[재개] 일시정지 해제 후 효과 재시작 준비, 현재 인덱스:', effectState.index);
+        // 재개 시에도 delay 없이 바로 효과를 이어서 진행 (원한다면 딜레이 조정 가능)
+        startEffect();
+        console.log('[재개] 효과 재시작 완료');
     }
     isPaused = false;
     document.body.classList.remove('paused');
@@ -1487,6 +1536,9 @@ function stopEffect() {
     showMessage('재개됨');
     console.log('[재개] 효과 재시작 및 UI 숨김');
 }
+
+
+
 
         function updatePageSlider() {
             pageSlider.max = pages.length - 1;
@@ -1506,26 +1558,26 @@ function stopEffect() {
         });
 
         speedDownButton.addEventListener('click', () => {
-            let newSpeed = Math.max(50, parseInt(speedControl.value) - 5);
-            speedControl.value = newSpeed;
-            speedInput.value = newSpeed;
-            speedPreset.value = newSpeed;
-            adjustSpeed();
-            localStorage.setItem('speed', newSpeed);
-            showMessage(`속도: ${newSpeed}ms`, 1000);
-            console.log(`[속도 감소] 새로운 속도: ${newSpeed}ms`);
-        });
+    let newSpeed = Math.max(50, parseInt(speedControl.value) - 5);
+    speedControl.value = newSpeed;
+    speedInput.value = newSpeed;
+    speedPreset.value = newSpeed;
+    adjustSpeed();
+    localStorage.setItem('speed', newSpeed);
+    showMessage(`현재 속도: ${newSpeed}ms`, 1500); // 지속 시간 1500ms로 조정
+    console.log(`[속도 감소] 새로운 속도: ${newSpeed}ms, 메시지 표시됨`);
+});
 
-        speedUpButton.addEventListener('click', () => {
-            let newSpeed = Math.min(2000, parseInt(speedControl.value) + 5);
-            speedControl.value = newSpeed;
-            speedInput.value = newSpeed;
-            speedPreset.value = newSpeed;
-            adjustSpeed();
-            localStorage.setItem('speed', newSpeed);
-            showMessage(`속도: ${newSpeed}ms`, 1000);
-            console.log(`[속도 증가] 새로운 속도: ${newSpeed}ms`);
-        });
+speedUpButton.addEventListener('click', () => {
+    let newSpeed = Math.min(2000, parseInt(speedControl.value) + 5);
+    speedControl.value = newSpeed;
+    speedInput.value = newSpeed;
+    speedPreset.value = newSpeed;
+    adjustSpeed();
+    localStorage.setItem('speed', newSpeed);
+    showMessage(`현재 속도: ${newSpeed}ms`, 1500); // 지속 시간 1500ms로 조정
+    console.log(`[속도 증가] 새로운 속도: ${newSpeed}ms, 메시지 표시됨`);
+});
 
         leftPageButton.addEventListener('pointerdown', () => {
             if (currentPage > 0) {
@@ -1633,41 +1685,46 @@ startTimer.addEventListener('click', function() {
         showMessage('타이머가 이미 실행 중입니다.', 2000);
         return;
     }
-    console.log('[타이머 시작 요청] 일시정지 상태 확인 중');
+    console.log('[타이머 시작 요청] 일시정지 상태 확인 및 전체화면 복귀 시도');
     totalSets = parseInt(setCount.value);
     const waitTime = (parseInt(waitMin.value) * 60 + parseInt(waitSec.value)) * 1000;
     const readTime = (parseInt(readMin.value) * 60 + parseInt(readSec.value)) * 1000;
     const pauseTime = (parseInt(pauseMin.value) * 60 + parseInt(pauseSec.value)) * 1000;
     const restTime = (parseInt(restMin.value) * 60 + parseInt(restSec.value)) * 1000;
     currentSet = 0;
-
+    
+    // 전체화면 복귀 및 일시정지 해제 처리
     if (!isTrainingActive) toggleButton.click();
     if (isPaused) {
         console.log('[타이머 시작] 일시정지 상태 감지, 해제 및 전체화면 복귀');
-        resumeEffect(); // 일시정지 해제 및 UI 숨김
+        resumeEffect(); // 일시정지 해제 및 UI 재설정
     }
     if (fullscreenMode.checked && !isFullscreen) {
         const requestFullscreen = document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen;
-        requestFullscreen.call(document.documentElement).then(() => {
-            document.body.classList.add('fullscreen');
-            isFullscreen = true;
-            updateFullScreenButtons();
-            console.log('[타이머 시작] 전체화면 모드 활성화');
-        }).catch(err => {
-            console.error('[전체화면 오류]', err);
-            showMessage('전체화면 모드 활성화 실패.');
-        });
+        if (requestFullscreen) {
+            requestFullscreen.call(document.documentElement).then(() => {
+                document.body.classList.add('fullscreen');
+                isFullscreen = true;
+                updateFullScreenButtons();
+                console.log('[타이머 시작] 전체화면 모드 활성화 완료');
+            }).catch(err => {
+                console.error('[전체화면 오류]', err);
+                showMessage('전체화면 모드 활성화 실패.');
+            });
+        }
     }
-    isTimerRunning = true; // 타이머 시작 플래그 설정
+    isTimerRunning = true;
     showMessage(`대기 시간 ${waitTime / 1000}초 후 읽기 시작`, waitTime);
-    console.log(`[타이머 시작] 대기 시간 ${waitTime}ms 설정`);
-    if (timerInterval) clearTimeout(timerInterval); // 기존 타이머 초기화
+    console.log(`[타이머 시작] 대기 시간 ${waitTime}ms 설정 완료`);
+    if (timerInterval) clearTimeout(timerInterval);
     timerInterval = setTimeout(() => {
         console.log('[타이머 시작] 대기 후 읽기 타이머 시작');
         playAlert(readAlert.value);
         startReadTimer(readTime, pauseTime, restTime);
     }, waitTime);
 });
+
+
 
 
         loadConfig.addEventListener('click', function() {
@@ -1697,43 +1754,49 @@ function startReadTimer(readTime, pauseTime, restTime) {
     if (currentSet >= totalSets) {
         playAlert(endAlert.value);
         showMessage('모든 세트가 완료되었습니다.');
-        console.log('[타이머 종료] 모든 세트 완료');
-        stopEffect(); // 효과 종료
-        isTimerRunning = false; // 타이머 종료 플래그 해제
+        console.log('[타이머 종료] 모든 세트 완료됨');
+        stopEffect(); // 텍스트 사라짐 효과 종료
+        isTimerRunning = false;
         if (timerInterval) clearTimeout(timerInterval);
         return;
     }
     currentSet++;
-    startEffect(); // 읽기 시간 동안 효과 시작
+    // 새로운 셋트 시작 시, 텍스트 효과 진행 인덱스는 그대로 유지 (이어지는 효과를 위해)
+    startEffect();
     showMessage(`세트 ${currentSet}/${totalSets} 시작: 읽는 시간 ${readTime / 1000}초`);
-    console.log(`[읽기 시작] 세트 ${currentSet}/${totalSets}`);
+    console.log(`[읽기 시작] 셋트 ${currentSet}/${totalSets} 읽기 타이머 시작 (시간: ${readTime}ms)`);
 
-    if (timerInterval) clearTimeout(timerInterval); // 이전 타이머 초기화
+    if (timerInterval) clearTimeout(timerInterval);
     timerInterval = setTimeout(() => {
-        console.log(`[읽기 종료] 세트 ${currentSet} - 일시정지로 전환`);
-        pauseEffect(); // 효과 유지하며 일시정지
+        console.log(`[읽기 종료] 셋트 ${currentSet} 읽기 시간 종료, 일시정지 전환`);
+        pauseEffect(); // 텍스트 사라짐 효과는 현재 진행 위치에서 멈추도록 함
         playAlert(pauseAlert.value);
         showMessage(`세트 ${currentSet}/${totalSets} 일시정지: ${pauseTime / 1000}초`);
-        console.log(`[일시정지 시작] 세트 ${currentSet}`);
+        console.log(`[일시정지 시작] 셋트 ${currentSet} 일시정지 타이머 시작 (시간: ${pauseTime}ms)`);
 
         timerInterval = setTimeout(() => {
-            resumeEffect(); // 일시정지 해제
+            resumeEffect(); // 일시정지 해제 및 효과 재개 (현재 인덱스에서 이어서 진행)
+            // 만약 휴식 시간이 설정되어 있고 아직 셋트가 남았다면 휴식 타이머 적용
             if (restTime > 0 && currentSet < totalSets) {
-                stopEffect(); // 휴식 전 효과 초기화
+                stopEffect(); // 효과 일시 정지 전에 초기화하지 않고, 휴식 시 잠시 멈춤
                 playAlert(restAlert.value);
                 showMessage(`세트 ${currentSet}/${totalSets} 휴식: ${restTime / 1000}초`);
-                console.log(`[휴식 시작] 세트 ${currentSet}`);
+                console.log(`[휴식 시작] 셋트 ${currentSet} 휴식 타이머 시작 (시간: ${restTime}ms)`);
                 timerInterval = setTimeout(() => {
-                    console.log(`[휴식 종료] 세트 ${currentSet} - 다음 읽기 시작`);
+                    console.log(`[휴식 종료] 셋트 ${currentSet} 휴식 종료, 다음 읽기 시작`);
                     startReadTimer(readTime, pauseTime, restTime);
                 }, restTime);
             } else {
-                console.log(`[일시정지 종료] 세트 ${currentSet} - 다음 읽기 시작`);
-                startReadTimer(readTime, pauseTime, restTime); // 즉시 다음 세트 시작
+                console.log(`[일시정지 종료] 셋트 ${currentSet} 일시정지 종료, 다음 읽기 시작`);
+                startReadTimer(readTime, pauseTime, restTime);
             }
         }, pauseTime);
     }, readTime);
 }
+
+
+
+
 
 stopTimer.addEventListener('click', function() {
     if (timerInterval) {
