@@ -676,13 +676,13 @@
         <button id="loadConfig">구성 불러오기</button>
     </div>
     <!-- 알림음 오디오 요소 -->
-    <audio id="piano1" src="https://example.com/piano1.mp3" preload="auto"></audio>
-    <audio id="piano2" src="https://example.com/piano2.mp3" preload="auto"></audio>
-    <audio id="piano3" src="https://example.com/piano3.mp3" preload="auto"></audio>
+<audio id="piano1" src="https://www.soundjay.com/buttons/beep-01a.mp3" preload="auto"></audio>
+<audio id="piano2" src="https://www.soundjay.com/buttons/beep-02.mp3" preload="auto"></audio>
+<audio id="piano3" src="https://www.soundjay.com/buttons/beep-03.mp3" preload="auto"></audio>
 
     <script>
         let noSleep;
-let isPageTurning = false;
+
 // script 최상단에 추가 (let interval 선언 근처)
 let interval, pages = [], currentPage = 0, book, toc = [];
 let worker, lastFileName = '';
@@ -694,6 +694,8 @@ let messageTimer;
 let lastSettings = {};
 let isPaused = false;
 let timerInterval, currentSet = 0, totalSets = 1;
+let isPageTurning = false;
+let isTimerRunning = false; // 타이머 실행 중 플래그 추가
         if (typeof NoSleep !== 'undefined') {
             noSleep = new NoSleep();
         } else {
@@ -826,6 +828,23 @@ let timerInterval, currentSet = 0, totalSets = 1;
                 request.onerror = () => resolve();
             });
         }
+
+
+function playAlert(soundId) {
+    const audio = document.getElementById(soundId);
+    console.log(`[알림음 재생 시도] ID: ${soundId}`);
+    audio.play().then(() => {
+        console.log(`[알림음 재생 성공] ${soundId}`);
+    }).catch(err => {
+        console.error(`[알림음 재생 오류] ${soundId}:`, err);
+        showMessage(`알림음 재생 실패: ${soundId}`);
+        // 폴백: 기본 알림음 재생
+        const fallbackAudio = new Audio('https://www.soundjay.com/buttons/beep-01a.mp3');
+        fallbackAudio.play().catch(fallbackErr => {
+            console.error('[폴백 알림음 오류]:', fallbackErr);
+        });
+    });
+}
 
         async function deleteCachedData(fileName) {
             await dbPromise.catch(() => {});
@@ -1454,16 +1473,20 @@ function stopEffect() {
         }
 
         function resumeEffect() {
-            if (!interval && isTrainingActive) {
-                startEffect();
-            }
-            isPaused = false;
-            document.body.classList.remove('paused');
-            pageSliderContainer.style.display = 'none';
-            timerSettings.style.display = 'none';
-            showMessage('재개됨');
-            console.log('[재개] 효과 재시작 및 UI 숨김');
-        }
+    if (!interval && isTrainingActive) {
+        console.log('[재개] 2초 대기 후 효과 재시작 준비');
+        setTimeout(() => { // 2초 딜레이 추가
+            startEffect(); // 효과 시작
+            console.log('[재개] 2초 후 효과 재시작 완료');
+        }, 0); // 요구된 2초 딜레이
+    }
+    isPaused = false;
+    document.body.classList.remove('paused');
+    pageSliderContainer.style.display = 'none';
+    timerSettings.style.display = 'none'; // 타이머 설정 UI 숨김
+    showMessage('재개됨');
+    console.log('[재개] 효과 재시작 및 UI 숨김');
+}
 
         function updatePageSlider() {
             pageSlider.max = pages.length - 1;
@@ -1605,6 +1628,11 @@ function stopEffect() {
 
         // 타이머 이벤트 리스너
 startTimer.addEventListener('click', function() {
+    if (isTimerRunning) {
+        console.log('[타이머 시작 요청] 이미 실행 중 - 무시');
+        showMessage('타이머가 이미 실행 중입니다.', 2000);
+        return;
+    }
     console.log('[타이머 시작 요청] 일시정지 상태 확인 중');
     totalSets = parseInt(setCount.value);
     const waitTime = (parseInt(waitMin.value) * 60 + parseInt(waitSec.value)) * 1000;
@@ -1614,17 +1642,34 @@ startTimer.addEventListener('click', function() {
     currentSet = 0;
 
     if (!isTrainingActive) toggleButton.click();
-    setTimeout(() => {
-        if (isPaused) {
-            console.log('[타이머 시작] 일시정지 상태 감지, 해제 시도');
-            resumeEffect(); // 일시정지 해제
-        }
-        console.log('[타이머 시작] 읽기 타이머 시작');
-        startReadTimer(readTime, pauseTime, restTime); // 즉시 읽기 타이머 시작
-        document.getElementById(readAlert.value).play();
-        showMessage('대기 후 읽기 시작');
+    if (isPaused) {
+        console.log('[타이머 시작] 일시정지 상태 감지, 해제 및 전체화면 복귀');
+        resumeEffect(); // 일시정지 해제 및 UI 숨김
+    }
+    if (fullscreenMode.checked && !isFullscreen) {
+        const requestFullscreen = document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen;
+        requestFullscreen.call(document.documentElement).then(() => {
+            document.body.classList.add('fullscreen');
+            isFullscreen = true;
+            updateFullScreenButtons();
+            console.log('[타이머 시작] 전체화면 모드 활성화');
+        }).catch(err => {
+            console.error('[전체화면 오류]', err);
+            showMessage('전체화면 모드 활성화 실패.');
+        });
+    }
+    isTimerRunning = true; // 타이머 시작 플래그 설정
+    showMessage(`대기 시간 ${waitTime / 1000}초 후 읽기 시작`, waitTime);
+    console.log(`[타이머 시작] 대기 시간 ${waitTime}ms 설정`);
+    if (timerInterval) clearTimeout(timerInterval); // 기존 타이머 초기화
+    timerInterval = setTimeout(() => {
+        console.log('[타이머 시작] 대기 후 읽기 타이머 시작');
+        playAlert(readAlert.value);
+        startReadTimer(readTime, pauseTime, restTime);
     }, waitTime);
 });
+
+
         loadConfig.addEventListener('click', function() {
             const savedConfig = JSON.parse(localStorage.getItem('timerConfig'));
             if (savedConfig) {
@@ -1648,39 +1693,59 @@ startTimer.addEventListener('click', function() {
             }
         });
 
-        function startReadTimer(readTime, pauseTime, restTime) {
-            if (currentSet >= totalSets) {
-                document.getElementById(endAlert.value).play();
-                showMessage('모든 세트가 완료되었습니다.');
-                console.log('[타이머 종료] 모든 세트 완료');
-                return;
-            }
-            currentSet++;
-            startEffect();
-            showMessage(`세트 ${currentSet} 시작: 읽는 시간`);
-            console.log(`[읽기 시작] 세트 ${currentSet}`);
-            timerInterval = setTimeout(() => {
-                stopEffect();
-                pauseEffect();
-                document.getElementById(pauseAlert.value).play();
-                showMessage(`세트 ${currentSet} 일시정지`);
-                console.log(`[일시정지 시작] 세트 ${currentSet}`);
+function startReadTimer(readTime, pauseTime, restTime) {
+    if (currentSet >= totalSets) {
+        playAlert(endAlert.value);
+        showMessage('모든 세트가 완료되었습니다.');
+        console.log('[타이머 종료] 모든 세트 완료');
+        stopEffect(); // 효과 종료
+        isTimerRunning = false; // 타이머 종료 플래그 해제
+        if (timerInterval) clearTimeout(timerInterval);
+        return;
+    }
+    currentSet++;
+    startEffect(); // 읽기 시간 동안 효과 시작
+    showMessage(`세트 ${currentSet}/${totalSets} 시작: 읽는 시간 ${readTime / 1000}초`);
+    console.log(`[읽기 시작] 세트 ${currentSet}/${totalSets}`);
+
+    if (timerInterval) clearTimeout(timerInterval); // 이전 타이머 초기화
+    timerInterval = setTimeout(() => {
+        console.log(`[읽기 종료] 세트 ${currentSet} - 일시정지로 전환`);
+        pauseEffect(); // 효과 유지하며 일시정지
+        playAlert(pauseAlert.value);
+        showMessage(`세트 ${currentSet}/${totalSets} 일시정지: ${pauseTime / 1000}초`);
+        console.log(`[일시정지 시작] 세트 ${currentSet}`);
+
+        timerInterval = setTimeout(() => {
+            resumeEffect(); // 일시정지 해제
+            if (restTime > 0 && currentSet < totalSets) {
+                stopEffect(); // 휴식 전 효과 초기화
+                playAlert(restAlert.value);
+                showMessage(`세트 ${currentSet}/${totalSets} 휴식: ${restTime / 1000}초`);
+                console.log(`[휴식 시작] 세트 ${currentSet}`);
                 timerInterval = setTimeout(() => {
-                    resumeEffect();
-                    if (restTime > 0) {
-                        stopEffect();
-                        document.getElementById(restAlert.value).play();
-                        showMessage(`세트 ${currentSet} 휴식`);
-                        console.log(`[휴식 시작] 세트 ${currentSet}`);
-                        timerInterval = setTimeout(() => {
-                            startReadTimer(readTime, pauseTime, restTime);
-                        }, restTime);
-                    } else {
-                        startReadTimer(readTime, pauseTime, restTime);
-                    }
-                }, pauseTime);
-            }, readTime);
-        }
+                    console.log(`[휴식 종료] 세트 ${currentSet} - 다음 읽기 시작`);
+                    startReadTimer(readTime, pauseTime, restTime);
+                }, restTime);
+            } else {
+                console.log(`[일시정지 종료] 세트 ${currentSet} - 다음 읽기 시작`);
+                startReadTimer(readTime, pauseTime, restTime); // 즉시 다음 세트 시작
+            }
+        }, pauseTime);
+    }, readTime);
+}
+
+stopTimer.addEventListener('click', function() {
+    if (timerInterval) {
+        clearTimeout(timerInterval);
+        timerInterval = null;
+    }
+    stopEffect();
+    isTimerRunning = false; // 타이머 중지 시 플래그 해제
+    showMessage('타이머가 정지되었습니다.', 2000);
+    console.log('[타이머 정지] 타이머 및 효과 정리 완료');
+});
+
 
         function debounce(func, wait) {
             let timeout;
