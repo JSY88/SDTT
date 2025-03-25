@@ -330,12 +330,12 @@
             display: none;
         }
 
-        .fullscreen #textContent {
-            width: 100vw;
-            height: 100vh;
-            margin: 0;
-            padding: 20px;
-        }
+.fullscreen #textContent {
+    width: 100vw;
+    height: 100vh;
+    margin: 0;
+    padding: 40px 20px 20px 20px; /* 상단 패딩 증가로 더블탭 영역 확보 */
+}
 
         .fullscreen #pageInfoContainer {
             display: flex;
@@ -444,17 +444,20 @@
         }
 
         /* 타이머 설정 UI 스타일 */
-        #timerSettings {
-            display: none;
-            position: fixed;
-            bottom: 60px;
-            width: 100%;
-            background: #fff;
-            padding: 10px;
-            box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
-            z-index: 1002;
-            text-align: center;
-        }
+#timerSettings {
+    display: none;
+    position: fixed;
+    bottom: 60px;
+    width: 90%; /* 전체 너비에서 약간 축소 */
+    max-width: 400px; /* 최대 너비 제한 */
+    left: 50%;
+    transform: translateX(-50%);
+    background: #fff;
+    padding: 10px;
+    box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
+    z-index: 1002;
+    text-align: center;
+}
 
         #timerSettings input[type="number"] {
             width: 50px;
@@ -679,6 +682,18 @@
 
     <script>
         let noSleep;
+let isPageTurning = false;
+// script 최상단에 추가 (let interval 선언 근처)
+let interval, pages = [], currentPage = 0, book, toc = [];
+let worker, lastFileName = '';
+let renderedPages = [];
+let isFullscreen = false;
+let libraryFiles = JSON.parse(localStorage.getItem('libraryFiles')) || [];
+let isTrainingActive = false;
+let messageTimer;
+let lastSettings = {};
+let isPaused = false;
+let timerInterval, currentSet = 0, totalSets = 1;
         if (typeof NoSleep !== 'undefined') {
             noSleep = new NoSleep();
         } else {
@@ -758,16 +773,6 @@
         const restAlert = document.getElementById('restAlert');
         const endAlert = document.getElementById('endAlert');
 
-        let interval, pages = [], currentPage = 0, book, toc = [];
-        let worker, lastFileName = '';
-        let renderedPages = [];
-        let isFullscreen = false;
-        let libraryFiles = JSON.parse(localStorage.getItem('libraryFiles')) || [];
-        let isTrainingActive = false;
-        let messageTimer;
-        let lastSettings = {};
-        let isPaused = false;
-        let timerInterval, currentSet = 0, totalSets = 1;
 
         const DB_NAME = 'vanishingTextDB';
         const DB_VERSION = 1;
@@ -1288,94 +1293,122 @@
             }
         });
 
-        function startEffect() {
-            stopEffect();
-            console.log(`[효과 시작] 효과: ${effectSelect.value}, 속도: ${speedControl.value}ms`);
-            setTimeout(() => {
-                if (effectSelect.value === 'char') {
-                    const spans = textContent.querySelectorAll('.char-span:not(.char-space)');
-                    let charIndex = 0;
-                    const totalChars = spans.length;
-                    const intervalTime = parseInt(speedControl.value) / 2;
-                    interval = setInterval(() => {
-                        if (charIndex < spans.length) {
-                            spans[charIndex].classList.add('fade');
-                            charIndex++;
-                            progress.value = (charIndex / totalChars) * 100;
-                            updateProgressPercent(progress.value);
-                        } else {
-                            clearInterval(interval);
-                            if (autoPageTurn.checked && currentPage < pages.length - 1) nextPage.click();
-                        }
-                    }, intervalTime);
-                } else if (effectSelect.value === 'fade') {
-                    const lines = textContent.querySelectorAll('.line');
-                    let lineIndex = 0;
-                    const totalLines = lines.length;
-                    const intervalTime = parseInt(speedControl.value);
-                    interval = setInterval(() => {
-                        if (lineIndex < lines.length) {
-                            lines[lineIndex].classList.add('hidden');
-                            lineIndex++;
-                            progress.value = (lineIndex / totalLines) * 100;
-                            updateProgressPercent(progress.value);
-                        } else {
-                            clearInterval(interval);
-                            if (autoPageTurn.checked && currentPage < pages.length - 1) nextPage.click();
-                        }
-                    }, intervalTime);
-                } else if (effectSelect.value === 'eink') {
-                    const spans = textContent.querySelectorAll('.char-span:not(.char-space)');
-                    let charIndex = 0;
-                    const totalChars = spans.length;
-                    const intervalTime = parseInt(speedControl.value) / 2;
-                    textContent.classList.add('eink-mode');
-                    interval = setInterval(() => {
-                        if (charIndex < spans.length) {
-                            spans[charIndex].classList.add('eink-black');
-                            charIndex++;
-                            progress.value = (charIndex / totalChars) * 100;
-                            updateProgressPercent(progress.value);
-                        } else {
-                            clearInterval(interval);
-                            if (autoPageTurn.checked && currentPage < pages.length - 1) nextPage.click();
-                        }
-                    }, intervalTime);
-                }
-    }, parseInt(delayBeforeEffect));
-        }
-
-        function stopEffect() {
-            if (interval) clearInterval(interval);
-            console.log('[효과 정지]');
-            textContent.style.opacity = 1;
-            textContent.style.backgroundColor = blackMode.checked ? blackModeColor.value : '#fff';
-            textContent.style.color = blackMode.checked ? '#fff' : '#333';
-            textContent.classList.remove('eink-mode');
-            if (effectSelect.value === 'char' || effectSelect.value === 'eink') {
-                textContent.querySelectorAll('.char-span').forEach(span => {
-                    if (!isPaused) {
-                        span.style.opacity = 1;
-                        span.style.color = blackMode.checked ? '#fff' : '#333';
-                        span.style.backgroundColor = '';
-                        span.classList.remove('current', 'eink-black', 'fade');
+function startEffect() {
+    if (interval) {
+        clearInterval(interval);
+        console.log('[효과 시작] 기존 interval 정리 완료');
+    }
+    console.log(`[효과 시작] 효과: ${effectSelect.value}, 속도: ${speedControl.value}ms`);
+    setTimeout(() => {
+        if (effectSelect.value === 'char') {
+            const spans = textContent.querySelectorAll('.char-span:not(.char-space)');
+            let charIndex = 0;
+            const totalChars = spans.length;
+            const intervalTime = parseInt(speedControl.value) / 2;
+            interval = setInterval(() => {
+                if (charIndex < spans.length) {
+                    spans[charIndex].classList.add('fade');
+                    charIndex++;
+                    progress.value = (charIndex / totalChars) * 100;
+                    updateProgressPercent(progress.value);
+                } else {
+                    clearInterval(interval);
+                    console.log('[효과 종료] 모든 글자 사라짐 완료');
+                    if (autoPageTurn.checked && currentPage < pages.length - 1 && !isPageTurning) {
+                        isPageTurning = true;
+                        console.log('[자동 페이지 넘김] 시작 - 플래그 설정');
+                        nextPage.click();
+                        setTimeout(() => {
+                            isPageTurning = false;
+                            console.log('[자동 페이지 넘김] 플래그 해제');
+                        }, 1000);
                     }
-                });
-                textContent.querySelectorAll('.line').forEach(line => {
-                    if (!isPaused) line.classList.remove('hidden');
-                    line.style.display = 'block';
-                });
-                if (!isPaused) {
-                    progress.value = 0;
-                    updateProgressPercent(0);
-                    progress.style.backgroundColor = '';
                 }
-            }
-            if (isTrainingActive && !isPaused) {
-                toggleButton.innerText = '시작';
-                isTrainingActive = false;
-            }
+            }, intervalTime);
+        } else if (effectSelect.value === 'fade') {
+            const lines = textContent.querySelectorAll('.line');
+            let lineIndex = 0;
+            const totalLines = lines.length;
+            const intervalTime = parseInt(speedControl.value);
+            interval = setInterval(() => {
+                if (lineIndex < lines.length) {
+                    lines[lineIndex].classList.add('hidden');
+                    lineIndex++;
+                    progress.value = (lineIndex / totalLines) * 100;
+                    updateProgressPercent(progress.value);
+                } else {
+                    clearInterval(interval);
+                    console.log('[효과 종료] 모든 라인 페이드 완료');
+                    if (autoPageTurn.checked && currentPage < pages.length - 1 && !isPageTurning) {
+                        isPageTurning = true;
+                        console.log('[자동 페이지 넘김] 시작 - 플래그 설정');
+                        nextPage.click();
+                        setTimeout(() => {
+                            isPageTurning = false;
+                            console.log('[자동 페이지 넘김] 플래그 해제');
+                        }, 1000);
+                    }
+                }
+            }, intervalTime);
+        } else if (effectSelect.value === 'eink') {
+            const spans = textContent.querySelectorAll('.char-span:not(.char-space)');
+            let charIndex = 0;
+            const totalChars = spans.length;
+            const intervalTime = parseInt(speedControl.value) / 2;
+            textContent.classList.add('eink-mode');
+            interval = setInterval(() => {
+                if (charIndex < spans.length) {
+                    spans[charIndex].classList.add('eink-black');
+                    charIndex++;
+                    progress.value = (charIndex / totalChars) * 100;
+                    updateProgressPercent(progress.value);
+                } else {
+                    clearInterval(interval);
+                    console.log('[효과 종료] 전자잉크 효과 완료');
+                    if (autoPageTurn.checked && currentPage < pages.length - 1 && !isPageTurning) {
+                        isPageTurning = true;
+                        console.log('[자동 페이지 넘김] 시작 - 플래그 설정');
+                        nextPage.click();
+                        setTimeout(() => {
+                            isPageTurning = false;
+                            console.log('[자동 페이지 넘김] 플래그 해제');
+                        }, 1000);
+                    }
+                }
+            }, intervalTime);
         }
+    }, parseInt(delayBeforeEffect.value));
+}
+function stopEffect() {
+    if (interval) {
+        clearInterval(interval);
+        interval = null; // interval 완전 초기화
+        console.log('[효과 정지] interval 정리 완료');
+    }
+    console.log('[효과 정지] 모든 효과 초기화 시작');
+    textContent.style.opacity = 1;
+    textContent.style.backgroundColor = blackMode.checked ? blackModeColor.value : '#fff';
+    textContent.style.color = blackMode.checked ? '#fff' : '#333';
+    textContent.classList.remove('eink-mode');
+    textContent.querySelectorAll('.char-span').forEach(span => {
+        span.classList.remove('fade', 'eink-black');
+        span.style.opacity = 1;
+        span.style.backgroundColor = '';
+    });
+    textContent.querySelectorAll('.line').forEach(line => {
+        line.classList.remove('hidden');
+        line.style.display = 'block';
+    });
+    progress.value = 0;
+    updateProgressPercent(0);
+    if (isTrainingActive && !isPaused) {
+        toggleButton.innerText = '시작';
+        isTrainingActive = false;
+    }
+}
+
+
+
 
         function exitFullscreen() {
             const exitFullscreen = document.exitFullscreen || document.webkitExitFullscreen;
@@ -1571,52 +1604,27 @@
         });
 
         // 타이머 이벤트 리스너
-        startTimer.addEventListener('click', function() {
-            console.log('[타이머 시작]');
-            totalSets = parseInt(setCount.value);
-            const waitTime = (parseInt(waitMin.value) * 60 + parseInt(waitSec.value)) * 1000;
-            const readTime = (parseInt(readMin.value) * 60 + parseInt(readSec.value)) * 1000;
-            const pauseTime = (parseInt(pauseMin.value) * 60 + parseInt(pauseSec.value)) * 1000;
-            const restTime = (parseInt(restMin.value) * 60 + parseInt(restSec.value)) * 1000;
-            currentSet = 0;
+startTimer.addEventListener('click', function() {
+    console.log('[타이머 시작 요청] 일시정지 상태 확인 중');
+    totalSets = parseInt(setCount.value);
+    const waitTime = (parseInt(waitMin.value) * 60 + parseInt(waitSec.value)) * 1000;
+    const readTime = (parseInt(readMin.value) * 60 + parseInt(readSec.value)) * 1000;
+    const pauseTime = (parseInt(pauseMin.value) * 60 + parseInt(pauseSec.value)) * 1000;
+    const restTime = (parseInt(restMin.value) * 60 + parseInt(restSec.value)) * 1000;
+    currentSet = 0;
 
-            if (!isTrainingActive) toggleButton.click();
-            setTimeout(() => {
-                startReadTimer(readTime, pauseTime, restTime);
-            }, waitTime);
-            document.getElementById(readAlert.value).play();
-            showMessage('대기 후 읽기 시작');
-        });
-
-        stopTimer.addEventListener('click', function() {
-            clearInterval(timerInterval);
-            stopEffect();
-            resumeEffect();
-            showMessage('타이머 정지');
-            console.log('[타이머 정지]');
-        });
-
-        saveConfig.addEventListener('click', function() {
-            const config = {
-                setCount: setCount.value,
-                waitMin: waitMin.value,
-                waitSec: waitSec.value,
-                readMin: readMin.value,
-                readSec: readSec.value,
-                pauseMin: pauseMin.value,
-                pauseSec: pauseSec.value,
-                restMin: restMin.value,
-                restSec: restSec.value,
-                readAlert: readAlert.value,
-                pauseAlert: pauseAlert.value,
-                restAlert: restAlert.value,
-                endAlert: endAlert.value
-            };
-            localStorage.setItem('timerConfig', JSON.stringify(config));
-            showMessage('구성이 저장되었습니다.');
-            console.log('[구성 저장]', config);
-        });
-
+    if (!isTrainingActive) toggleButton.click();
+    setTimeout(() => {
+        if (isPaused) {
+            console.log('[타이머 시작] 일시정지 상태 감지, 해제 시도');
+            resumeEffect(); // 일시정지 해제
+        }
+        console.log('[타이머 시작] 읽기 타이머 시작');
+        startReadTimer(readTime, pauseTime, restTime); // 즉시 읽기 타이머 시작
+        document.getElementById(readAlert.value).play();
+        showMessage('대기 후 읽기 시작');
+    }, waitTime);
+});
         loadConfig.addEventListener('click', function() {
             const savedConfig = JSON.parse(localStorage.getItem('timerConfig'));
             if (savedConfig) {
@@ -2015,7 +2023,6 @@
             toggleButton.innerText = '시작';
             isTrainingActive = false;
             pages = [];
-            renderedPages = [];
             textContent.innerHTML = '';
             pageInfo.innerText = '';
             progress.value = 0;
