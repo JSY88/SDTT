@@ -1304,6 +1304,15 @@
     progress.value = 0;
     updateProgressPercent(0);
 
+    // 페이지 전환 시 interval 정리 및 index 초기화
+    if (interval) {
+        clearInterval(interval);
+        interval = null;
+        console.log('[페이지 전환] interval 정리 완료');
+    }
+    effectState.index = 0; // 텍스트 사라짐 효과를 처음부터 시작하도록 인덱스 초기화
+    console.log('[페이지 전환] effectState.index 초기화: 0');
+
     if (pageAnimation.checked && direction !== 0) {
         textContent.style.transform = direction > 0 ? 'translateX(-100%)' : 'translateX(100%)';
         textContent.style.opacity = 0;
@@ -1311,19 +1320,14 @@
             textContent.style.transform = 'translateX(0)';
             textContent.style.opacity = 1;
             if (isTrainingActive && !isPaused) {
-                console.log('[페이지 전환 후 효과 재시작] 애니메이션 완료');
-                if (interval) clearInterval(interval); // 기존 interval 정리
-                effectState.index = 0; // index를 0으로 초기화
                 setTimeout(() => startEffect(), 0); // DOM 업데이트 후 효과 시작
+                console.log('[페이지 전환 후 효과 재시작] 애니메이션 완료');
             }
             isPageTurning = false;
         }, 300);
     } else if (isTrainingActive && !isPaused) {
-        console.log('[페이지 전환 후 효과 재시작] 즉시 시작');
-        if (interval) clearInterval(interval); // 기존 interval 정리
-        effectState.index = 0; // index를 0으로 초기화
         setTimeout(() => startEffect(), 0); // DOM 업데이트 후 효과 시작
-        isPageTurning = false;
+        console.log('[페이지 전환 후 효과 재시작] 즉시 시작');
     }
     preloadPages();
     saveLastPage();
@@ -1546,35 +1550,66 @@ function pauseEffect() {
     if (interval) {
         clearInterval(interval);
         interval = null;
+        console.log('[일시정지] interval 정리 완료');
     }
     effectState.isRunning = false;
     isPaused = true;
     document.body.classList.add('paused');
     pageSliderContainer.style.display = 'block';
-    // timerSettings.style.display = 'block'; // 타이머 제거
     tocButton.style.display = 'inline-block';
     toggleButton.style.display = 'inline-block';
     libraryButton.style.display = 'inline-block';
-    pageInfoContainer.style.display = 'flex'; // 페이지 및 속도 버튼 표시
+    pageInfoContainer.style.display = 'flex';
     showMessage('일시정지됨');
-    console.log('[일시정지] UI 표시 완료 - 속도: ' + speedControl.value + 'ms');
+    console.log('[일시정지] UI 표시 완료, 현재 인덱스: ' + effectState.index);
 }
 
 
 
         function resumeEffect() {
-            isPaused = false;
-            document.body.classList.remove('paused');
-            pageSliderContainer.style.display = 'none';
-            timerSettings.style.display = 'none';
-            tocButton.style.display = 'inline-block';
-            libraryButton.style.display = 'inline-block';
-            showMessage('재개됨');
-            console.log('[재개] 효과 재시작 - 현재 인덱스:', effectState.index);
-            if (effectState.type && effectState.index < effectState.total) {
-                startEffect();
-            }
+    isPaused = false;
+    document.body.classList.remove('paused');
+    pageSliderContainer.style.display = 'none';
+    tocButton.style.display = 'inline-block';
+    libraryButton.style.display = 'inline-block';
+    showMessage('재개됨');
+    console.log('[재개] 효과 재시작 - 현재 인덱스: ' + effectState.index);
+
+    if (effectState.type && effectState.index < effectState.total) {
+        if (interval) {
+            clearInterval(interval);
+            interval = null;
+            console.log('[재개] 기존 interval 정리');
         }
+        // 효과를 현재 인덱스에서 이어서 재시작
+        const spans = textContent.querySelectorAll('.char-span');
+        effectState.total = spans.length;
+        const intervalTime = parseInt(speedControl.value) / 2;
+        console.log(`[재개] 총 글자 수: ${effectState.total}, 간격: ${intervalTime}ms`);
+        interval = setInterval(() => {
+            if (effectState.index < effectState.total && effectState.isRunning) {
+                spans[effectState.index].classList.add('fade');
+                effectState.index++;
+                progress.value = (effectState.index / effectState.total) * 100;
+                console.log(`[글자 사라짐] 인덱스: ${effectState.index}/${effectState.total}`);
+            } else {
+                clearInterval(interval);
+                interval = null;
+                effectState.isRunning = false;
+                console.log('[효과 종료] 모든 글자 사라짐 완료');
+                if (autoPageTurn.checked && currentPage < pages.length - 1 && !isPageTurning) {
+                    isPageTurning = true;
+                    setTimeout(() => {
+                        currentPage++;
+                        displayPage(1);
+                        isPageTurning = false;
+                        console.log('[자동 페이지 넘김] 다음 페이지: ' + (currentPage + 1));
+                    }, 300);
+                }
+            }
+        }, intervalTime);
+    }
+}
 
         function updatePageSlider() {
             pageSlider.max = pages.length - 1;
@@ -1890,8 +1925,8 @@ function startReadTimer(readTime, pauseTime, restTime) {
 speedControl.addEventListener('input', () => {
     clearTimeout(debounceTimer);
     debounceTimer = setTimeout(() => {
-        speedInput.value = speedControl.value; // 속도 입력 동기화
-        speedPreset.value = speedControl.value; // 프리셋 동기화
+        speedInput.value = speedControl.value;
+        speedPreset.value = speedControl.value;
         if (interval) {
             clearInterval(interval);
             interval = null;
@@ -1901,8 +1936,8 @@ speedControl.addEventListener('input', () => {
             startEffect(); // 새 속도로 효과 재시작
             console.log('[속도 조정] 효과 재시작 - 속도: ' + speedControl.value + 'ms');
         }
-        localStorage.setItem('speed', speedControl.value); // 속도 저장
-    }, 300); // 300ms 디바운싱
+        localStorage.setItem('speed', speedControl.value);
+    }, 300); // 300ms 디바운싱으로 과도한 호출 방지
 });
 
 
