@@ -59,28 +59,28 @@
         }
 
         #controls {
-    margin: 10px 0;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 5px;
-    justify-content: center;
-    align-items: center; /* 버튼 수평 정렬 */
-}
+            margin: 10px 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            justify-content: center;
+            align-items: center;
+        }
 
         #message {
-    color: red;
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(255, 255, 255, 0.95); /* 배경 투명도 약간 높임 */
-    padding: 8px 15px; /* 패딩 약간 증가 */
-    border-radius: 5px;
-    z-index: 10;
-    display: none;
-    font-size: 16px; /* 글자 크기 증가 */
-    font-weight: bold; /* 강조 */
-}
+            color: red;
+            position: fixed;
+            bottom: 60px; /* 속도 버튼 아래로 위치 조정 */
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.95);
+            padding: 8px 15px;
+            border-radius: 5px;
+            z-index: 10;
+            display: none;
+            font-size: 16px;
+            font-weight: bold;
+        }
 
         #retryButton {
             position: fixed;
@@ -103,15 +103,18 @@
         }
 
         #pageInfoContainer {
-            position: fixed;
-            top: 10px; /* 페이지 표시를 상단으로 이동 */
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            z-index: 1000;
-            display: none;
+    position: fixed;
+    top: 10px;
+    left: 10px; /* 상단 좌측으로 이동하여 겹침 방지 */
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    z-index: 1000;
+}
+
+
+        .fullscreen #pageInfoContainer {
+            display: none; /* 전체화면에서 페이지 표시 및 속도 버튼 숨김 */
         }
 
         #pageInfo {
@@ -131,7 +134,7 @@
         }
 
         .speed-control {
-            display: none; /* 기본적으로 숨김 */
+            display: none;
             width: 50px;
             height: 50px;
             background: transparent;
@@ -144,7 +147,7 @@
         }
 
         .paused .speed-control {
-            display: block; /* 일시정지 시 표시 */
+            display: block;
         }
 
         .speed-control:hover {
@@ -304,12 +307,12 @@
         }
 
         .char-span {
-            transition: none;
-        }
+    transition: opacity 0.5s ease-out; /* 부드러운 사라짐을 위한 전환 효과 */
+}
 
-        .char-span.fade {
-            animation: charFade 0.3s forwards;
-        }
+.char-span.fade {
+    opacity: 0; /* 애니메이션 대신 opacity로 처리 */
+}
 
         .char-span.current {
             background-color: transparent;
@@ -325,6 +328,17 @@
             transition: opacity 0.2s;
         }
 
+.paused #pageInfoContainer,
+.paused #controls {
+    display: flex !important; /* 일시정지 시 항상 표시 */
+}
+
+.paused .speed-control,
+.paused #tocButton,
+.paused #toggleButton,
+.paused #libraryButton {
+    display: inline-block !important; /* 버튼 강제 표시 */
+}
         .line.hidden {
             opacity: 0;
         }
@@ -333,15 +347,11 @@
             display: none;
         }
 
-.fullscreen #textContent {
-    width: 100vw;
-    height: 100vh;
-    margin: 0;
-    padding: 40px 20px 20px 20px; /* 상단 패딩 증가로 더블탭 영역 확보 */
-}
-
-        .fullscreen #pageInfoContainer {
-            display: flex;
+        .fullscreen #textContent {
+            width: 100vw;
+            height: 100vh;
+            margin: 0;
+            padding: 40px 20px 20px 20px;
         }
 
         #fileUpload {
@@ -430,27 +440,26 @@
             background-color: #c0392b;
         }
 
-        /* 페이지 이동 슬라이더 스타일 */
         #pageSliderContainer {
-            display: none;
-            position: fixed;
-            bottom: 0;
-            width: 100%;
-            background: #fff;
-            padding: 10px;
-            box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
-            z-index: 1001;
-        }
+    display: none;
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    background: #fff;
+    padding: 10px;
+    box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
+    z-index: 1001;
+}
+
 
         #pageSlider {
             width: 100%;
         }
 
-        /* 타이머 설정 UI 스타일 */
-#timerSettings {
-    display: none; /* 기본적으로 숨김 */
+        #timerSettings {
+    display: none;
     position: fixed;
-    bottom: 60px;
+    bottom: 60px; /* 페이지 슬라이더 위에 위치 */
     width: 90%;
     max-width: 400px;
     left: 50%;
@@ -485,10 +494,16 @@
                 height: calc(var(--text-height) - 60px);
                 padding: 8px;
             }
-            #controls {
-                flex-direction: column;
-                gap: 3px;
-            }
+#controls {
+    margin: 10px 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    justify-content: center;
+    align-items: center;
+    /* position: fixed 제거, 자연스러운 흐름 유지 */
+}
+
             button {
                 padding: 8px 12px;
                 font-size: 14px;
@@ -520,13 +535,17 @@
         .black-mode #fileUpload:hover { background-color: #444; }
         .black-mode #pageInfo, .black-mode .speed-control { color: #fff; }
 
-        #toggleButton {
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            z-index: 15;
-        }
-
+#toggleButton {
+    /* 고정 위치 스타일 제거 */
+    padding: 8px 12px;
+    font-size: 14px;
+    border: none;
+    border-radius: 5px;
+    background-color: #3498db;
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.3s, transform 0.1s;
+}
         .fullscreen #toggleButton {
             bottom: 10px;
             left: 10px;
@@ -539,12 +558,12 @@
     <input type="file" id="fileUpload" accept=".txt,.epub" aria-label="파일 업로드" multiple>
     <div id="controls" role="toolbar">
     <button id="toggleButton" aria-label="훈련 시작/중지">시작</button>
-        <button id="prevPage" aria-label="이전 페이지"><span class="icon">◀</span> 이전</button>
-        <button id="nextPage" aria-label="다음 페이지"><span class="icon">▶</span> 다음</button>
-        <button id="tocButton" aria-label="목차">목차</button>
-        <button id="libraryButton" aria-label="라이브러리">라이브러리</button>
-        <input type="number" id="jumpToPage" min="1" placeholder="페이지로 이동" style="width: 100px; padding: 5px;">
-    </div>
+    <button id="prevPage" aria-label="이전 페이지"><span class="icon">◀</span> 이전</button>
+    <button id="nextPage" aria-label="다음 페이지"><span class="icon">▶</span> 다음</button>
+    <button id="tocButton" aria-label="목차">목차</button>
+    <button id="libraryButton" aria-label="라이브러리">라이브러리</button>
+    <input type="number" id="jumpToPage" min="1" placeholder="페이지로 이동" style="width: 100px; padding: 5px;">
+</div>
     <details>
         <summary>고급 설정</summary>
         <div id="advancedControls">
@@ -642,11 +661,9 @@
         <button id="closeLibrary" style="position: absolute; top: 10px; right: 10px; padding: 5px; background: #fff; border: none; cursor: pointer;">X</button>
         <div id="libraryContent"></div>
     </div>
-    <!-- 페이지 이동 슬라이더 -->
     <div id="pageSliderContainer">
         <input type="range" id="pageSlider" min="0" max="0" value="0">
     </div>
-    <!-- 타이머 설정 UI -->
     <div id="timerSettings">
         <label>세트 횟수: <input type="number" id="setCount" min="1" value="1"></label><br>
         <label>대기 시간: <input type="number" id="waitMin" min="0" value="0">분 <input type="number" id="waitSec" min="0" max="59" value="5">초</label><br>
@@ -678,30 +695,36 @@
         <button id="saveConfig">구성 저장</button>
         <button id="loadConfig">구성 불러오기</button>
     </div>
-    <!-- 알림음 오디오 요소 -->
-<audio id="piano1" src="sounds/a.mp3" preload="auto"></audio>
-<audio id="piano2" src="sounds/b.wav" preload="auto"></audio>
-<audio id="piano3" src="sounds/c.wav" preload="auto"></audio>
+    <audio id="piano1" src="sounds/a.mp3" preload="auto"></audio>
+    <audio id="piano2" src="sounds/b.wav" preload="auto"></audio>
+    <audio id="piano3" src="sounds/c.wav" preload="auto"></audio>
 
     <script>
         let noSleep;
+        let effectState = { type: null, index: 0, total: 0, isRunning: false };
+        let interval, pages = [], currentPage = 0, book, toc = [];
+        let worker, lastFileName = '';
+        let renderedPages = [];
+        let isFullscreen = false;
+        let libraryFiles = JSON.parse(localStorage.getItem('libraryFiles')) || [];
+        let isTrainingActive = false;
+        let messageTimer;
+        let lastSettings = {};
+        let isPaused = false;
+        let timerInterval, currentSet = 0, totalSets = 1;
+        let isPageTurning = false;
+        let isTimerRunning = false;
+        let isInitialLoad = true;
 
-// script 최상단에 추가 (let interval 선언 근처)
-let effectState = { type: null, index: 0, total: 0, isRunning: false };
-let interval, pages = [], currentPage = 0, book, toc = [];
-let worker, lastFileName = '';
-let renderedPages = [];
-let isFullscreen = false;
-let libraryFiles = JSON.parse(localStorage.getItem('libraryFiles')) || [];
-let isTrainingActive = false;
-let messageTimer;
-let lastSettings = {};
-let isPaused = false;
-let timerInterval, currentSet = 0, totalSets = 1;
-let isPageTurning = false;
-let isTimerRunning = false;
-let isInitialLoad = true; // 첫 로드 여부 플래그 추가
-
+        // 마지막 파일 자동 열기
+        const lastOpenedFile = localStorage.getItem('lastOpenedFile');
+        if (lastOpenedFile && !pages.length) {
+            console.log('[초기화] 마지막 파일 자동 열기 시도:', lastOpenedFile);
+            fetch(lastOpenedFile).then(response => response.blob()).then(blob => {
+                const file = new File([blob], lastOpenedFile.split('/').pop(), { type: blob.type });
+                handleFileUpload(file);
+            }).catch(err => console.error('[마지막 파일 로드 오류]:', err));
+        }
 
         if (typeof NoSleep !== 'undefined') {
             noSleep = new NoSleep();
@@ -782,7 +805,6 @@ let isInitialLoad = true; // 첫 로드 여부 플래그 추가
         const restAlert = document.getElementById('restAlert');
         const endAlert = document.getElementById('endAlert');
 
-
         const DB_NAME = 'vanishingTextDB';
         const DB_VERSION = 1;
         const CACHE_STORE_NAME = 'fileCacheStore';
@@ -807,28 +829,28 @@ let isInitialLoad = true; // 첫 로드 여부 플래그 추가
         });
 
         async function getCachedData(fileName) {
-    try {
-        await dbPromise;
-        return new Promise((resolve) => {
-            if (!db) {
-                console.warn('[IndexedDB] 데이터베이스 연결 없음');
-                resolve(null);
-                return;
+            try {
+                await dbPromise;
+                return new Promise((resolve) => {
+                    if (!db) {
+                        console.warn('[IndexedDB] 데이터베이스 연결 없음');
+                        resolve(null);
+                        return;
+                    }
+                    const transaction = db.transaction([CACHE_STORE_NAME], 'readonly');
+                    const store = transaction.objectStore(CACHE_STORE_NAME);
+                    const request = store.get(fileName);
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = () => {
+                        console.error('[IndexedDB] 캐시 데이터 가져오기 실패:', fileName);
+                        resolve(null);
+                    };
+                });
+            } catch (err) {
+                console.error('[IndexedDB] 캐시 데이터 접근 오류:', err);
+                return null;
             }
-            const transaction = db.transaction([CACHE_STORE_NAME], 'readonly');
-            const store = transaction.objectStore(CACHE_STORE_NAME);
-            const request = store.get(fileName);
-            request.onsuccess = () => resolve(request.result);
-            request.onerror = () => {
-                console.error('[IndexedDB] 캐시 데이터 가져오기 실패:', fileName);
-                resolve(null);
-            };
-        });
-    } catch (err) {
-        console.error('[IndexedDB] 캐시 데이터 접근 오류:', err);
-        return null;
-    }
-}
+        }
 
         async function setCachedData(fileName, data) {
             await dbPromise.catch(() => {});
@@ -845,22 +867,16 @@ let isInitialLoad = true; // 첫 로드 여부 플래그 추가
             });
         }
 
-
-function playAlert(soundId) {
-    const audio = document.getElementById(soundId);
-    console.log(`[알림음 재생 시도] ID: ${soundId}`);
-    audio.play().then(() => {
-        console.log(`[알림음 재생 성공] ${soundId}`);
-    }).catch(err => {
-        console.error(`[알림음 재생 오류] ${soundId}:`, err);
-        showMessage(`알림음 재생 실패: ${soundId}`);
-        // 폴백: 기본 알림음 재생
-        const fallbackAudio = new Audio('https://www.soundjay.com/buttons/beep-01a.mp3');
-        fallbackAudio.play().catch(fallbackErr => {
-            console.error('[폴백 알림음 오류]:', fallbackErr);
-        });
-    });
-}
+        function playAlert(soundId) {
+            const audio = document.getElementById(soundId);
+            console.log(`[알림음 재생 시도] ID: ${soundId}`);
+            audio.play().then(() => {
+                console.log(`[알림음 재생 성공] ${soundId}`);
+            }).catch(err => {
+                console.error(`[알림음 재생 오류] ${soundId}:`, err);
+                showMessage(`알림음 재생 실패: ${soundId}`);
+            });
+        }
 
         async function deleteCachedData(fileName) {
             await dbPromise.catch(() => {});
@@ -925,7 +941,6 @@ function playAlert(soundId) {
             });
         }
 
-        // 초기 설정 로드
         speedControl.value = localStorage.getItem('speed') || 100;
         speedInput.value = localStorage.getItem('speed') || 100;
         speedPreset.value = localStorage.getItem('speedPreset') || 100;
@@ -959,7 +974,6 @@ function playAlert(soundId) {
         updateFullScreenButtons();
         updatePageInfoStyles();
 
-        // 타이머 설정 초기값 로드
         const savedConfig = JSON.parse(localStorage.getItem('timerConfig'));
         if (savedConfig) {
             setCount.value = savedConfig.setCount || 1;
@@ -1067,6 +1081,7 @@ function playAlert(soundId) {
             }
 
             lastFileName = file.name;
+            localStorage.setItem('lastOpenedFile', file.name); // 마지막 파일 저장
             textContent.style.opacity = 1;
             showMessage('파일 로딩 중...');
             progress.value = 0;
@@ -1241,24 +1256,35 @@ function playAlert(soundId) {
             const start = Math.max(0, currentPage - range);
             const end = Math.min(pages.length, currentPage + range + 1);
             for (let i = start; i < end; i++) {
-                const text = pages[i];
-                const lines = text.split('\n').filter(line => line.trim().length > 0);
-                const html = lines.map(line => {
-                    const chars = line.split('');
-                    return `<div class="line">${chars.map(char => char.trim() === '' ? `<span class="char-span char-space">${char}</span>` : `<span class="char-span">${char}</span>`).join('')}</div>`;
-                }).join('');
-                renderedPages[i] = html;
-            }
-            Object.keys(renderedPages).forEach(key => {
-                const pageNum = parseInt(key);
-                if (pageNum < start || pageNum >= end) {
-                    delete renderedPages[pageNum];
+                if (!renderedPages[i]) {
+                    const text = pages[i];
+                    const lines = text.split('\n').filter(line => line.trim().length > 0);
+                    const html = lines.map(line => {
+                        const chars = line.split('');
+                        return `<div class="line">${chars.map(char => char.trim() === '' ? `<span class="char-span char-space">${char}</span>` : `<span class="char-span">${char}</span>`).join('')}</div>`;
+                    }).join('');
+                    renderedPages[i] = html;
                 }
-            });
+            }
+            // 나머지 페이지 비동기 로딩
+            setTimeout(() => {
+                for (let i = 0; i < pages.length; i++) {
+                    if (!renderedPages[i]) {
+                        const text = pages[i];
+                        const lines = text.split('\n').filter(line => line.trim().length > 0);
+                        const html = lines.map(line => {
+                            const chars = line.split('');
+                            return `<div class="line">${chars.map(char => char.trim() === '' ? `<span class="char-span char-space">${char}</span>` : `<span class="char-span">${char}</span>`).join('')}</div>`;
+                        }).join('');
+                        renderedPages[i] = html;
+                    }
+                }
+            }, 0);
+            console.log('[페이지 프리로드] 범위:', start, 'to', end);
         }
 
         function displayPage(direction = 0) {
-    console.log(`[페이지 표시] 현재 페이지: ${currentPage + 1}/${pages.length}, 초기 로드 여부: ${isInitialLoad}, 일시정지 여부: ${isPaused}`);
+    console.log(`[페이지 표시] 페이지: ${currentPage + 1}/${pages.length}, 훈련 상태: ${isTrainingActive}, 일시정지: ${isPaused}`);
     const fragment = document.createDocumentFragment();
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = renderedPages[currentPage] || '';
@@ -1266,31 +1292,31 @@ function playAlert(soundId) {
     textContent.innerHTML = '';
     textContent.appendChild(fragment);
 
-    pageInfo.innerText = (showPageInfo.checked || isFullscreen) ? `${currentPage + 1}/${pages.length}` : '';
-    pageInfo.style.fontSize = `${pageInfoSize.value}px`;
+    pageInfo.innerText = showPageInfo.checked ? `${currentPage + 1}/${pages.length}` : '';
     updatePageInfoStyles();
     progress.value = 0;
     updateProgressPercent(0);
 
-    // 페이지 전환 애니메이션 처리
     if (pageAnimation.checked && direction !== 0) {
         textContent.style.transform = direction > 0 ? 'translateX(-100%)' : 'translateX(100%)';
         textContent.style.opacity = 0;
         setTimeout(() => {
             textContent.style.transform = 'translateX(0)';
             textContent.style.opacity = 1;
-            if (!isInitialLoad) {
-                console.log('[페이지 전환 후 효과 시작] 애니메이션 완료 후 호출');
-                startEffect(); // 페이지 전환 시 항상 효과 시작
+            if (isTrainingActive && !isPaused) {
+                console.log('[페이지 전환 후 효과 재시작] 애니메이션 완료');
+                if (interval) clearInterval(interval); // 기존 interval 정리
+                effectState.index = 0; // index를 0으로 초기화
+                setTimeout(() => startEffect(), 0); // DOM 업데이트 후 효과 시작
             }
-            isPageTurning = false; // 페이지 전환 완료
-            console.log('[페이지 전환 완료] 플래그 해제');
+            isPageTurning = false;
         }, 300);
-    } else if (!isInitialLoad) {
-        console.log('[페이지 전환 후 효과 시작] 즉시 호출');
-        startEffect(); // 초기 로드가 아니면 즉시 효과 시작
-        isPageTurning = false; // 페이지 전환 완료
-        console.log('[페이지 전환 완료] 플래그 해제');
+    } else if (isTrainingActive && !isPaused) {
+        console.log('[페이지 전환 후 효과 재시작] 즉시 시작');
+        if (interval) clearInterval(interval); // 기존 interval 정리
+        effectState.index = 0; // index를 0으로 초기화
+        setTimeout(() => startEffect(), 0); // DOM 업데이트 후 효과 시작
+        isPageTurning = false;
     }
     preloadPages();
     saveLastPage();
@@ -1342,36 +1368,43 @@ function playAlert(soundId) {
             }
         });
 
-function startEffect() {
+        function startEffect() {
     if (interval) {
         clearInterval(interval);
-        console.log('[효과 시작] 기존 interval 정리 완료');
+        interval = null; // interval 초기화
+        console.log('[효과 시작] 이전 interval 정리');
     }
-    console.log(`[효과 시작] 효과: ${effectSelect.value}, 속도: ${speedControl.value}ms`);
     effectState.type = effectSelect.value;
     effectState.isRunning = true;
-    effectState.index = effectState.index || 0; // 재개 시 이전 인덱스 유지
-
+    effectState.index = 0; // 항상 0부터 시작
     const delay = parseInt(delayBeforeEffect.value);
+    console.log(`[효과 시작] 타입: ${effectState.type}, 속도: ${speedControl.value}ms, 지연: ${delay}ms, index: ${effectState.index}`);
+
     setTimeout(() => {
         if (effectState.type === 'char') {
-            const spans = textContent.querySelectorAll('.char-span:not(.char-space)');
+            const spans = textContent.querySelectorAll('.char-span'); // 공백 포함 모든 글자 대상
             effectState.total = spans.length;
             const intervalTime = parseInt(speedControl.value) / 2;
+            console.log(`[글자 단위 효과] 총 글자 수: ${effectState.total}, 간격: ${intervalTime}ms`);
             interval = setInterval(() => {
                 if (effectState.index < effectState.total && effectState.isRunning) {
                     spans[effectState.index].classList.add('fade');
                     effectState.index++;
                     progress.value = (effectState.index / effectState.total) * 100;
-                    updateProgressPercent(progress.value);
-                } else if (effectState.index >= effectState.total) {
+                    console.log(`[글자 사라짐] 인덱스: ${effectState.index}/${effectState.total}`);
+                } else {
                     clearInterval(interval);
+                    interval = null;
                     effectState.isRunning = false;
                     console.log('[효과 종료] 모든 글자 사라짐 완료');
                     if (autoPageTurn.checked && currentPage < pages.length - 1 && !isPageTurning) {
                         isPageTurning = true;
-                        console.log('[자동 페이지 넘김] 시작 - 플래그 설정');
-                        nextPage.click();
+                        setTimeout(() => {
+                            currentPage++;
+                            displayPage(1);
+                            isPageTurning = false;
+                            console.log('[자동 페이지 넘김] 다음 페이지로 이동: ' + (currentPage + 1));
+                        }, 300);
                     }
                 }
             }, intervalTime);
@@ -1379,42 +1412,50 @@ function startEffect() {
             const lines = textContent.querySelectorAll('.line');
             effectState.total = lines.length;
             const intervalTime = parseInt(speedControl.value);
+            console.log(`[페이드 효과] 총 라인 수: ${effectState.total}, 간격: ${intervalTime}ms`);
             interval = setInterval(() => {
                 if (effectState.index < effectState.total && effectState.isRunning) {
                     lines[effectState.index].classList.add('hidden');
                     effectState.index++;
                     progress.value = (effectState.index / effectState.total) * 100;
-                    updateProgressPercent(progress.value);
-                } else if (effectState.index >= effectState.total) {
+                } else {
                     clearInterval(interval);
+                    interval = null;
                     effectState.isRunning = false;
                     console.log('[효과 종료] 모든 라인 페이드 완료');
                     if (autoPageTurn.checked && currentPage < pages.length - 1 && !isPageTurning) {
                         isPageTurning = true;
-                        console.log('[자동 페이지 넘김] 시작 - 플래그 설정');
-                        nextPage.click();
+                        setTimeout(() => {
+                            currentPage++;
+                            displayPage(1);
+                            isPageTurning = false;
+                        }, 300);
                     }
                 }
             }, intervalTime);
         } else if (effectState.type === 'eink') {
-            const spans = textContent.querySelectorAll('.char-span:not(.char-space)');
+            const spans = textContent.querySelectorAll('.char-span'); // 공백 포함
             effectState.total = spans.length;
             const intervalTime = parseInt(speedControl.value) / 2;
             textContent.classList.add('eink-mode');
+            console.log(`[전자잉크 효과] 총 글자 수: ${effectState.total}, 간격: ${intervalTime}ms`);
             interval = setInterval(() => {
                 if (effectState.index < effectState.total && effectState.isRunning) {
                     spans[effectState.index].classList.add('eink-black');
                     effectState.index++;
                     progress.value = (effectState.index / effectState.total) * 100;
-                    updateProgressPercent(progress.value);
-                } else if (effectState.index >= effectState.total) {
+                } else {
                     clearInterval(interval);
+                    interval = null;
                     effectState.isRunning = false;
                     console.log('[효과 종료] 전자잉크 효과 완료');
                     if (autoPageTurn.checked && currentPage < pages.length - 1 && !isPageTurning) {
                         isPageTurning = true;
-                        console.log('[자동 페이지 넘김] 시작 - 플래그 설정');
-                        nextPage.click();
+                        setTimeout(() => {
+                            currentPage++;
+                            displayPage(1);
+                            isPageTurning = false;
+                        }, 300);
                     }
                 }
             }, intervalTime);
@@ -1428,17 +1469,21 @@ function startEffect() {
 
 
 
-function stopEffect() {
-    if (interval) {
-        clearInterval(interval);
-        interval = null;
-    }
-    effectState.isRunning = false;
-    effectState.index = 0; // 효과 완전 정지 시 초기화
-    console.log('[효과 정지] 완전 정지 및 상태 초기화');
-}
 
 
+
+
+
+
+        function stopEffect() {
+            if (interval) {
+                clearInterval(interval);
+                interval = null;
+            }
+            effectState.isRunning = false;
+            effectState.index = 0;
+            console.log('[효과 정지] 완전 정지 및 상태 초기화');
+        }
 
         function exitFullscreen() {
             const exitFullscreen = document.exitFullscreen || document.webkitExitFullscreen;
@@ -1451,6 +1496,14 @@ function stopEffect() {
                         if (noSleep) noSleep.disable();
                         isFullscreen = false;
                         updateFullScreenButtons();
+                        stopEffect();
+                        if (timerInterval) {
+                            clearTimeout(timerInterval);
+                            timerInterval = null;
+                            isTimerRunning = false;
+                            showMessage('타이머가 정지되었습니다.', 2000);
+                            console.log('[전체화면 종료] 타이머 정지');
+                        }
                     }).catch(() => {
                         showMessage('전체화면 모드 종료 실패.');
                     });
@@ -1458,7 +1511,6 @@ function stopEffect() {
             }
         }
 
-        // 더블탭 이벤트 처리
         const hammer = new Hammer(textContent);
         hammer.on('doubletap', function() {
             console.log(`[더블탭] 일시정지 상태: ${isPaused ? '해제' : '활성화'}`);
@@ -1469,7 +1521,7 @@ function stopEffect() {
             }
         });
 
-        function pauseEffect() {
+function pauseEffect() {
     if (interval) {
         clearInterval(interval);
         interval = null;
@@ -1479,33 +1531,44 @@ function stopEffect() {
     document.body.classList.add('paused');
     pageSliderContainer.style.display = 'block';
     timerSettings.style.display = 'block';
-    updatePageSlider();
+    tocButton.style.display = 'inline-block';
+    toggleButton.style.display = 'inline-block';
+    libraryButton.style.display = 'inline-block';
+    pageInfoContainer.style.display = 'flex'; // 페이지 및 속도 버튼 표시
     showMessage('일시정지됨');
-    console.log('[일시정지] 효과 정지 및 UI 표시 - 현재 인덱스:', effectState.index);
+    console.log('[일시정지] UI 표시 완료 - 페이지 슬라이더, 타이머 설정, 버튼 표시됨');
 }
 
+
+
         function resumeEffect() {
-    isPaused = false;
-    document.body.classList.remove('paused');
-    pageSliderContainer.style.display = 'none';
-    timerSettings.style.display = 'none';
-    showMessage('재개됨');
-    console.log('[재개] 효과 재시작 - 현재 인덱스:', effectState.index);
-    if (effectState.type && effectState.index < effectState.total) {
-        startEffect(); // 저장된 상태에서 효과 이어감
-    }
-}
+            isPaused = false;
+            document.body.classList.remove('paused');
+            pageSliderContainer.style.display = 'none';
+            timerSettings.style.display = 'none';
+            tocButton.style.display = 'inline-block';
+            libraryButton.style.display = 'inline-block';
+            showMessage('재개됨');
+            console.log('[재개] 효과 재시작 - 현재 인덱스:', effectState.index);
+            if (effectState.type && effectState.index < effectState.total) {
+                startEffect();
+            }
+        }
 
         function updatePageSlider() {
             pageSlider.max = pages.length - 1;
             pageSlider.value = currentPage;
         }
 
+        let sliderTimeout;
         pageSlider.addEventListener('input', function() {
-            currentPage = parseInt(this.value);
-            stopEffect();
-            displayPage();
-            console.log(`[슬라이더 이동] 페이지: ${currentPage + 1}`);
+            clearTimeout(sliderTimeout);
+            sliderTimeout = setTimeout(() => {
+                currentPage = parseInt(this.value);
+                stopEffect();
+                displayPage();
+                console.log(`[슬라이더 이동] 페이지: ${currentPage + 1}`);
+            }, 100); // 디바운싱 적용
         });
 
         pageInfo.addEventListener('click', () => {
@@ -1514,26 +1577,26 @@ function stopEffect() {
         });
 
         speedDownButton.addEventListener('click', () => {
-    let newSpeed = Math.max(50, parseInt(speedControl.value) - 5);
-    speedControl.value = newSpeed;
-    speedInput.value = newSpeed;
-    speedPreset.value = newSpeed;
-    adjustSpeed();
-    localStorage.setItem('speed', newSpeed);
-    showMessage(`현재 속도: ${newSpeed}ms`, 1500); // 지속 시간 1500ms로 조정
-    console.log(`[속도 감소] 새로운 속도: ${newSpeed}ms, 메시지 표시됨`);
-});
+            let newSpeed = Math.max(50, parseInt(speedControl.value) - 5);
+            speedControl.value = newSpeed;
+            speedInput.value = newSpeed;
+            speedPreset.value = newSpeed;
+            adjustSpeed();
+            localStorage.setItem('speed', newSpeed);
+            showMessage(`현재 속도: ${newSpeed}ms`, 1500);
+            console.log(`[속도 감소] 새로운 속도: ${newSpeed}ms`);
+        });
 
-speedUpButton.addEventListener('click', () => {
-    let newSpeed = Math.min(2000, parseInt(speedControl.value) + 5);
-    speedControl.value = newSpeed;
-    speedInput.value = newSpeed;
-    speedPreset.value = newSpeed;
-    adjustSpeed();
-    localStorage.setItem('speed', newSpeed);
-    showMessage(`현재 속도: ${newSpeed}ms`, 1500); // 지속 시간 1500ms로 조정
-    console.log(`[속도 증가] 새로운 속도: ${newSpeed}ms, 메시지 표시됨`);
-});
+        speedUpButton.addEventListener('click', () => {
+            let newSpeed = Math.min(2000, parseInt(speedControl.value) + 5);
+            speedControl.value = newSpeed;
+            speedInput.value = newSpeed;
+            speedPreset.value = newSpeed;
+            adjustSpeed();
+            localStorage.setItem('speed', newSpeed);
+            showMessage(`현재 속도: ${newSpeed}ms`, 1500);
+            console.log(`[속도 증가] 새로운 속도: ${newSpeed}ms`);
+        });
 
         leftPageButton.addEventListener('pointerdown', () => {
             if (currentPage > 0) {
@@ -1634,49 +1697,119 @@ speedUpButton.addEventListener('click', () => {
             });
         });
 
-        // 타이머 이벤트 리스너
-startTimer.addEventListener('click', function() {
-    if (isTimerRunning) {
-        console.log('[타이머 시작 요청] 이미 실행 중 - 무시');
-        showMessage('타이머가 이미 실행 중입니다.', 2000);
+        startTimer.addEventListener('click', function() {
+            if (isTimerRunning) {
+                console.log('[타이머 시작 요청] 이미 실행 중 - 무시');
+                showMessage('타이머가 이미 실행 중입니다.', 2000);
+                return;
+            }
+            console.log('[타이머 시작 요청] 시작 준비');
+            totalSets = parseInt(setCount.value);
+            const waitTime = (parseInt(waitMin.value) * 60 + parseInt(waitSec.value)) * 1000;
+            const readTime = (parseInt(readMin.value) * 60 + parseInt(readSec.value)) * 1000;
+            const pauseTime = (parseInt(pauseMin.value) * 60 + parseInt(pauseSec.value)) * 1000;
+            const restTime = (parseInt(restMin.value) * 60 + parseInt(restSec.value)) * 1000;
+            currentSet = 0;
+            isTimerRunning = true;
+
+            if (!isTrainingActive) toggleButton.click();
+            if (isPaused) resumeEffect();
+            if (fullscreenMode.checked && !isFullscreen) {
+                const requestFullscreen = document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen;
+                requestFullscreen.call(document.documentElement).then(() => {
+                    document.body.classList.add('fullscreen');
+                    isFullscreen = true;
+                    updateFullScreenButtons();
+                    console.log('[타이머 시작] 전체화면 모드 활성화');
+                }).catch(err => {
+                    console.error('[전체화면 오류]', err);
+                    showMessage('전체화면 모드 활성화 실패.');
+                });
+            }
+            showMessage(`대기 시간 ${waitTime / 1000}초 후 읽기 시작`, waitTime);
+            console.log(`[타이머 시작] 대기 시간 ${waitTime}ms 설정`);
+            if (timerInterval) clearTimeout(timerInterval);
+            timerInterval = setTimeout(() => {
+                console.log('[타이머 시작] 대기 후 읽기 타이머 시작');
+                playAlert(readAlert.value);
+                startReadTimer(readTime, pauseTime, restTime);
+            }, waitTime);
+        });
+
+function startReadTimer(readTime, pauseTime, restTime) {
+    if (currentSet >= totalSets) {
+        playAlert(endAlert.value);
+        showMessage('모든 세트 완료');
+        stopEffect();
+        isTimerRunning = false;
+        pauseEffect();
+        console.log('[타이머 종료] 모든 세트 완료 - 총 세트 수: ' + totalSets);
         return;
     }
-    console.log('[타이머 시작 요청] 시작 준비');
-    totalSets = parseInt(setCount.value);
-    const waitTime = (parseInt(waitMin.value) * 60 + parseInt(waitSec.value)) * 1000;
-    const readTime = (parseInt(readMin.value) * 60 + parseInt(readSec.value)) * 1000;
-    const pauseTime = (parseInt(pauseMin.value) * 60 + parseInt(pauseSec.value)) * 1000;
-    const restTime = (parseInt(restMin.value) * 60 + parseInt(restSec.value)) * 1000;
-    currentSet = 0;
 
-    if (!isTrainingActive) toggleButton.click();
-    if (isPaused) {
-        console.log('[타이머 시작] 일시정지 상태 감지, 해제 및 전체화면 복귀');
-        resumeEffect(); // 일시정지 해제 및 UI 숨김
-    }
-    if (fullscreenMode.checked && !isFullscreen) {
-        const requestFullscreen = document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen;
-        requestFullscreen.call(document.documentElement).then(() => {
-            document.body.classList.add('fullscreen');
-            isFullscreen = true;
-            updateFullScreenButtons();
-            console.log('[타이머 시작] 전체화면 모드 활성화');
-        }).catch(err => {
-            console.error('[전체화면 오류]', err);
-            showMessage('전체화면 모드 활성화 실패.');
-        });
-    }
-    isTimerRunning = true; // 타이머 시작 플래그 설정
-    showMessage(`대기 시간 ${waitTime / 1000}초 후 읽기 시작`, waitTime);
-    console.log(`[타이머 시작] 대기 시간 ${waitTime}ms 설정`);
-    if (timerInterval) clearTimeout(timerInterval); // 기존 타이머 초기화
+    currentSet++;
+    speedControl.value = localStorage.getItem('speed') || 100; // 속도 고정
+    console.log(`[읽기 시작] 세트 ${currentSet}/${totalSets}, 속도: ${speedControl.value}ms`);
+    startEffect();
+    showMessage(`세트 ${currentSet}/${totalSets} 시작: ${readTime / 1000}초`);
+
+    if (timerInterval) clearTimeout(timerInterval);
     timerInterval = setTimeout(() => {
-        console.log('[타이머 시작] 대기 후 읽기 타이머 시작');
-        playAlert(readAlert.value);
-        startReadTimer(readTime, pauseTime, restTime);
-    }, waitTime);
-});
+        pauseEffect();
+        playAlert(pauseAlert.value);
+        showMessage(`세트 ${currentSet}/${totalSets} 일시정지: ${pauseTime / 1000}초`);
+        console.log(`[일시정지 시작] 세트 ${currentSet} - 일시정지 시간: ${pauseTime}ms`);
 
+        timerInterval = setTimeout(() => {
+            if (currentSet < totalSets) {
+                if (restTime > 0) {
+                    stopEffect();
+                    playAlert(restAlert.value);
+                    showMessage(`세트 ${currentSet}/${totalSets} 휴식: ${restTime / 1000}초`);
+                    console.log(`[휴식 시작] 세트 ${currentSet} - 휴식 시간: ${restTime}ms`);
+                    timerInterval = setTimeout(() => {
+                        startReadTimer(readTime, pauseTime, restTime);
+                        console.log(`[휴식 종료] 세트 ${currentSet} 완료 - 다음 세트로 이동`);
+                    }, restTime);
+                } else {
+                    if (currentPage < pages.length - 1) {
+                        currentPage++;
+                        displayPage(1);
+                        console.log(`[페이지 넘김] 세트 ${currentSet} 후 다음 페이지로 이동 - 현재 페이지: ${currentPage + 1}`);
+                    }
+                    startReadTimer(readTime, pauseTime, restTime);
+                    console.log(`[즉시 다음 세트] 휴식 시간 0 - 세트 ${currentSet}에서 ${currentSet + 1}로 이동`);
+                }
+            } else {
+                playAlert(endAlert.value);
+                showMessage('모든 세트 완료');
+                stopEffect();
+                isTimerRunning = false;
+                pauseEffect();
+                console.log('[타이머 종료] 모든 세트 완료 - 최종 세트: ' + currentSet);
+            }
+        }, pauseTime);
+    }, readTime);
+}
+
+
+
+
+
+
+
+
+
+        stopTimer.addEventListener('click', function() {
+            if (timerInterval) {
+                clearTimeout(timerInterval);
+                timerInterval = null;
+            }
+            stopEffect();
+            isTimerRunning = false;
+            showMessage('타이머가 정지되었습니다.', 2000);
+            console.log('[타이머 정지] 타이머 및 효과 정리 완료');
+        });
 
         loadConfig.addEventListener('click', function() {
             const savedConfig = JSON.parse(localStorage.getItem('timerConfig'));
@@ -1701,62 +1834,26 @@ startTimer.addEventListener('click', function() {
             }
         });
 
-function startReadTimer(readTime, pauseTime, restTime) {
-    // 모든 세트가 완료되었는지 확인
-    if (currentSet >= totalSets) {
-        playAlert(endAlert.value); // 종료 알림음 재생
-        showMessage('모든 세트가 완료되었습니다.');
-        console.log('[타이머 종료] 모든 세트 완료');
-        stopEffect(); // 효과 완전히 정지
-        isTimerRunning = false; // 타이머 종료 플래그 설정
-        if (timerInterval) clearTimeout(timerInterval); // 기존 타이머 정리
-        pauseEffect(); // 일시정지 상태로 전환하여 사용자 재개 가능
-        console.log('[타이머 종료 후 일시정지] 효과 일시정지 상태로 전환');
-        return;
-    }
-
-    currentSet++; // 다음 세트로 이동
-    startEffect(); // 읽기 시간 동안 효과 시작
-    showMessage(`세트 ${currentSet}/${totalSets} 시작: 읽는 시간 ${readTime / 1000}초`);
-    console.log(`[읽기 시작] 세트 ${currentSet}/${totalSets}`);
-
-    if (timerInterval) clearTimeout(timerInterval); // 이전 타이머 초기화
-    timerInterval = setTimeout(() => {
-        console.log(`[읽기 종료] 세트 ${currentSet} - 일시정지로 전환`);
-        pauseEffect(); // 효과 유지하며 일시정지
-        playAlert(pauseAlert.value); // 일시정지 알림음
-        showMessage(`세트 ${currentSet}/${totalSets} 일시정지: ${pauseTime / 1000}초`);
-        console.log(`[일시정지 시작] 세트 ${currentSet}`);
-
-        timerInterval = setTimeout(() => {
-            resumeEffect(); // 일시정지 해제
-            if (restTime > 0 && currentSet < totalSets) {
-                stopEffect(); // 휴식 전 효과 초기화
-                playAlert(restAlert.value); // 휴식 알림음
-                showMessage(`세트 ${currentSet}/${totalSets} 휴식: ${restTime / 1000}초`);
-                console.log(`[휴식 시작] 세트 ${currentSet}`);
-                timerInterval = setTimeout(() => {
-                    console.log(`[휴식 종료] 세트 ${currentSet} - 다음 읽기 시작`);
-                    startReadTimer(readTime, pauseTime, restTime); // 다음 세트 시작
-                }, restTime);
-            } else {
-                console.log(`[일시정지 종료] 세트 ${currentSet} - 다음 읽기 시작`);
-                startReadTimer(readTime, pauseTime, restTime); // 즉시 다음 세트 시작
-            }
-        }, pauseTime);
-    }, readTime);
-}
-stopTimer.addEventListener('click', function() {
-    if (timerInterval) {
-        clearTimeout(timerInterval);
-        timerInterval = null;
-    }
-    stopEffect();
-    isTimerRunning = false; // 타이머 중지 시 플래그 해제
-    showMessage('타이머가 정지되었습니다.', 2000);
-    console.log('[타이머 정지] 타이머 및 효과 정리 완료');
-});
-
+        saveConfig.addEventListener('click', function() {
+            const config = {
+                setCount: setCount.value,
+                waitMin: waitMin.value,
+                waitSec: waitSec.value,
+                readMin: readMin.value,
+                readSec: readSec.value,
+                pauseMin: pauseMin.value,
+                pauseSec: pauseSec.value,
+                restMin: restMin.value,
+                restSec: restSec.value,
+                readAlert: readAlert.value,
+                pauseAlert: pauseAlert.value,
+                restAlert: restAlert.value,
+                endAlert: endAlert.value
+            };
+            localStorage.setItem('timerConfig', JSON.stringify(config));
+            showMessage('구성이 저장되었습니다.');
+            console.log('[구성 저장]', config);
+        });
 
         function debounce(func, wait) {
             let timeout;
@@ -1994,7 +2091,7 @@ stopTimer.addEventListener('click', function() {
             const deltaX = touchEndX - touchStartX;
             const timeDiff = Date.now() - lastTouchTime;
 
-            if (timeDiff > 300) { // 디바운싱: 300ms 이상 간격
+            if (timeDiff > 300) {
                 if (mobileSpeedControl.checked && touchEndY > window.innerHeight * 0.8) {
                     if (touchEndX > window.innerWidth * 0.75) {
                         let newSpeed = Math.max(50, parseInt(speedControl.value) - 5);
@@ -2203,4 +2300,4 @@ stopTimer.addEventListener('click', function() {
         }
     </script>
 </body>
-</html>
+</html> 
