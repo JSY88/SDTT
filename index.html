@@ -310,6 +310,12 @@
     transition: opacity 0.5s ease-out; /* 부드러운 사라짐을 위한 전환 효과 */
 }
 
+#currentSpeed {
+    font-size: 16px;
+    color: #333;
+    margin-left: 10px; /* 버튼과 간격 조정 */
+}
+
 .char-span.fade {
     opacity: 0; /* 애니메이션 대신 opacity로 처리 */
 }
@@ -456,8 +462,8 @@
             width: 100%;
         }
 
-        #timerSettings {
-    display: none;
+#timerSettings {
+    display: none !important; /* 타이머 설정 UI 완전히 숨김 */
     position: fixed;
     bottom: 60px; /* 페이지 슬라이더 위에 위치 */
     width: 90%;
@@ -644,10 +650,11 @@
     </div>
     <div id="textContent" role="region" aria-label="텍스트 표시 영역"></div>
     <div id="pageInfoContainer">
-        <button id="speedDownButton" class="speed-control" aria-label="속도 감소">-</button>
-        <button id="pageInfo" aria-live="polite"></button>
-        <button id="speedUpButton" class="speed-control" aria-label="속도 증가">+</button>
-    </div>
+    <button id="speedDownButton" class="speed-control" aria-label="속도 감소">-</button>
+    <button id="pageInfo" aria-live="polite"></button>
+    <span id="currentSpeed"></span> <!-- 현재 속도 표시 -->
+    <button id="speedUpButton" class="speed-control" aria-label="속도 증가">+</button>
+</div>
     <button id="leftPageButton" aria-label="이전 페이지로 이동"></button>
     <button id="rightPageButton" aria-label="다음 페이지로 이동"></button>
     <div id="loadingSpinner"></div>
@@ -796,8 +803,8 @@
         const pauseSec = document.getElementById('pauseSec');
         const restMin = document.getElementById('restMin');
         const restSec = document.getElementById('restSec');
-        const startTimer = document.getElementById('startTimer');
-        const stopTimer = document.getElementById('stopTimer');
+        //const startTimer = document.getElementById('startTimer');
+        //const stopTimer = document.getElementById('stopTimer');
         const saveConfig = document.getElementById('saveConfig');
         const loadConfig = document.getElementById('loadConfig');
         const readAlert = document.getElementById('readAlert');
@@ -1369,20 +1376,25 @@
         });
 
         function startEffect() {
+    // 기존 interval 정리
     if (interval) {
         clearInterval(interval);
-        interval = null; // interval 초기화
+        interval = null;
         console.log('[효과 시작] 이전 interval 정리');
     }
+
+    // 효과 상태 초기화
     effectState.type = effectSelect.value;
     effectState.isRunning = true;
     effectState.index = 0; // 항상 0부터 시작
     const delay = parseInt(delayBeforeEffect.value);
-    console.log(`[효과 시작] 타입: ${effectState.type}, 속도: ${speedControl.value}ms, 지연: ${delay}ms, index: ${effectState.index}`);
+    console.log(`[효과 시작] 타입: ${effectState.type}, 속도: ${speedControl.value}ms, 지연: ${delay}ms`);
 
+    // 지연 시간 후 효과 시작
     setTimeout(() => {
         if (effectState.type === 'char') {
-            const spans = textContent.querySelectorAll('.char-span'); // 공백 포함 모든 글자 대상
+            // 글자 단위 효과
+            const spans = textContent.querySelectorAll('.char-span');
             effectState.total = spans.length;
             const intervalTime = parseInt(speedControl.value) / 2;
             console.log(`[글자 단위 효과] 총 글자 수: ${effectState.total}, 간격: ${intervalTime}ms`);
@@ -1403,12 +1415,13 @@
                             currentPage++;
                             displayPage(1);
                             isPageTurning = false;
-                            console.log('[자동 페이지 넘김] 다음 페이지로 이동: ' + (currentPage + 1));
+                            console.log('[자동 페이지 넘김] 다음 페이지: ' + (currentPage + 1));
                         }, 300);
                     }
                 }
             }, intervalTime);
         } else if (effectState.type === 'fade') {
+            // 페이드 효과
             const lines = textContent.querySelectorAll('.line');
             effectState.total = lines.length;
             const intervalTime = parseInt(speedControl.value);
@@ -1418,6 +1431,7 @@
                     lines[effectState.index].classList.add('hidden');
                     effectState.index++;
                     progress.value = (effectState.index / effectState.total) * 100;
+                    console.log(`[라인 페이드] 인덱스: ${effectState.index}/${effectState.total}`);
                 } else {
                     clearInterval(interval);
                     interval = null;
@@ -1429,12 +1443,14 @@
                             currentPage++;
                             displayPage(1);
                             isPageTurning = false;
+                            console.log('[자동 페이지 넘김] 다음 페이지: ' + (currentPage + 1));
                         }, 300);
                     }
                 }
             }, intervalTime);
         } else if (effectState.type === 'eink') {
-            const spans = textContent.querySelectorAll('.char-span'); // 공백 포함
+            // 전자잉크 효과
+            const spans = textContent.querySelectorAll('.char-span');
             effectState.total = spans.length;
             const intervalTime = parseInt(speedControl.value) / 2;
             textContent.classList.add('eink-mode');
@@ -1444,6 +1460,7 @@
                     spans[effectState.index].classList.add('eink-black');
                     effectState.index++;
                     progress.value = (effectState.index / effectState.total) * 100;
+                    console.log(`[전자잉크 효과] 인덱스: ${effectState.index}/${effectState.total}`);
                 } else {
                     clearInterval(interval);
                     interval = null;
@@ -1455,6 +1472,7 @@
                             currentPage++;
                             displayPage(1);
                             isPageTurning = false;
+                            console.log('[자동 페이지 넘김] 다음 페이지: ' + (currentPage + 1));
                         }, 300);
                     }
                 }
@@ -1462,6 +1480,9 @@
         }
     }, delay);
 }
+
+
+
 
 
 
@@ -1530,13 +1551,13 @@ function pauseEffect() {
     isPaused = true;
     document.body.classList.add('paused');
     pageSliderContainer.style.display = 'block';
-    timerSettings.style.display = 'block';
+    // timerSettings.style.display = 'block'; // 타이머 제거
     tocButton.style.display = 'inline-block';
     toggleButton.style.display = 'inline-block';
     libraryButton.style.display = 'inline-block';
     pageInfoContainer.style.display = 'flex'; // 페이지 및 속도 버튼 표시
     showMessage('일시정지됨');
-    console.log('[일시정지] UI 표시 완료 - 페이지 슬라이더, 타이머 설정, 버튼 표시됨');
+    console.log('[일시정지] UI 표시 완료 - 속도: ' + speedControl.value + 'ms');
 }
 
 
@@ -1575,6 +1596,8 @@ function pauseEffect() {
             stopEffect();
             exitFullscreen();
         });
+
+
 
         speedDownButton.addEventListener('click', () => {
             let newSpeed = Math.max(50, parseInt(speedControl.value) - 5);
@@ -1863,13 +1886,25 @@ function startReadTimer(readTime, pauseTime, restTime) {
             };
         }
 
-        speedControl.addEventListener('input', () => {
-            speedInput.value = speedControl.value;
-            speedPreset.value = speedControl.value;
-            adjustSpeed();
-            if (!interval) previewEffect();
-            localStorage.setItem('speed', speedControl.value);
-        });
+        let debounceTimer;
+speedControl.addEventListener('input', () => {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+        speedInput.value = speedControl.value; // 속도 입력 동기화
+        speedPreset.value = speedControl.value; // 프리셋 동기화
+        if (interval) {
+            clearInterval(interval);
+            interval = null;
+            console.log('[속도 조정] 기존 interval 정리 완료');
+        }
+        if (isTrainingActive && !isPaused) {
+            startEffect(); // 새 속도로 효과 재시작
+            console.log('[속도 조정] 효과 재시작 - 속도: ' + speedControl.value + 'ms');
+        }
+        localStorage.setItem('speed', speedControl.value); // 속도 저장
+    }, 300); // 300ms 디바운싱
+});
+
 
         speedInput.addEventListener('input', () => {
             speedControl.value = speedInput.value;
