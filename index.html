@@ -614,8 +614,8 @@
     <details>
         <summary>고급 설정</summary>
         <div id="advancedControls">
-            <label for="speedControl">속도 (50ms ~ 2000ms):</label>
-            <div><input type="range" id="speedControl" min="50" max="2000" step="1" value="100">
+            <label for="speedControl">속도 (10ms ~ 250ms):</label>
+            <div><input type="range" id="speedControl" min="10" max="250" step="1" value="100">
                  <input type="text" id="speedInput" value="100" style="width: 80px;"></div>
             <label for="speedPreset">속도 프리셋:</label>
             <select id="speedPreset">
@@ -1539,52 +1539,69 @@ function pauseEffect() {
 
 
 function runEffect(type, startIndex) {
-    const intervalTime = parseInt(speedControl.value) / (type === 'fade' ? 1 : 2); // 타입별 간격 설정
-    console.log(`[효과 실행] 타입: ${type}, 시작 인덱스: ${startIndex}, 간격: ${intervalTime}ms`); // 디버깅 로그
+    const intervalTime = parseInt(speedControl.value) / (type === 'fade' ? 1 : 2);
+    console.log(`[효과 실행] 타입: ${type}, 시작 인덱스: ${startIndex}, 간격: ${intervalTime}ms`);
 
     if (type === 'char' || type === 'eink') {
-        const spans = textContent.querySelectorAll('.char-span'); // 모든 문자 요소 가져오기
-        effectState.total = spans.length; // 전체 글자 수 설정
-        effectState.index = startIndex; // 시작 인덱스 설정
-        effectState.isRunning = true; // 실행 상태로 설정
+        const spans = textContent.querySelectorAll('.char-span');
+        effectState.total = spans.length;
+        effectState.index = startIndex;
+        effectState.isRunning = true;
         interval = setInterval(() => {
             if (effectState.index < effectState.total && effectState.isRunning) {
                 if (type === 'char') {
-                    spans[effectState.index].classList.add('fade'); // 글자 사라짐 효과
+                    spans[effectState.index].classList.add('fade');
                 } else {
-                    spans[effectState.index].classList.add('eink-black'); // 전자잉크 효과
+                    spans[effectState.index].classList.add('eink-black');
                 }
-                effectState.index++; // 인덱스 증가
-                progress.value = (effectState.index / effectState.total) * 100; // 진행률 업데이트
-                console.log(`[${type} 효과] 인덱스: ${effectState.index}/${effectState.total}`); // 디버깅 로그
+                effectState.index++;
+                progress.value = (effectState.index / effectState.total) * 100;
+                console.log(`[${type} 효과] 인덱스: ${effectState.index}/${effectState.total}`);
             } else {
-                clearInterval(interval); // 인터벌 종료
+                clearInterval(interval);
                 interval = null;
-                effectState.isRunning = false; // 실행 상태 해제
-                console.log(`[효과 종료] ${type} 효과 완료`); // 디버깅 로그
+                effectState.isRunning = false;
+                console.log(`[효과 종료] ${type} 효과 완료`);
+
+                // 자동 페이지 전환 로직
+                if (autoPageTurn.checked && currentPage < pages.length - 1) {
+                    console.log('[자동 페이지 전환] 다음 페이지로 이동');
+                    currentPage++;
+                    displayPage(1); // 다음 페이지로 전환
+                } else if (autoPageTurn.checked) {
+                    console.log('[자동 페이지 전환] 마지막 페이지 - 전환 없음');
+                }
             }
         }, intervalTime);
     } else if (type === 'fade') {
-        const lines = textContent.querySelectorAll('.line'); // 모든 라인 요소 가져오기
-        effectState.total = lines.length; // 전체 라인 수 설정
-        effectState.index = startIndex; // 시작 인덱스 설정
-        effectState.isRunning = true; // 실행 상태로 설정
+        const lines = textContent.querySelectorAll('.line');
+        effectState.total = lines.length;
+        effectState.index = startIndex;
+        effectState.isRunning = true;
         interval = setInterval(() => {
             if (effectState.index < effectState.total && effectState.isRunning) {
-                lines[effectState.index].classList.add('hidden'); // 라인 숨김 효과
-                effectState.index++; // 인덱스 증가
-                progress.value = (effectState.index / effectState.total) * 100; // 진행률 업데이트
-                console.log(`[페이드 효과] 인덱스: ${effectState.index}/${effectState.total}`); // 디버깅 로그
+                lines[effectState.index].classList.add('hidden');
+                effectState.index++;
+                progress.value = (effectState.index / effectState.total) * 100;
+                console.log(`[페이드 효과] 인덱스: ${effectState.index}/${effectState.total}`);
             } else {
-                clearInterval(interval); // 인터벌 종료
+                clearInterval(interval);
                 interval = null;
-                effectState.isRunning = false; // 실행 상태 해제
-                console.log('[효과 종료] 페이드 효과 완료'); // 디버깅 로그
+                effectState.isRunning = false;
+                console.log('[효과 종료] 페이드 효과 완료');
+
+                // 자동 페이지 전환 로직
+                if (autoPageTurn.checked && currentPage < pages.length - 1) {
+                    console.log('[자동 페이지 전환] 다음 페이지로 이동');
+                    currentPage++;
+                    displayPage(1); // 다음 페이지로 전환
+                } else if (autoPageTurn.checked) {
+                    console.log('[자동 페이지 전환] 마지막 페이지 - 전환 없음');
+                }
             }
         }, intervalTime);
     }
 }
-
 
 
 
@@ -1613,7 +1630,7 @@ function runEffect(type, startIndex) {
 
 
         speedDownButton.addEventListener('click', () => {
-            let newSpeed = Math.max(50, parseInt(speedControl.value) - 5);
+            let newSpeed = Math.max(10, parseInt(speedControl.value) - 5);
             speedControl.value = newSpeed;
             speedInput.value = newSpeed;
             speedPreset.value = newSpeed;
@@ -1624,7 +1641,7 @@ function runEffect(type, startIndex) {
         });
 
         speedUpButton.addEventListener('click', () => {
-            let newSpeed = Math.min(2000, parseInt(speedControl.value) + 5);
+            let newSpeed = Math.min(10, parseInt(speedControl.value) + 5);
             speedControl.value = newSpeed;
             speedInput.value = newSpeed;
             speedPreset.value = newSpeed;
