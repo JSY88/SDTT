@@ -1380,118 +1380,20 @@
         });
 
         function startEffect() {
-    // 기존 interval 정리
     if (interval) {
-        clearInterval(interval);
+        clearInterval(interval); // 기존 인터벌 정리
         interval = null;
-        console.log('[효과 시작] 이전 interval 정리');
+        console.log('[효과 시작] 이전 interval 정리'); // 디버깅 로그
     }
-
-    // 효과 상태 초기화
-    effectState.type = effectSelect.value;
-    effectState.isRunning = true;
-    effectState.index = 0; // 항상 0부터 시작
-    const delay = parseInt(delayBeforeEffect.value);
-    console.log(`[효과 시작] 타입: ${effectState.type}, 속도: ${speedControl.value}ms, 지연: ${delay}ms`);
-
-    // 지연 시간 후 효과 시작
+    effectState.type = effectSelect.value; // 효과 타입 설정
+    effectState.isRunning = true; // 실행 상태로 전환
+    effectState.index = 0; // 인덱스 초기화
+    const delay = parseInt(delayBeforeEffect.value); // 지연 시간 설정
+    console.log(`[효과 시작] 타입: ${effectState.type}, 속도: ${speedControl.value}ms, 지연: ${delay}ms`); // 디버깅 로그
     setTimeout(() => {
-        if (effectState.type === 'char') {
-            // 글자 단위 효과
-            const spans = textContent.querySelectorAll('.char-span');
-            effectState.total = spans.length;
-            const intervalTime = parseInt(speedControl.value) / 2;
-            console.log(`[글자 단위 효과] 총 글자 수: ${effectState.total}, 간격: ${intervalTime}ms`);
-            interval = setInterval(() => {
-                if (effectState.index < effectState.total && effectState.isRunning) {
-                    spans[effectState.index].classList.add('fade');
-                    effectState.index++;
-                    progress.value = (effectState.index / effectState.total) * 100;
-                    console.log(`[글자 사라짐] 인덱스: ${effectState.index}/${effectState.total}`);
-                } else {
-                    clearInterval(interval);
-                    interval = null;
-                    effectState.isRunning = false;
-                    console.log('[효과 종료] 모든 글자 사라짐 완료');
-                    if (autoPageTurn.checked && currentPage < pages.length - 1 && !isPageTurning) {
-                        isPageTurning = true;
-                        setTimeout(() => {
-                            currentPage++;
-                            displayPage(1);
-                            isPageTurning = false;
-                            console.log('[자동 페이지 넘김] 다음 페이지: ' + (currentPage + 1));
-                        }, 300);
-                    }
-                }
-            }, intervalTime);
-        } else if (effectState.type === 'fade') {
-            // 페이드 효과
-            const lines = textContent.querySelectorAll('.line');
-            effectState.total = lines.length;
-            const intervalTime = parseInt(speedControl.value);
-            console.log(`[페이드 효과] 총 라인 수: ${effectState.total}, 간격: ${intervalTime}ms`);
-            interval = setInterval(() => {
-                if (effectState.index < effectState.total && effectState.isRunning) {
-                    lines[effectState.index].classList.add('hidden');
-                    effectState.index++;
-                    progress.value = (effectState.index / effectState.total) * 100;
-                    console.log(`[라인 페이드] 인덱스: ${effectState.index}/${effectState.total}`);
-                } else {
-                    clearInterval(interval);
-                    interval = null;
-                    effectState.isRunning = false;
-                    console.log('[효과 종료] 모든 라인 페이드 완료');
-                    if (autoPageTurn.checked && currentPage < pages.length - 1 && !isPageTurning) {
-                        isPageTurning = true;
-                        setTimeout(() => {
-                            currentPage++;
-                            displayPage(1);
-                            isPageTurning = false;
-                            console.log('[자동 페이지 넘김] 다음 페이지: ' + (currentPage + 1));
-                        }, 300);
-                    }
-                }
-            }, intervalTime);
-        } else if (effectState.type === 'eink') {
-            // 전자잉크 효과
-            const spans = textContent.querySelectorAll('.char-span');
-            effectState.total = spans.length;
-            const intervalTime = parseInt(speedControl.value) / 2;
-            textContent.classList.add('eink-mode');
-            console.log(`[전자잉크 효과] 총 글자 수: ${effectState.total}, 간격: ${intervalTime}ms`);
-            interval = setInterval(() => {
-                if (effectState.index < effectState.total && effectState.isRunning) {
-                    spans[effectState.index].classList.add('eink-black');
-                    effectState.index++;
-                    progress.value = (effectState.index / effectState.total) * 100;
-                    console.log(`[전자잉크 효과] 인덱스: ${effectState.index}/${effectState.total}`);
-                } else {
-                    clearInterval(interval);
-                    interval = null;
-                    effectState.isRunning = false;
-                    console.log('[효과 종료] 전자잉크 효과 완료');
-                    if (autoPageTurn.checked && currentPage < pages.length - 1 && !isPageTurning) {
-                        isPageTurning = true;
-                        setTimeout(() => {
-                            currentPage++;
-                            displayPage(1);
-                            isPageTurning = false;
-                            console.log('[자동 페이지 넘김] 다음 페이지: ' + (currentPage + 1));
-                        }, 300);
-                    }
-                }
-            }, intervalTime);
-        }
+        runEffect(effectState.type, 0); // 처음부터 효과 시작
     }, delay);
 }
-
-
-
-
-
-
-
-
 
 
 
@@ -1567,49 +1469,78 @@ function pauseEffect() {
 
 
         function resumeEffect() {
-    isPaused = false;
-    document.body.classList.remove('paused');
-    pageSliderContainer.style.display = 'none';
-    tocButton.style.display = 'inline-block';
-    libraryButton.style.display = 'inline-block';
-    showMessage('재개됨');
-    console.log('[재개] 효과 재시작 - 현재 인덱스: ' + effectState.index);
+    isPaused = false; // 일시정지 상태 해제
+    document.body.classList.remove('paused'); // 일시정지 클래스 제거
+    pageSliderContainer.style.display = 'none'; // 페이지 슬라이더 숨김
+    tocButton.style.display = 'inline-block'; // 목차 버튼 표시
+    libraryButton.style.display = 'inline-block'; // 라이브러리 버튼 표시
+    showMessage('재개됨'); // 사용자에게 재개 알림
+    console.log('[재개] 효과 재시작 - 현재 인덱스: ' + effectState.index); // 디버깅 로그
 
     if (effectState.type && effectState.index < effectState.total) {
         if (interval) {
-            clearInterval(interval);
+            clearInterval(interval); // 기존 인터벌 정리
             interval = null;
-            console.log('[재개] 기존 interval 정리');
+            console.log('[재개] 기존 interval 정리'); // 디버깅 로그
         }
-        // 효과를 현재 인덱스에서 이어서 재시작
-        const spans = textContent.querySelectorAll('.char-span');
-        effectState.total = spans.length;
-        const intervalTime = parseInt(speedControl.value) / 2;
-        console.log(`[재개] 총 글자 수: ${effectState.total}, 간격: ${intervalTime}ms`);
+        runEffect(effectState.type, effectState.index); // 현재 인덱스에서 효과 재시작
+    } else {
+        console.log('[재개 실패] 효과 타입 없음 또는 이미 완료됨'); // 디버깅 로그
+    }
+}
+
+
+
+function runEffect(type, startIndex) {
+    const intervalTime = parseInt(speedControl.value) / (type === 'fade' ? 1 : 2); // 타입별 간격 설정
+    console.log(`[효과 실행] 타입: ${type}, 시작 인덱스: ${startIndex}, 간격: ${intervalTime}ms`); // 디버깅 로그
+
+    if (type === 'char' || type === 'eink') {
+        const spans = textContent.querySelectorAll('.char-span'); // 모든 문자 요소 가져오기
+        effectState.total = spans.length; // 전체 글자 수 설정
+        effectState.index = startIndex; // 시작 인덱스 설정
+        effectState.isRunning = true; // 실행 상태로 설정
         interval = setInterval(() => {
             if (effectState.index < effectState.total && effectState.isRunning) {
-                spans[effectState.index].classList.add('fade');
-                effectState.index++;
-                progress.value = (effectState.index / effectState.total) * 100;
-                console.log(`[글자 사라짐] 인덱스: ${effectState.index}/${effectState.total}`);
-            } else {
-                clearInterval(interval);
-                interval = null;
-                effectState.isRunning = false;
-                console.log('[효과 종료] 모든 글자 사라짐 완료');
-                if (autoPageTurn.checked && currentPage < pages.length - 1 && !isPageTurning) {
-                    isPageTurning = true;
-                    setTimeout(() => {
-                        currentPage++;
-                        displayPage(1);
-                        isPageTurning = false;
-                        console.log('[자동 페이지 넘김] 다음 페이지: ' + (currentPage + 1));
-                    }, 300);
+                if (type === 'char') {
+                    spans[effectState.index].classList.add('fade'); // 글자 사라짐 효과
+                } else {
+                    spans[effectState.index].classList.add('eink-black'); // 전자잉크 효과
                 }
+                effectState.index++; // 인덱스 증가
+                progress.value = (effectState.index / effectState.total) * 100; // 진행률 업데이트
+                console.log(`[${type} 효과] 인덱스: ${effectState.index}/${effectState.total}`); // 디버깅 로그
+            } else {
+                clearInterval(interval); // 인터벌 종료
+                interval = null;
+                effectState.isRunning = false; // 실행 상태 해제
+                console.log(`[효과 종료] ${type} 효과 완료`); // 디버깅 로그
+            }
+        }, intervalTime);
+    } else if (type === 'fade') {
+        const lines = textContent.querySelectorAll('.line'); // 모든 라인 요소 가져오기
+        effectState.total = lines.length; // 전체 라인 수 설정
+        effectState.index = startIndex; // 시작 인덱스 설정
+        effectState.isRunning = true; // 실행 상태로 설정
+        interval = setInterval(() => {
+            if (effectState.index < effectState.total && effectState.isRunning) {
+                lines[effectState.index].classList.add('hidden'); // 라인 숨김 효과
+                effectState.index++; // 인덱스 증가
+                progress.value = (effectState.index / effectState.total) * 100; // 진행률 업데이트
+                console.log(`[페이드 효과] 인덱스: ${effectState.index}/${effectState.total}`); // 디버깅 로그
+            } else {
+                clearInterval(interval); // 인터벌 종료
+                interval = null;
+                effectState.isRunning = false; // 실행 상태 해제
+                console.log('[효과 종료] 페이드 효과 완료'); // 디버깅 로그
             }
         }, intervalTime);
     }
 }
+
+
+
+
 
         function updatePageSlider() {
             pageSlider.max = pages.length - 1;
