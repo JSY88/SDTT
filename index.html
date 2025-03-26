@@ -1630,26 +1630,34 @@ function runEffect(type, startIndex) {
 
 
         speedDownButton.addEventListener('click', () => {
-            let newSpeed = Math.max(10, parseInt(speedControl.value) - 5);
-            speedControl.value = newSpeed;
-            speedInput.value = newSpeed;
-            speedPreset.value = newSpeed;
-            adjustSpeed();
-            localStorage.setItem('speed', newSpeed);
-            showMessage(`현재 속도: ${newSpeed}ms`, 1500);
-            console.log(`[속도 감소] 새로운 속도: ${newSpeed}ms`);
-        });
+    let newSpeed = Math.max(10, parseInt(speedControl.value) - 5);
+    speedControl.value = newSpeed;
+    speedInput.value = newSpeed;
+    speedPreset.value = newSpeed;
+    adjustSpeed();
+    localStorage.setItem('speed', newSpeed);
+    showMessage(`현재 속도: ${newSpeed}ms`, 1500);
+    console.log(`[속도 감소] 새로운 속도: ${newSpeed}ms`);
+    if (!isTrainingActive) { // 훈련 중이 아닐 때만 미리보기
+        previewEffect();
+        console.log('[속도 감소] 미리보기 실행');
+    }
+});
 
         speedUpButton.addEventListener('click', () => {
-            let newSpeed = Math.min(10, parseInt(speedControl.value) + 5);
-            speedControl.value = newSpeed;
-            speedInput.value = newSpeed;
-            speedPreset.value = newSpeed;
-            adjustSpeed();
-            localStorage.setItem('speed', newSpeed);
-            showMessage(`현재 속도: ${newSpeed}ms`, 1500);
-            console.log(`[속도 증가] 새로운 속도: ${newSpeed}ms`);
-        });
+    let newSpeed = Math.min(250, parseInt(speedControl.value) + 5);
+    speedControl.value = newSpeed;
+    speedInput.value = newSpeed;
+    speedPreset.value = newSpeed;
+    adjustSpeed();
+    localStorage.setItem('speed', newSpeed);
+    showMessage(`현재 속도: ${newSpeed}ms`, 1500);
+    console.log(`[속도 증가] 새로운 속도: ${newSpeed}ms`);
+    if (!isTrainingActive) { // 훈련 중이 아닐 때만 미리보기
+        previewEffect();
+        console.log('[속도 증가] 미리보기 실행');
+    }
+});
 
         leftPageButton.addEventListener('pointerdown', () => {
             if (currentPage > 0) {
