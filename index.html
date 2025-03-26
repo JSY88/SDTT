@@ -494,12 +494,53 @@
         }
 
         @media (max-width: 600px) {
-            body { padding: 5px; }
-            #textContent {
-                font-size: 16px;
-                height: calc(var(--text-height) - 60px);
-                padding: 8px;
-            }
+    body { padding: 5px; }
+    #textContent {
+        font-size: 16px;
+        height: calc(var(--text-height) - 60px);
+        padding: 8px;
+    }
+    #controls {
+        margin: 10px 0;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        justify-content: center;
+        align-items: center;
+    }
+    button {
+        padding: 8px 12px;
+        font-size: 14px;
+        max-width: 100%;
+    }
+    #advancedControls {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+    #pageInfo {
+        font-size: 14px;
+        padding: 6px 12px;
+    }
+    .speed-control {
+        width: 40px;
+        height: 40px;
+        font-size: 18px;
+    }
+    #message {
+        bottom: 60px;
+        font-size: 14px;
+    }
+    #pageInfoContainer {
+        position: fixed; // 명확한 위치 지정
+        top: 10px;
+        left: 10px;
+        z-index: 1001;
+    }
+    .speed-control {
+        position: relative;
+        z-index: 1001;
+    }
+}
 #controls {
     margin: 10px 0;
     display: flex;
@@ -1313,22 +1354,28 @@
     effectState.index = 0; // 텍스트 사라짐 효과를 처음부터 시작하도록 인덱스 초기화
     console.log('[페이지 전환] effectState.index 초기화: 0');
 
+    // 페이지 전환 애니메이션 처리
     if (pageAnimation.checked && direction !== 0) {
         textContent.style.transform = direction > 0 ? 'translateX(-100%)' : 'translateX(100%)';
         textContent.style.opacity = 0;
         setTimeout(() => {
             textContent.style.transform = 'translateX(0)';
             textContent.style.opacity = 1;
-            if (isTrainingActive && !isPaused) {
-                setTimeout(() => startEffect(), 0); // DOM 업데이트 후 효과 시작
-                console.log('[페이지 전환 후 효과 재시작] 애니메이션 완료');
+            // 자동 재시작 옵션 확인 및 효과 시작
+            if (autoRestart.checked && isTrainingActive && !isPaused) {
+                setTimeout(() => startEffect(), 0);
+                console.log('[페이지 전환 후 효과 재시작] 애니메이션 완료 후 시작');
             }
             isPageTurning = false;
-        }, 300);
-    } else if (isTrainingActive && !isPaused) {
-        setTimeout(() => startEffect(), 0); // DOM 업데이트 후 효과 시작
-        console.log('[페이지 전환 후 효과 재시작] 즉시 시작');
+        }, 300); // 애니메이션 지속 시간 300ms
+    } else {
+        // 애니메이션이 없는 경우 즉시 처리
+        if (autoRestart.checked && isTrainingActive && !isPaused) {
+            setTimeout(() => startEffect(), 0);
+            console.log('[페이지 전환 후 효과 재시작] 즉시 시작');
+        }
     }
+
     preloadPages();
     saveLastPage();
     updatePageSlider();
