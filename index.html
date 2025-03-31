@@ -508,6 +508,12 @@
         justify-content: center;
         align-items: center;
     }
+#fullscreenButton {
+ padding: 8px 12px;
+ font-size: 14px;
+ max-width: 100%;
+ }
+}
     button {
         padding: 8px 12px;
         font-size: 14px;
@@ -550,6 +556,12 @@
     align-items: center;
     /* position: fixed 제거, 자연스러운 흐름 유지 */
 }
+
+
+
+
+
+
 
             button {
                 padding: 8px 12px;
@@ -604,6 +616,7 @@
 <body>
     <input type="file" id="fileUpload" accept=".txt,.epub" aria-label="파일 업로드" multiple>
     <div id="controls" role="toolbar">
+ <button id="fullscreenButton" aria-label="전체화면">전체화면</button>
     <button id="toggleButton" aria-label="훈련 시작/중지">시작</button>
     <button id="prevPage" aria-label="이전 페이지"><span class="icon">◀</span> 이전</button>
     <button id="nextPage" aria-label="다음 페이지"><span class="icon">▶</span> 다음</button>
@@ -1345,34 +1358,30 @@
     progress.value = 0;
     updateProgressPercent(0);
 
-    // 페이지 전환 시 interval 정리 및 index 초기화
     if (interval) {
         clearInterval(interval);
         interval = null;
         console.log('[페이지 전환] interval 정리 완료');
     }
-    effectState.index = 0; // 텍스트 사라짐 효과를 처음부터 시작하도록 인덱스 초기화
+    effectState.index = 0; // 초기화는 유지하되, 재시작 조건에서 조정
     console.log('[페이지 전환] effectState.index 초기화: 0');
 
-    // 페이지 전환 애니메이션 처리
     if (pageAnimation.checked && direction !== 0) {
         textContent.style.transform = direction > 0 ? 'translateX(-100%)' : 'translateX(100%)';
         textContent.style.opacity = 0;
         setTimeout(() => {
             textContent.style.transform = 'translateX(0)';
             textContent.style.opacity = 1;
-            // 자동 재시작 옵션 확인 및 효과 시작
             if (autoRestart.checked && isTrainingActive && !isPaused) {
-                setTimeout(() => startEffect(), 0);
-                console.log('[페이지 전환 후 효과 재시작] 애니메이션 완료 후 시작');
+                console.log('[페이지 전환 후 자동 재시작] 애니메이션 완료 후 효과 시작');
+                startEffect(); // 페이지 전환 시 새로 시작
             }
             isPageTurning = false;
-        }, 300); // 애니메이션 지속 시간 300ms
+        }, 300);
     } else {
-        // 애니메이션이 없는 경우 즉시 처리
         if (autoRestart.checked && isTrainingActive && !isPaused) {
-            setTimeout(() => startEffect(), 0);
-            console.log('[페이지 전환 후 효과 재시작] 즉시 시작');
+            console.log('[페이지 전환 후 자동 재시작] 즉시 효과 시작');
+            startEffect(); // 페이지 전환 시 새로 시작
         }
     }
 
@@ -1380,6 +1389,11 @@
     saveLastPage();
     updatePageSlider();
 }
+
+
+
+
+
 
 
 
@@ -1396,35 +1410,25 @@
         }
 
         toggleButton.addEventListener('click', () => {
-            console.log(`[토글 버튼 클릭] 훈련 상태: ${isTrainingActive ? '정지' : '시작'}`);
-            if (!isTrainingActive) {
-                if (fullscreenMode.checked) {
-                    const requestFullscreen = document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen;
-                    if (!document.fullscreenElement && requestFullscreen) {
-                        requestFullscreen.call(document.documentElement).then(() => {
-                            document.body.style.opacity = 0;
-                            setTimeout(() => {
-                                document.body.classList.add('fullscreen');
-                                document.body.style.opacity = 1;
-                                if (noSleep) noSleep.enable();
-                                isFullscreen = true;
-                                updateFullScreenButtons();
-                            }, 300);
-                        }).catch(() => {
-                            showMessage('전체화면 모드 활성화 실패.');
-                        });
-                    }
-                }
-                startEffect();
-                toggleButton.innerText = '정지';
-                isTrainingActive = true;
-            } else {
-                stopEffect();
-                exitFullscreen();
-                toggleButton.innerText = '시작';
-                isTrainingActive = false;
-            }
-        });
+    console.log(`[토글 버튼 클릭] 훈련 상태: ${isTrainingActive ? '정지' : '시작'}, 현재 인덱스: ${effectState.index}`);
+    if (!isTrainingActive) {
+        if (effectState.index === 0 || !effectState.type) {
+            startEffect(); // 처음 시작 또는 효과 타입이 없는 경우
+            console.log('[훈련 시작] 처음부터 효과 실행');
+        } else {
+            resumeEffect(); // 멈춘 지점에서 재개
+            console.log('[훈련 재개] 멈춘 지점부터 효과 실행');
+        }
+        toggleButton.innerText = '정지';
+        isTrainingActive = true;
+        showMessage('훈련 시작됨');
+    } else {
+        pauseEffect();
+        toggleButton.innerText = '시작';
+        isTrainingActive = false;
+        showMessage('훈련 일시정지됨');
+    }
+});
 
         function startEffect() {
     if (interval) {
@@ -1443,9 +1447,56 @@
 }
 
 
+const fullscreenButton = document.getElementById('fullscreenButton');
 
-
-
+fullscreenButton.addEventListener('click', () => {
+    console.log('[전체화면 버튼 클릭] 현재 전체화면 상태: ' + (isFullscreen ? '활성화' : '비활성화'));
+    if (!isFullscreen) {
+        const requestFullscreen = document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen;
+        if (!document.fullscreenElement && requestFullscreen) {
+            requestFullscreen.call(document.documentElement).then(() => {
+                document.body.style.opacity = 0;
+                setTimeout(() => {
+                    document.body.classList.add('fullscreen');
+                    document.body.style.opacity = 1;
+                    if (noSleep) noSleep.enable();
+                    isFullscreen = true;
+                    fullscreenButton.innerText = '메인화면'; // 텍스트 변경
+                    updateFullScreenButtons();
+                    showMessage('전체화면 모드 활성화됨');
+                    console.log('[전체화면] 활성화 완료 - 효과 시작 준비');
+                    startEffect();
+                    isTrainingActive = true;
+                    toggleButton.innerText = '정지';
+                }, 300);
+            }).catch(() => {
+                showMessage('전체화면 모드 활성화 실패.');
+                console.log('[전체화면] 활성화 실패');
+            });
+        }
+    } else {
+        const exitFullscreen = document.exitFullscreen || document.webkitExitFullscreen;
+        if (document.fullscreenElement && exitFullscreen) {
+            document.body.style.opacity = 0;
+            setTimeout(() => {
+                exitFullscreen.call(document).then(() => {
+                    document.body.classList.remove('fullscreen');
+                    document.body.style.opacity = 1;
+                    if (noSleep) noSleep.disable();
+                    isFullscreen = false;
+                    fullscreenButton.innerText = '전체화면'; // 텍스트 복원
+                    updateFullScreenButtons();
+                    pauseEffect(); // 효과 일시정지
+                    showMessage('메인화면으로 복귀');
+                    console.log('[전체화면 종료] 메인화면 복귀 완료');
+                }).catch(() => {
+                    showMessage('전체화면 모드 종료 실패.');
+                    console.log('[전체화면 종료] 실패');
+                });
+            }, 300);
+        }
+    }
+});
 
 
 
@@ -1514,7 +1565,6 @@ function pauseEffect() {
 }
 
 
-
         function resumeEffect() {
     isPaused = false; // 일시정지 상태 해제
     document.body.classList.remove('paused'); // 일시정지 클래스 제거
@@ -1532,78 +1582,74 @@ function pauseEffect() {
         }
         runEffect(effectState.type, effectState.index); // 현재 인덱스에서 효과 재시작
     } else {
-        console.log('[재개 실패] 효과 타입 없음 또는 이미 완료됨'); // 디버깅 로그
+        console.log('[재개 실패] 효과 타입 없음 또는 이미 완료됨 - 처음부터 시작'); // 디버깅 로그
+        startEffect(); // 효과가 완료되었거나 타입이 없는 경우 처음부터 시작
+        showMessage('효과가 완료되어 처음부터 시작합니다.', 2000);
     }
 }
 
 
 
 function runEffect(type, startIndex) {
-    const intervalTime = parseInt(speedControl.value) / (type === 'fade' ? 1 : 2);
-    console.log(`[효과 실행] 타입: ${type}, 시작 인덱스: ${startIndex}, 간격: ${intervalTime}ms`);
+ console.log(`[새로운 효과 실행] 타입: ${type}, 시작 인덱스: ${startIndex}`);
+ const baseSpeed = parseInt(speedControl.value); // 기본 속도 고정
+ const spans = textContent.querySelectorAll('.char-span');
+ const lines = textContent.querySelectorAll('.line');
+ effectState.total = (type === 'fade') ? lines.length : spans.length;
+ effectState.index = startIndex;
+ effectState.isRunning = true;
 
-    if (type === 'char' || type === 'eink') {
-        const spans = textContent.querySelectorAll('.char-span');
-        effectState.total = spans.length;
-        effectState.index = startIndex;
-        effectState.isRunning = true;
-        interval = setInterval(() => {
-            if (effectState.index < effectState.total && effectState.isRunning) {
-                if (type === 'char') {
-                    spans[effectState.index].classList.add('fade');
-                } else {
-                    spans[effectState.index].classList.add('eink-black');
-                }
-                effectState.index++;
-                progress.value = (effectState.index / effectState.total) * 100;
-                console.log(`[${type} 효과] 인덱스: ${effectState.index}/${effectState.total}`);
-            } else {
-                clearInterval(interval);
-                interval = null;
-                effectState.isRunning = false;
-                console.log(`[효과 종료] ${type} 효과 완료`);
+ // 사라짐 타이밍 배열 생성
+ const timings = [];
+ for (let i = startIndex; i < effectState.total; i++) {
+ timings.push(i * baseSpeed); // 각 요소마다 고정된 속도로 타이밍 계산
+ }
 
-                // 자동 페이지 전환 로직
-                if (autoPageTurn.checked && currentPage < pages.length - 1) {
-                    console.log('[자동 페이지 전환] 다음 페이지로 이동');
-                    currentPage++;
-                    displayPage(1); // 다음 페이지로 전환
-                } else if (autoPageTurn.checked) {
-                    console.log('[자동 페이지 전환] 마지막 페이지 - 전환 없음');
-                }
-            }
-        }, intervalTime);
-    } else if (type === 'fade') {
-        const lines = textContent.querySelectorAll('.line');
-        effectState.total = lines.length;
-        effectState.index = startIndex;
-        effectState.isRunning = true;
-        interval = setInterval(() => {
-            if (effectState.index < effectState.total && effectState.isRunning) {
-                lines[effectState.index].classList.add('hidden');
-                effectState.index++;
-                progress.value = (effectState.index / effectState.total) * 100;
-                console.log(`[페이드 효과] 인덱스: ${effectState.index}/${effectState.total}`);
-            } else {
-                clearInterval(interval);
-                interval = null;
-                effectState.isRunning = false;
-                console.log('[효과 종료] 페이드 효과 완료');
+ if (interval) {
+ clearInterval(interval);
+ interval = null;
+ console.log('[효과 실행] 기존 interval 정리');
+ }
 
-                // 자동 페이지 전환 로직
-                if (autoPageTurn.checked && currentPage < pages.length - 1) {
-                    console.log('[자동 페이지 전환] 다음 페이지로 이동');
-                    currentPage++;
-                    displayPage(1); // 다음 페이지로 전환
-                } else if (autoPageTurn.checked) {
-                    console.log('[자동 페이지 전환] 마지막 페이지 - 전환 없음');
-                }
-            }
-        }, intervalTime);
-    }
+ let currentTime = 0;
+ interval = setInterval(() => {
+ if (!effectState.isRunning) {
+ clearInterval(interval);
+ interval = null;
+ console.log('[효과 중단] 실행 상태 비활성화');
+ return;
+ }
+
+ currentTime += baseSpeed;
+ const currentIndex = timings.findIndex(t => t <= currentTime && t > (currentTime - baseSpeed));
+
+ if (currentIndex >= 0 && effectState.index < effectState.total) {
+ if (type === 'char') {
+ spans[effectState.index].classList.add('fade');
+ } else if (type === 'eink') {
+ spans[effectState.index].classList.add('eink-black');
+ } else if (type === 'fade') {
+ lines[effectState.index].classList.add('hidden');
+ }
+ effectState.index++;
+ progress.value = (effectState.index / effectState.total) * 100;
+ console.log(`[${type} 효과] 인덱스: ${effectState.index}/${effectState.total}, 시간: ${currentTime}ms`);
+ }
+
+ if (effectState.index >= effectState.total) {
+ clearInterval(interval);
+ interval = null;
+ effectState.isRunning = false;
+ console.log(`[효과 종료] ${type} 효과 완료 - 총 시간: ${currentTime}ms`);
+
+ if (autoPageTurn.checked && currentPage < pages.length - 1) {
+ console.log('[자동 페이지 전환] 다음 페이지로 이동');
+ currentPage++;
+ displayPage(1);
+ }
+ }
+ }, baseSpeed); // 고정된 간격으로 실행
 }
-
-
 
 
         function updatePageSlider() {
