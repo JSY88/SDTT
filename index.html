@@ -1358,30 +1358,34 @@
     progress.value = 0;
     updateProgressPercent(0);
 
+    // 페이지 전환 시 interval 정리만 수행, index는 보존
     if (interval) {
         clearInterval(interval);
         interval = null;
         console.log('[페이지 전환] interval 정리 완료');
     }
-    effectState.index = 0; // 초기화는 유지하되, 재시작 조건에서 조정
-    console.log('[페이지 전환] effectState.index 초기화: 0');
+    // effectState.index = 0; // 제거: 인덱스 초기화하지 않음
+    console.log('[페이지 전환] effectState.index 유지: ' + effectState.index); // 디버깅 로그 강화
 
+    // 페이지 전환 애니메이션 처리
     if (pageAnimation.checked && direction !== 0) {
         textContent.style.transform = direction > 0 ? 'translateX(-100%)' : 'translateX(100%)';
         textContent.style.opacity = 0;
         setTimeout(() => {
             textContent.style.transform = 'translateX(0)';
             textContent.style.opacity = 1;
+            // 자동 재시작 옵션 확인 및 효과 시작
             if (autoRestart.checked && isTrainingActive && !isPaused) {
-                console.log('[페이지 전환 후 자동 재시작] 애니메이션 완료 후 효과 시작');
-                startEffect(); // 페이지 전환 시 새로 시작
+                setTimeout(() => startEffect(), 0);
+                console.log('[페이지 전환 후 효과 재시작] 애니메이션 완료 후 시작');
             }
             isPageTurning = false;
-        }, 300);
+        }, 300); // 애니메이션 지속 시간 300ms
     } else {
+        // 애니메이션이 없는 경우 즉시 처리
         if (autoRestart.checked && isTrainingActive && !isPaused) {
-            console.log('[페이지 전환 후 자동 재시작] 즉시 효과 시작');
-            startEffect(); // 페이지 전환 시 새로 시작
+            setTimeout(() => startEffect(), 0);
+            console.log('[페이지 전환 후 효과 재시작] 즉시 시작');
         }
     }
 
@@ -1389,7 +1393,6 @@
     saveLastPage();
     updatePageSlider();
 }
-
 
 
 
@@ -1578,79 +1581,95 @@ function pauseEffect() {
         if (interval) {
             clearInterval(interval); // 기존 인터벌 정리
             interval = null;
-            console.log('[재개] 기존 interval 정리'); // 디버깅 로그
+            console.log('[재개] 기존 interval 정리 완료'); // 디버깅 로그
         }
+        console.log('[재개 성공] 멈춘 지점에서 효과 재시작 - 타입: ' + effectState.type + ', 인덱스: ' + effectState.index);
         runEffect(effectState.type, effectState.index); // 현재 인덱스에서 효과 재시작
     } else {
         console.log('[재개 실패] 효과 타입 없음 또는 이미 완료됨 - 처음부터 시작'); // 디버깅 로그
         startEffect(); // 효과가 완료되었거나 타입이 없는 경우 처음부터 시작
-        showMessage('효과가 완료되어 처음부터 시작합니다.', 2000);
+        showMessage('효과가 완료되어 처음부터 시작합니다.', 2000); // 사용자 알림
     }
 }
 
 
 
 function runEffect(type, startIndex) {
- console.log(`[새로운 효과 실행] 타입: ${type}, 시작 인덱스: ${startIndex}`);
- const baseSpeed = parseInt(speedControl.value); // 기본 속도 고정
- const spans = textContent.querySelectorAll('.char-span');
- const lines = textContent.querySelectorAll('.line');
- effectState.total = (type === 'fade') ? lines.length : spans.length;
- effectState.index = startIndex;
- effectState.isRunning = true;
+    console.log(`[새로운 효과 실행] 타입: ${type}, 시작 인덱스: ${startIndex}`);
+    const baseSpeed = parseInt(speedControl.value); // 기본 속도 고정
+    const spans = textContent.querySelectorAll('.char-span');
+    const lines = textContent.querySelectorAll('.line');
+    effectState.total = (type === 'fade') ? lines.length : spans.length;
+    effectState.index = startIndex;
+    effectState.isRunning = true;
 
- // 사라짐 타이밍 배열 생성
- const timings = [];
- for (let i = startIndex; i < effectState.total; i++) {
- timings.push(i * baseSpeed); // 각 요소마다 고정된 속도로 타이밍 계산
- }
+    // 시작 인덱스 전까지의 효과 상태 반영
+    if (type === 'char' || type === 'eink') {
+        for (let i = 0; i < startIndex; i++) {
+            if (i < spans.length) {
+                spans[i].classList.add(type === 'char' ? 'fade' : 'eink-black');
+            }
+        }
+    } else if (type === 'fade') {
+        for (let i = 0; i < startIndex; i++) {
+            if (i < lines.length) {
+                lines[i].classList.add('hidden');
+            }
+        }
+    }
+    console.log(`[효과 초기화] 인덱스 ${startIndex} 전까지 상태 반영 완료`);
 
- if (interval) {
- clearInterval(interval);
- interval = null;
- console.log('[효과 실행] 기존 interval 정리');
- }
+    // 사라짐 타이밍 배열 생성
+    const timings = [];
+    for (let i = startIndex; i < effectState.total; i++) {
+        timings.push((i - startIndex) * baseSpeed); // 시작 인덱스 기준으로 타이밍 재계산
+    }
 
- let currentTime = 0;
- interval = setInterval(() => {
- if (!effectState.isRunning) {
- clearInterval(interval);
- interval = null;
- console.log('[효과 중단] 실행 상태 비활성화');
- return;
- }
+    if (interval) {
+        clearInterval(interval);
+        interval = null;
+        console.log('[효과 실행] 기존 interval 정리');
+    }
 
- currentTime += baseSpeed;
- const currentIndex = timings.findIndex(t => t <= currentTime && t > (currentTime - baseSpeed));
+    let currentTime = 0;
+    interval = setInterval(() => {
+        if (!effectState.isRunning || isPaused) {
+            clearInterval(interval);
+            interval = null;
+            console.log('[효과 중단] 실행 상태 비활성화 또는 일시정지');
+            return;
+        }
 
- if (currentIndex >= 0 && effectState.index < effectState.total) {
- if (type === 'char') {
- spans[effectState.index].classList.add('fade');
- } else if (type === 'eink') {
- spans[effectState.index].classList.add('eink-black');
- } else if (type === 'fade') {
- lines[effectState.index].classList.add('hidden');
- }
- effectState.index++;
- progress.value = (effectState.index / effectState.total) * 100;
- console.log(`[${type} 효과] 인덱스: ${effectState.index}/${effectState.total}, 시간: ${currentTime}ms`);
- }
+        currentTime += baseSpeed;
+        const currentIndex = timings.findIndex(t => t <= currentTime && t > (currentTime - baseSpeed));
 
- if (effectState.index >= effectState.total) {
- clearInterval(interval);
- interval = null;
- effectState.isRunning = false;
- console.log(`[효과 종료] ${type} 효과 완료 - 총 시간: ${currentTime}ms`);
+        if (currentIndex >= 0 && effectState.index < effectState.total) {
+            if (type === 'char') {
+                spans[effectState.index].classList.add('fade');
+            } else if (type === 'eink') {
+                spans[effectState.index].classList.add('eink-black');
+            } else if (type === 'fade') {
+                lines[effectState.index].classList.add('hidden');
+            }
+            effectState.index++;
+            progress.value = (effectState.index / effectState.total) * 100;
+            console.log(`[${type} 효과] 인덱스: ${effectState.index}/${effectState.total}, 시간: ${currentTime}ms`);
+        }
 
- if (autoPageTurn.checked && currentPage < pages.length - 1) {
- console.log('[자동 페이지 전환] 다음 페이지로 이동');
- currentPage++;
- displayPage(1);
- }
- }
- }, baseSpeed); // 고정된 간격으로 실행
+        if (effectState.index >= effectState.total) {
+            clearInterval(interval);
+            interval = null;
+            effectState.isRunning = false;
+            console.log(`[효과 종료] ${type} 효과 완료 - 총 시간: ${currentTime}ms`);
+
+            if (autoPageTurn.checked && currentPage < pages.length - 1) {
+                console.log('[자동 페이지 전환] 다음 페이지로 이동');
+                currentPage++;
+                displayPage(1);
+            }
+        }
+    }, baseSpeed); // 고정된 간격으로 실행
 }
-
 
         function updatePageSlider() {
             pageSlider.max = pages.length - 1;
